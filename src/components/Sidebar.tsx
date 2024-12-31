@@ -1,7 +1,6 @@
 import { 
   Drawer, 
   styled, 
-  Avatar, 
   Typography, 
   IconButton, 
   List, 
@@ -117,7 +116,7 @@ const AddressText = styled(Typography)({
   lineHeight: '100%',
 });
 
-const StyledListItemButton = styled(ListItemButton)<{ selected?: boolean }>(({ selected }) => ({
+const StyledListItemButton = styled(ListItemButton)<{ selected?: boolean }>(() => ({
   width: '210px',
   height: '44px',
   margin: '0 20px',

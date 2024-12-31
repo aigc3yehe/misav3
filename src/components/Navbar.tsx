@@ -1,11 +1,9 @@
-import { AppBar, Button, Toolbar, styled, alpha, Dialog, DialogTitle, DialogActions, Avatar, IconButton, Box } from '@mui/material';
+import { AppBar, Button, Toolbar, styled, alpha, Dialog, DialogTitle, DialogActions, Box } from '@mui/material';
 import { useAppKit } from '@reown/appkit/react'
 import { useAccount, useDisconnect } from 'wagmi';
 import { useState } from 'react';
-import MoreVertIcon from '@mui/icons-material/MoreVert';
-import SharedAvatar from './SharedAvatar';
 
-const StyledAppBar = styled(AppBar)(({ theme }) => ({
+const StyledAppBar = styled(AppBar)(() => ({
   background: 'transparent',
   backdropFilter: 'blur(8px)',
 }));
@@ -85,7 +83,7 @@ const ConnectedButton = styled(Button)({
 });
 
 // 自定义确认弹窗样式
-const StyledDialog = styled(Dialog)(({ theme }) => ({
+const StyledDialog = styled(Dialog)(() => ({
   '& .MuiDialog-paper': {
     backgroundColor: '#2B1261',
     borderRadius: '4px',
@@ -132,7 +130,7 @@ interface NavbarProps {
   sidebarOpen: boolean;
 }
 
-export default function Navbar({ onSidebarOpen, sidebarOpen }: NavbarProps) {
+export default function Navbar({ sidebarOpen }: NavbarProps) {
   const { open } = useAppKit();
   const { address, isConnected } = useAccount();
   const { disconnect } = useDisconnect();
