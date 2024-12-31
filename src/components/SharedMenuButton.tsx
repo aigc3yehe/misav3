@@ -1,6 +1,7 @@
-import { styled } from '@mui/material';
+import { styled, alpha } from '@mui/material';
 import { IconButton } from '@mui/material';
-import MoreVertIcon from '@mui/icons-material/MoreVert';
+import menuExpanded from '../assets/menu_expanded.svg';
+import menuNormal from '../assets/menu_normal.svg';
 
 interface SharedMenuButtonProps {
   expanded: boolean;
@@ -12,13 +13,28 @@ const TransitionIconButton = styled(IconButton)<{ $expanded: boolean }>(({ $expa
   zIndex: 1300,
   color: 'white',
   transition: 'all 0.3s ease-in-out',
+  padding: 0,
+  width: '30px',
+  height: '30px',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
   ...$expanded ? {
-    left: '220px', // 侧边栏展开时的位置
-    top: '46px',
+    left: '207px',
+    top: '19px',
   } : {
-    left: '92px', // 侧边栏收起时的位置
-    top: '32px',
-  }
+    left: '90px',
+    top: '27px',
+  },
+  '&:hover': {
+    backgroundColor: alpha('#fff', 0.08),
+  },
+}));
+
+const MenuIcon = styled('img')<{ $expanded: boolean }>(({ $expanded }) => ({
+  width: $expanded ? '16px' : '18px',
+  height: $expanded ? '20px' : '16px',
+  transition: 'all 0.3s ease-in-out',
 }));
 
 export default function SharedMenuButton({ expanded, onClick }: SharedMenuButtonProps) {
@@ -27,7 +43,11 @@ export default function SharedMenuButton({ expanded, onClick }: SharedMenuButton
       $expanded={expanded}
       onClick={onClick}
     >
-      <MoreVertIcon />
+      <MenuIcon 
+        $expanded={expanded}
+        src={expanded ? menuExpanded : menuNormal}
+        alt="menu"
+      />
     </TransitionIconButton>
   );
 } 

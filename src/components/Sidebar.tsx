@@ -3,8 +3,7 @@ import {
   styled, 
   Typography, 
   IconButton, 
-  List, 
-  ListItemText,
+  List,
   ListItemButton,
   Divider,
   Box,
@@ -12,25 +11,24 @@ import {
   MenuItem,
   Link,
 } from '@mui/material';
-import InfoIcon from '@mui/icons-material/Info';
-import MoreVertIcon from '@mui/icons-material/MoreVert';
-import HomeIcon from '@mui/icons-material/Home';
-import CubeIcon from '@mui/icons-material/ViewInAr';
-import GalleryIcon from '@mui/icons-material/Collections';
-import ModelIcon from '@mui/icons-material/Person';
-import NftIcon from '@mui/icons-material/Token';
-import ChatIcon from '@mui/icons-material/Chat';
-import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
-import ContentCopyIcon from '@mui/icons-material/ContentCopy';
-import MoreHorizIcon from '@mui/icons-material/MoreHoriz';
+import infoIcon from '../assets/info.svg';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { keyframes } from '@mui/system';
-import TwitterIcon from '@mui/icons-material/X';
-import ArticleIcon from '@mui/icons-material/DocumentScanner';
-import { Discord as DiscordIcon } from '../components/icons/Discord';
-import { Logo } from '../components/icons/Logo';
+import livingroomNormal from '../assets/livingroom_normal.svg';
+import livingroomSelected from '../assets/livingroom_selected.svg';
+import modelsNormal from '../assets/models_normal.svg';
+import modelsSelected from '../assets/models_selected.svg';
+import galleryNormal from '../assets/gallery_normal.svg';
+import gallerySelected from '../assets/gallery_selected.svg';
+import moreIcon from '../assets/more.svg';
+import arrowDropDown from '../assets/arrow_drop_down.svg';
+import copyIcon from '../assets/mi_copy.svg';
+import xIcon from '../assets/x.svg';
+import docsIcon from '../assets/docs.svg';
+import discardIcon from '../assets/discard.svg';
+import logoImage from '../assets/mirae_studio.png';
 
 const SIDEBAR_WIDTH = 250;
 
@@ -101,13 +99,15 @@ const ProfileInfo = styled(Box)({
 const NameSection = styled(Box)({
   display: 'flex',
   alignItems: 'center',
-  gap: '4px',
+  gap: '0px',
+  marginTop: '-5px',
 });
 
 const AddressSection = styled(Box)({
   display: 'flex',
   alignItems: 'center',
-  gap: '4px',
+  gap: '0px',
+  marginTop: '-12px',
 });
 
 const AddressText = styled(Typography)({
@@ -121,6 +121,7 @@ const StyledListItemButton = styled(ListItemButton)<{ selected?: boolean }>(() =
   height: '44px',
   margin: '0 20px',
   padding: '10px 6px',
+  gap: '8px',
   borderRadius: '4px',
   '&.MuiListItemButton-root': {
     backgroundColor: 'transparent',
@@ -150,10 +151,11 @@ const ChatListItem = styled(Box)({
   position: 'relative',
   display: 'flex',
   alignItems: 'center',
+  gap: '8px',
   width: '100%',
   '& .chat-more-button': {
     position: 'absolute',
-    right: '8px',
+    right: '0px',
     opacity: 0,
     transition: 'opacity 0.2s',
   },
@@ -184,38 +186,73 @@ const SocialBar = styled(Box)({
   bottom: 30,
   left: 20,
   width: 210,
-  height: 35,
+  height: 40,
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'space-between',
 });
 
-const LogoLink = styled(Link)({
-  display: 'flex',
-  alignItems: 'center',
-  width: 90,
-  height: 35,
-  '&:hover': {
-    opacity: 0.8,
-  },
-});
-
 const SocialIconsWrapper = styled(Box)({
   display: 'flex',
   alignItems: 'center',
-  gap: '12px',
+  gap: '8px',
+  marginTop: '5px',
 });
 
 const SocialIconLink = styled(Link)({
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  width: 20,
-  height: 20,
+  width: '30px',
+  height: '30px',
+  borderRadius: '50%',
   color: 'white',
+  transition: 'background-color 0.2s',
   '&:hover': {
-    opacity: 0.8,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
   },
+  '& img': {
+    width: '20px',
+    height: '20px',
+  }
+});
+
+const InfoIconButton = styled(IconButton)({
+  padding: 5,
+  '& img': {
+    width: '20px',
+    height: '20px',
+  },
+});
+
+const NavIcon = styled('img')({
+  width: '24px',
+  height: '24px',
+});
+
+const IconImage = styled('img')({
+  display: 'block',
+});
+
+const ArrowIcon = styled(IconImage)({
+  width: '14px',
+  height: '10px',
+});
+
+const CopyIcon = styled(IconImage)({
+  width: '12px',
+  height: '12px',
+});
+
+const SocialIcon = styled(IconImage)({
+  width: '20px',
+  height: '20px',
+});
+
+const LogoImage = styled('img')({
+  width: '90px',
+  height: '35px',
+  marginBottom: '10px',
 });
 
 interface SidebarProps {
@@ -239,9 +276,49 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
   };
 
   const navigationItems = [
-    { path: '/living-room', label: 'Living Room', icon: <HomeIcon sx={{ fontSize: 24 }} /> },
-    { path: '/models', label: 'Models', icon: <CubeIcon sx={{ fontSize: 24 }} /> },
-    { path: '/gallery', label: 'Gallery', icon: <GalleryIcon sx={{ fontSize: 24 }} /> },
+    { 
+      path: '/living-room', 
+      label: 'Living Room', 
+      icon: {
+        normal: livingroomNormal,
+        selected: livingroomSelected
+      }
+    },
+    { 
+      path: '/models', 
+      label: 'Models', 
+      icon: {
+        normal: modelsNormal,
+        selected: modelsSelected
+      }
+    },
+    { 
+      path: '/gallery', 
+      label: 'Gallery', 
+      icon: {
+        normal: galleryNormal,
+        selected: gallerySelected
+      }
+    },
+  ];
+
+  const mySpaceItems = [
+    {
+      path: '/my-models',
+      label: 'My Models',
+      icon: {
+        normal: modelsNormal, // 使用与 Models 相同的图标
+        selected: modelsSelected
+      }
+    },
+    {
+      path: '/my-nfts',
+      label: 'My NFTs',
+      icon: {
+        normal: galleryNormal, // 使用与 Gallery 相同的图标
+        selected: gallerySelected
+      }
+    },
   ];
 
   const handleMoreClick = (event: React.MouseEvent<HTMLElement>, chatId: string) => {
@@ -265,6 +342,25 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
     { id: '1', label: 'Chat 2024.12.23' },
     { id: '2', label: 'Chat 2024.12.22' },
   ];
+
+  const renderNavItems = (items: typeof navigationItems) => {
+    return items.map((item) => {
+      const isSelected = location.pathname === item.path;
+      return (
+        <StyledListItemButton
+          key={item.path}
+          selected={isSelected}
+          onClick={() => navigate(item.path)}
+        >
+          <NavIcon 
+            src={isSelected ? item.icon.selected : item.icon.normal} 
+            alt={item.label}
+          />
+          <NavText>{item.label}</NavText>
+        </StyledListItemButton>
+      );
+    });
+  };
 
   return (
     <StyledDrawer
@@ -290,7 +386,14 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
                 >
                   NVIYOKO
                 </Typography>
-                <ArrowDropDownIcon sx={{ fontSize: 16 }} />
+                <IconButton 
+                  size="small" 
+                  onClick={() => handleCopyAddress('0x1234567890abcdef1234567890abcdef12345678')}
+                  sx={{ padding: 1, width: 28, height: 28 }}
+                >
+                  <ArrowIcon src={arrowDropDown} alt="expand" />
+                </IconButton>
+                
               </NameSection>
               <AddressSection>
                 <AddressText>
@@ -299,49 +402,29 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
                 <IconButton 
                   size="small" 
                   onClick={() => handleCopyAddress('0x1234567890abcdef1234567890abcdef12345678')}
-                  sx={{ padding: 0 }}
+                  sx={{ padding: 1, width: 28, height: 28  }}
                 >
-                  <ContentCopyIcon sx={{ fontSize: 12, color: '#D6C0FF' }} />
+                  <CopyIcon src={copyIcon} alt="copy" />
                 </IconButton>
               </AddressSection>
             </Box>
           </ProfileInfo>
-          <Box sx={{ display: 'flex', gap: '4px' }}>
-            <IconButton size="small">
-              <InfoIcon sx={{ fontSize: 20 }} />
-            </IconButton>
-            <IconButton size="small" onClick={onClose}>
-              <MoreVertIcon sx={{ fontSize: 20 }} />
-            </IconButton>
-          </Box>
+          <InfoIconButton style={{ padding: 5, marginTop: -16, marginRight: 21 }}>
+            <img src={infoIcon} alt="info" />
+          </InfoIconButton>  
+          
         </ProfileHeader>
       </ProfileSection>
 
       <StyledList>
-        {navigationItems.map((item) => (
-          <StyledListItemButton
-            key={item.path}
-            selected={location.pathname === item.path}
-            onClick={() => navigate(item.path)}
-          >
-            {item.icon}
-            <NavText sx={{ ml: 2 }}>{item.label}</NavText>
-          </StyledListItemButton>
-        ))}
+        {renderNavItems(navigationItems)}
       </StyledList>
 
       <Divider sx={{ borderColor: 'rgba(255, 255, 255, 0.1)', margin: '0 20px' }} />
 
       <GroupTitle>My Space</GroupTitle>
       <StyledList>
-        <StyledListItemButton>
-          <ModelIcon sx={{ mr: 2 }} />
-          <ListItemText primary="My Models" />
-        </StyledListItemButton>
-        <StyledListItemButton>
-          <NftIcon sx={{ mr: 2 }} />
-          <ListItemText primary="My NFTs" />
-        </StyledListItemButton>
+        {renderNavItems(mySpaceItems)}
       </StyledList>
 
       <Divider sx={{ borderColor: 'rgba(255, 255, 255, 0.1)', margin: '0 20px' }} />
@@ -351,15 +434,15 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
         {recentChats.map((chat) => (
           <StyledListItemButton key={chat.id}>
             <ChatListItem>
-              <ChatIcon sx={{ mr: 2, fontSize: 24 }} />
+              <NavIcon src={livingroomNormal} alt="chat" />
               <NavText>{chat.label}</NavText>
               <IconButton
                 className="chat-more-button"
                 size="small"
+                sx={{ marginRight: '-5px' }}
                 onClick={(e) => handleMoreClick(e, chat.id)}
-                sx={{ color: 'white' }}
               >
-                <MoreHorizIcon />
+                <NavIcon src={moreIcon} alt="more" />
               </IconButton>
             </ChatListItem>
           </StyledListItemButton>
@@ -387,12 +470,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
       </Menu>
 
       <SocialBar>
-        <LogoLink
-          href="/"
-          underline="none"
-        >
-          <Logo />
-        </LogoLink>
+        <LogoImage src={logoImage} alt="Mirae Studio" />
         <SocialIconsWrapper>
           <SocialIconLink
             href="https://twitter.com/yourhandle"
@@ -400,7 +478,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
             rel="noopener noreferrer"
             underline="none"
           >
-            <TwitterIcon sx={{ fontSize: 20 }} />
+            <SocialIcon src={xIcon} alt="Twitter" />
           </SocialIconLink>
           <SocialIconLink
             href="https://discord.gg/yourinvite"
@@ -408,13 +486,13 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
             rel="noopener noreferrer"
             underline="none"
           >
-            <DiscordIcon />
+            <SocialIcon src={discardIcon} alt="Discard" />
           </SocialIconLink>
           <SocialIconLink
             href="/docs"
             underline="none"
           >
-            <ArticleIcon sx={{ fontSize: 20 }} />
+            <SocialIcon src={docsIcon} alt="Docs" />
           </SocialIconLink>
         </SocialIconsWrapper>
       </SocialBar>

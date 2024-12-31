@@ -8,13 +8,16 @@ const StyledAppBar = styled(AppBar)(() => ({
   backdropFilter: 'blur(8px)',
 }));
 
-const StyledToolbar = styled(Toolbar)({
+const StyledToolbar = styled(Toolbar)(({ theme }) => ({
   display: 'flex',
   justifyContent: 'space-between',
   gap: '20px',
   minHeight: 'auto',
-  padding: '22px 40px'
-});
+  padding: '22px 40px',
+  [theme.breakpoints.up('sm')]: {
+    padding: '22px 40px',
+  },
+}));
 
 const GradientBorderButton = styled(Button)({
   position: 'relative',

@@ -17,10 +17,10 @@ const TransitionAvatar = styled(Avatar)<{ $expanded: boolean }>(({ $expanded }) 
     left: '20px',
     top: '24px',
   } : {
-    width: '40px',
-    height: '40px',
-    left: '40px',
-    top: '22px',
+    width: '41px',
+    height: '41px',
+    left: '44.5px',
+    top: '21.5px',
   }
 }));
 
