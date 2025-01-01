@@ -27,7 +27,7 @@ const SectionHeader = styled(Box)({
 
 const TitleSection = styled(Box)({
   display: 'flex',
-  alignItems: 'baseline',
+  alignItems: 'center',
   gap: '12px',
 });
 
@@ -43,6 +43,7 @@ const DateRange = styled(Typography)({
   fontWeight: 400,
   lineHeight: '100%',
   color: '#D6C0FF',
+  marginTop: '3px',
 });
 
 const SeeAllLink = styled(Link)({
@@ -105,7 +106,7 @@ const NewStyleText = styled(Typography)({
 const Divider = styled(Box)({
   height: 1,
   backgroundColor: 'rgba(255, 255, 255, 0.1)',
-  marginTop: '8px',
+  marginTop: '30px',
   marginBottom: '22px',
 });
 
@@ -195,26 +196,13 @@ export default function Models() {
   }, [isInitialLoad]); // 只依赖 isInitialLoad
 
   const loadMoreModels = useCallback(async () => {
-    console.log('📥 loadMoreModels started:', {
-      currentPage: page,
-      loading,
-      hasMore,
-      currentModelCount: enabledModels.length
-    });
-
     if (loading || !hasMore) {
-      console.log('❌ loadMoreModels cancelled:', { loading, hasMore });
       return;
     }
     
     setLoading(true);
     try {
       const newModels = await fetchEnabledModels(page, pageSize);
-      console.log('✅ New models fetched:', {
-        count: newModels.length,
-        pageSize,
-        hasMore: newModels.length === pageSize
-      });
 
       // 添加去重逻辑
       setEnabledModels(prev => {
@@ -316,7 +304,7 @@ export default function Models() {
             onCardClick={() => handleCardClick(model.id)}
           />
         )}
-        itemWidth={268}
+        itemWidth={268.5}
         itemHeight={314}
         gap={12}
         containerWidth={(document.getElementById('modelsContainer')?.offsetWidth ?? 0) - containerPadding * 2}

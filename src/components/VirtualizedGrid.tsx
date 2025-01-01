@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { styled } from '@mui/material';
 
 interface VirtualizedGridProps<T> {
@@ -8,6 +8,7 @@ interface VirtualizedGridProps<T> {
   itemHeight: number;
   gap: number;
   containerWidth: number;
+  threshold?: number;
   onScroll?: (scrollInfo: { scrollTop: number; scrollHeight: number; clientHeight: number }) => void;
 }
 
@@ -26,15 +27,26 @@ function VirtualizedGrid<T>({
   itemHeight,
   gap,
   containerWidth,
+  threshold = 200,
   onScroll,
 }: VirtualizedGridProps<T>) {
   const [visibleItems, setVisibleItems] = useState<T[]>([]);
   const [startIndex, setStartIndex] = useState(0);
-  const threshold = 200;
 
-  const itemsPerRow = Math.floor((containerWidth + gap) / (itemWidth + gap));
+  // 添加滚动条宽度计算
+  const container = document.getElementById('modelsContainer');
+  const hasVerticalScrollbar = container ? container.scrollHeight > container.clientHeight : false;
+  const SCROLLBAR_WIDTH = 17;
+  const adjustedContainerWidth = containerWidth - (hasVerticalScrollbar ? SCROLLBAR_WIDTH : 0);
+
+  // 使用调整后的容器宽度进行计算
+  const itemsPerRow = Math.floor((adjustedContainerWidth + gap) / (itemWidth + gap));
   const totalRows = Math.ceil(items.length / itemsPerRow);
   const totalHeight = totalRows * (itemHeight + gap) - gap;
+
+  // 修改计算逻辑
+  const totalRowWidth = (itemWidth * itemsPerRow) + (gap * (itemsPerRow - 1));
+  const sidePadding = (adjustedContainerWidth - totalRowWidth) / 2;
 
   useEffect(() => {
     const container = document.getElementById('modelsContainer');
@@ -74,11 +86,12 @@ function VirtualizedGrid<T>({
   }, [items, itemHeight, gap, itemsPerRow, totalRows, onScroll]);
 
   return (
-    <GridContainer>
+    <GridContainer style={{ marginTop: '22px' }}>
       <GridContent style={{ height: totalHeight }}>
         <div style={{
           position: 'absolute',
           top: Math.floor(startIndex / itemsPerRow) * (itemHeight + gap),
+          left: `${sidePadding}px`,
           display: 'grid',
           gridTemplateColumns: `repeat(${itemsPerRow}, ${itemWidth}px)`,
           gap: `${gap}px`,
