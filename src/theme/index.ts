@@ -1,4 +1,5 @@
 import { createTheme } from '@mui/material';
+import pointingCursor from '../assets/pointer.png';  // 确保图片路径正确
 
 export const theme = createTheme({
   palette: {
@@ -25,6 +26,9 @@ export const theme = createTheme({
         body: {
           backgroundColor: '#150F20',
           minHeight: '100vh',
+        },
+        'button, a, [role="button"], .MuiButtonBase-root, .clickable, .MuiIconButton-root, .MuiMenuItem-root:not([aria-disabled="true"])': {
+          cursor: `url(${pointingCursor}), pointer !important`,
         },
         '*::-webkit-scrollbar': {
           width: '17px',

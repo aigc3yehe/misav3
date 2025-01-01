@@ -2,6 +2,13 @@ import { AppBar, Button, Toolbar, styled, alpha, Dialog, DialogTitle, DialogActi
 import { useAppKit } from '@reown/appkit/react'
 import { useAccount, useDisconnect } from 'wagmi';
 import { useState } from 'react';
+import Menu from '@mui/material/Menu';
+import MenuItem from '@mui/material/MenuItem';
+import Avatar from '@mui/material/Avatar';
+import xIcon from '../assets/x.svg';
+import logoutIcon from '../assets/logout.svg';
+import avatarImage from '../assets/avatar.png';
+import pointingCursor from '../assets/pointer.png';
 
 const StyledAppBar = styled(AppBar)(() => ({
   background: 'transparent',
@@ -73,16 +80,41 @@ const ConnectButton = styled(Button)({
   padding: '0',
 });
 
-const ConnectedButton = styled(Button)({
-  maxWidth: '200px',
-  height: '40px',
-  borderRadius: '4px',
-  fontFamily: 'Tektur, sans-serif',
-  fontWeight: 700,
-  fontSize: '16px',
-  lineHeight: '24px',
-  padding: '0 16px',
-  textTransform: 'none',
+const StyledMenu = styled(Menu)(() => ({
+  '& .MuiPaper-root': {
+    backgroundColor: 'rgba(21, 15, 32, 0.95)',
+    width: 'auto',
+    borderRadius: 4,
+  },
+  '& .MuiMenuItem-root': {
+    height: 34,
+    '&:hover': {
+      backgroundColor: '#4E318D',
+    },
+  },
+}));
+
+const MenuItemContent = styled(Box)({
+  display: 'flex',
+  alignItems: 'center',
+  gap: '8px',
+  width: '100%',
+  padding: '8px 6px',
+  '& img': {
+    width: 20,
+    height: 20,
+  },
+  '& .logout-icon': {
+    width: 24,
+    height: 24,
+  },
+  '& .address-text': {
+    fontFamily: 'Inter, sans-serif',
+    fontSize: 14,
+    fontWeight: 400,
+    lineHeight: '140%',
+    color: '#ffffff',
+  },
 });
 
 // 自定义确认弹窗样式
@@ -138,6 +170,8 @@ export default function Navbar({ sidebarOpen }: NavbarProps) {
   const { address, isConnected } = useAccount();
   const { disconnect } = useDisconnect();
   const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const openMenu = Boolean(anchorEl);
 
   const handleDisconnect = () => {
     disconnect();
@@ -146,6 +180,14 @@ export default function Navbar({ sidebarOpen }: NavbarProps) {
 
   const formatAddress = (address: string) => {
     return `${address.slice(0, 6)}...${address.slice(-4)}`;
+  };
+
+  const handleClick = (event: React.MouseEvent<HTMLElement>) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleClose = () => {
+    setAnchorEl(null);
   };
 
   return (
@@ -175,18 +217,55 @@ export default function Navbar({ sidebarOpen }: NavbarProps) {
               CONNECT
             </ConnectButton>
           ) : (
-            <ConnectedButton
-              onClick={() => setIsLogoutDialogOpen(true)}
-              sx={{
-                backgroundColor: '#2B1261',
-                color: '#ffffff',
-                '&:hover': {
-                  backgroundColor: alpha('#2B1261', 0.8),
-                },
-              }}
-            >
-              {formatAddress(address || '')}
-            </ConnectedButton>
+            <>
+              <Avatar
+                src={avatarImage}
+                sx={{
+                  width: 40,
+                  height: 40,
+                  cursor: `url(${pointingCursor}), pointer`,
+                }}
+                onClick={handleClick}
+              />
+              <StyledMenu
+                anchorEl={anchorEl}
+                open={openMenu}
+                onClose={handleClose}
+                anchorOrigin={{
+                  vertical: 'bottom',
+                  horizontal: 'right',
+                }}
+                transformOrigin={{
+                  vertical: 'top',
+                  horizontal: 'right',
+                }}
+                style={{
+                  marginTop: '10px',
+                }}
+              >
+                <MenuItem disableRipple sx={{ cursor: 'default' }}>
+                  <MenuItemContent>
+                    <Avatar src={avatarImage} sx={{ width: 20, height: 20 }} />
+                    <span className="address-text">{formatAddress(address || '')}</span>
+                  </MenuItemContent>
+                </MenuItem>
+                <MenuItem onClick={handleClose}>
+                  <MenuItemContent>
+                    <img src={xIcon} alt="Twitter" />
+                    <span className="address-text">Link Twitter</span>
+                  </MenuItemContent>
+                </MenuItem>
+                <MenuItem onClick={() => {
+                  handleClose();
+                  setIsLogoutDialogOpen(true);
+                }}>
+                  <MenuItemContent>
+                    <img src={logoutIcon} alt="Logout" className="logout-icon" />
+                    <span className="address-text">Logout</span>
+                  </MenuItemContent>
+                </MenuItem>
+              </StyledMenu>
+            </>
           )}
         </RightSection>
 

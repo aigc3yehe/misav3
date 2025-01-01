@@ -2,6 +2,7 @@ import { Box, styled, Typography } from '@mui/material';
 import likeIcon from '../assets/like.svg';
 import likedIcon from '../assets/liked.svg';
 import unlikeIcon from '../assets/unlike.svg';
+import pointingCursor from '../assets/pointer.png';
 
 interface ModelCardProps {
   id: string;
@@ -21,9 +22,12 @@ const Card = styled(Box)({
   overflow: 'hidden',
   position: 'relative',
   backgroundColor: '#000',
-  cursor: 'pointer',
+  cursor: `url(${pointingCursor}), pointer`,
   '&:hover': {
     opacity: 0.9,
+    '& img': {
+      transform: 'scale(1.05)',
+    },
   },
 });
 
@@ -31,6 +35,7 @@ const CoverImage = styled('img')({
   width: '100%',
   height: '100%',
   objectFit: 'cover',
+  transition: 'transform 0.3s ease',
 });
 
 const ContentOverlay = styled(Box)({
@@ -56,7 +61,7 @@ const LikeButton = styled(Box)<{ isLiked: boolean }>(({ isLiked }) => ({
   padding: '8px',
   gap: '10px',
   borderRadius: 4,
-  cursor: 'pointer',
+  cursor: `url(${pointingCursor}), pointer`,
   backgroundColor: isLiked ? '#39EDFF' : 'rgba(0, 0, 0, 0.7)',
   '&:hover': {
     opacity: 0.8,
@@ -71,7 +76,7 @@ const UnlikeButton = styled(Box)({
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  cursor: 'pointer',
+  cursor: `url(${pointingCursor}), pointer`,
   '&:hover': {
     opacity: 0.8,
   },

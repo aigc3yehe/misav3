@@ -1,5 +1,6 @@
 import { Box, styled, Typography } from '@mui/material';
 import { useState } from 'react';
+import pointingCursor from '../assets/pointer.png';
 
 interface EnabledModelCardProps {
   id: string;
@@ -16,9 +17,12 @@ const Card = styled(Box)({
   overflow: 'hidden',
   position: 'relative',
   backgroundColor: '#000',
-  cursor: 'pointer',
+  cursor: `url(${pointingCursor}), pointer`,
   '&:hover': {
     opacity: 0.9,
+    '& img': {
+      transform: 'scale(1.05)',
+    },
   },
 });
 
@@ -27,7 +31,7 @@ const CoverImage = styled('img')({
   height: '100%',
   objectFit: 'cover',
   opacity: 0,
-  transition: 'opacity 0.2s',
+  transition: 'opacity 0.2s, transform 0.3s ease',
   '&.loaded': {
     opacity: 1,
   },

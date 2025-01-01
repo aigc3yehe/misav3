@@ -6,6 +6,8 @@ import addIcon from '../assets/add.svg';
 import ModelCard from '../components/ModelCard';
 import EnabledModelCard from '../components/EnabledModelCard';
 import VirtualizedGrid from '../components/VirtualizedGrid';
+import pointingCursor from '../assets/pointer.png';
+
 
 const CARD_WIDTH = 175;
 const CARD_GAP = 12;
@@ -85,7 +87,7 @@ const AddModelCard = styled(Box)({
   alignItems: 'center',
   justifyContent: 'center',
   gap: '12px',
-  cursor: 'pointer',
+  cursor: `url(${pointingCursor}), pointer`,
   '&:hover': {
     opacity: 0.8,
   },
