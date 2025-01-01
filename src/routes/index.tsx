@@ -2,6 +2,7 @@ import { createBrowserRouter } from 'react-router-dom';
 import MainLayout from '../layouts/MainLayout';
 import LivingRoom from '../pages/LivingRoom';
 import Models from '../pages/Models';
+import ModelDetail from '../pages/ModelDetail';
 import Gallery from '../pages/Gallery';
 
 export const router = createBrowserRouter([
@@ -20,6 +21,10 @@ export const router = createBrowserRouter([
       {
         path: '/models',
         element: <Models />,
+      },
+      {
+        path: '/models/:id',
+        element: <ModelDetail />,
       },
       {
         path: '/gallery',

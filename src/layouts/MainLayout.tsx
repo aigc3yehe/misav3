@@ -15,13 +15,15 @@ const LayoutRoot = styled('div')(({ theme }) => ({
 }));
 
 const LayoutWrapper = styled('div')<{ sidebarOpen: boolean }>(({ sidebarOpen }) => ({
-  display: 'flex',
-  flex: '1 1 auto',
-  overflow: 'hidden',
+  position: 'fixed',
+  top: 0,
+  left: 0,
+  right: 0,
+  bottom: 0,
   paddingTop: 84,
-  marginLeft: sidebarOpen ? '250px' : 0,
-  transition: 'margin-left 0.3s ease-in-out',
-  transitionDelay: sidebarOpen ? '0.1s' : '0s',
+  paddingLeft: sidebarOpen ? 250 : 0,
+  transition: 'padding-left 0.3s ease-in-out',
+  overflow: 'auto',
 }));
 
 export default function MainLayout() {
@@ -31,11 +33,19 @@ export default function MainLayout() {
     setSidebarOpen(!sidebarOpen);
   };
 
+  const agent = {
+    name: 'Niyoko',
+    avatar: '/mock/niyosko.png',
+    email: 'niyoko@niyoko.studio',
+    phone: '1234567890',
+    address: '1234567890',
+  }
+
   return (
     <LayoutRoot>
       <SharedAvatar 
         expanded={sidebarOpen} 
-        src="/path-to-avatar.jpg" 
+        src={agent.avatar} 
       />
       <SharedMenuButton 
         expanded={sidebarOpen}
@@ -51,9 +61,8 @@ export default function MainLayout() {
       />
       <LayoutWrapper sidebarOpen={sidebarOpen}>
         <Box sx={{ 
-          flex: '1 1 auto', 
-          overflow: 'auto',
           width: '100%',
+          height: '100%',
         }}>
           <Outlet />
         </Box>
