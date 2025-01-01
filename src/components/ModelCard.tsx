@@ -100,7 +100,7 @@ export default function ModelCard({ id, coverUrl, name, likes, isLiked, onLike, 
   };
 
   return (
-    <Card onClick={handleClick}>
+    <Card onClick={handleClick} id={id}>
       <CoverImage src={coverUrl} alt={name} />
       <ContentOverlay>
         <ActionRow>

@@ -20,13 +20,31 @@ export const theme = createTheme({
   },
   components: {
     MuiCssBaseline: {
-      styleOverrides: `
-        @import url('https://fonts.googleapis.com/css2?family=Tektur:wght@400;500;700&display=swap');
-        body {
-          backgroundColor: '#150F20';
-          minHeight: '100vh';
-        }
-      `,
+      styleOverrides: {
+        '@import': "url('https://fonts.googleapis.com/css2?family=Tektur:wght@400;500;700&display=swap')",
+        body: {
+          backgroundColor: '#150F20',
+          minHeight: '100vh',
+        },
+        '*::-webkit-scrollbar': {
+          width: '17px',
+        },
+        '*::-webkit-scrollbar-track': {
+          background: 'rgba(255, 255, 255, 0.05)',
+          borderRadius: '8px',
+        },
+        '*::-webkit-scrollbar-thumb': {
+          background: 'rgba(255, 255, 255, 0.15)',
+          borderRadius: '8px',
+          border: '5px solid transparent',
+          backgroundClip: 'content-box',
+          '&:hover': {
+            background: 'rgba(255, 255, 255, 0.25)',
+            border: '5px solid transparent',
+            backgroundClip: 'content-box',
+          },
+        },
+      },
     },
     MuiAppBar: {
       styleOverrides: {
