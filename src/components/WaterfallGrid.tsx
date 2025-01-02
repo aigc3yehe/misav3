@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { styled } from '@mui/material';
 
 interface WaterfallGridProps<T> {
@@ -40,17 +40,21 @@ function WaterfallGrid<T>({
 }: WaterfallGridProps<T>) {
   const [visibleItems, setVisibleItems] = useState<Array<T & { position: { left: number; top: number } }>>([]);
   const [totalHeight, setTotalHeight] = useState(0);
+  const gridRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const container = containerRef.current;
-    if (!container || containerWidth <= 0) {
-      console.log('Container not found or invalid width:', { container, containerWidth });
-      return;
-    }
+    const grid = gridRef.current;
+    if (!container || !grid || containerWidth <= 0) return;
 
     const handleScroll = () => {
-      const { scrollTop, clientHeight, scrollHeight } = container;
-
+      const { scrollTop, clientHeight } = container;
+      
+      // 计算网格容器相对于视口的位置
+      const gridRect = grid.getBoundingClientRect();
+      const containerRect = container.getBoundingClientRect();
+      const gridTop = gridRect.top - containerRect.top + scrollTop;
+      
       // 确保至少有1列
       const itemsPerRow = Math.max(1, Math.floor((containerWidth + gap) / (itemWidth + gap)));
       console.log('Layout calculation:', { itemsPerRow, containerWidth, itemWidth, gap });
@@ -84,45 +88,39 @@ function WaterfallGrid<T>({
 
       // 更新总高度
       const maxHeight = Math.max(...columnHeights);
-      console.log('Height calculation:', { columnHeights, maxHeight });
       setTotalHeight(maxHeight > 0 ? maxHeight - gap : 0);
 
-      // 计算可见区域的项目
-      const visibleStart = Math.max(0, scrollTop - clientHeight);
-      const visibleEnd = scrollTop + clientHeight * 2;
-
-      const visible = itemPositions.filter(
-        item => item.position.top >= visibleStart && item.position.top <= visibleEnd
-      );
-
-      setVisibleItems(visible);
-
-      console.log('scrollHeight', scrollHeight);
+      // 调整 scrollHeight 的计算，使用网格的实际高度
+      const adjustedScrollHeight = gridTop + maxHeight;
+      console.log('scrollHeight', adjustedScrollHeight);
       console.log('clientHeight', clientHeight);
       console.log('scrollTop', scrollTop);
       console.log('threshold', threshold);
       
-      // 直接检查是否需要加载更多
-      if (scrollHeight > 0 && 
+      // 使用调整后的 scrollHeight 检查是否需要加载更多
+      if (adjustedScrollHeight > 0 && 
           clientHeight > 0 && 
-          scrollHeight - (scrollTop + clientHeight) < threshold) {
+          adjustedScrollHeight - (scrollTop + clientHeight) < threshold) {
         console.log('Triggering load more...');
-        onScroll?.({ scrollTop, scrollHeight, clientHeight });
+        onScroll?.({ 
+          scrollTop, 
+          scrollHeight: adjustedScrollHeight, 
+          clientHeight 
+        });
       }
+
+      setVisibleItems(itemPositions.filter(
+        item => item.position.top >= 0 && item.position.top <= adjustedScrollHeight
+      ));
     };
 
-    // 初始化时检查一次
     handleScroll();
-    
-    // 直接绑定滚动事件
     container.addEventListener('scroll', handleScroll);
-    return () => {
-      container.removeEventListener('scroll', handleScroll);
-    };
+    return () => container.removeEventListener('scroll', handleScroll);
   }, [items, itemHeight, gap, containerWidth, threshold, onScroll, itemWidth, containerRef]);
 
   return (
-    <GridContainer>
+    <GridContainer ref={gridRef}>
       <GridContent style={{ height: totalHeight }}>
         {visibleItems.map((item, index) => (
           <ItemWrapper

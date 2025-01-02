@@ -19,8 +19,8 @@ const PageContainer = styled(Box)({
   '&::-webkit-scrollbar': {
     display: 'none',
   },
-  scrollbarWidth: 'none', // Firefox
-  msOverflowStyle: 'none', // IE/Edge
+  scrollbarWidth: 'none',
+  msOverflowStyle: 'none',
 });
 
 const ContentContainer = styled(Box)({
@@ -224,6 +224,7 @@ const TabPanel = styled(Box)({
 const GallerySection = styled(Box)({
   marginTop: '40px',
   position: 'relative',
+  minHeight: '500px',
 });
 
 const GalleryTitle = styled(Typography)({
@@ -492,7 +493,7 @@ export default function ModelDetail() {
           <GalleryTitle>GALLERY</GalleryTitle>
           
           <WaterfallGrid
-            items={debouncedItems} // 使用防抖后的数据
+            items={debouncedItems}
             renderItem={(item) => (
               <GalleryCard
                 key={item.id}
@@ -511,6 +512,7 @@ export default function ModelDetail() {
             containerWidth={1110}
             onScroll={handleScroll}
             containerRef={containerRef}
+            threshold={600}
           />
 
           <LoadingWrapper className={isLoadingVisible ? 'visible' : ''}>
