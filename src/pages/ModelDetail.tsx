@@ -1,5 +1,5 @@
-import { Box, styled, IconButton, Typography, Tabs, Tab, Button } from '@mui/material';
-import { useState } from 'react';
+import { Box, styled, IconButton, Typography, Tabs, Tab, Button, CircularProgress } from '@mui/material';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import backIcon from '../assets/back.svg';
 import ImageViewPager from '../components/ImageViewPager';
@@ -8,6 +8,9 @@ import shareIcon from '../assets/share.svg';
 import coinsIcon from '../assets/coins.svg';
 import xIcon from '../assets/x.svg';
 import avatarIcon from '../assets/avatar.png';
+import WaterfallGrid from '../components/WaterfallGrid';
+import GalleryCard from '../components/GalleryCard';
+import avatar from '../assets/image_avatar.png';
 
 const PageContainer = styled(Box)({
   padding: '0 40px',
@@ -218,9 +221,53 @@ const TabPanel = styled(Box)({
   lineHeight: 'auto',
 });
 
-const Gallery = styled(Box)({
+const GallerySection = styled(Box)({
   marginTop: '40px',
+  position: 'relative',
 });
+
+const GalleryTitle = styled(Typography)({
+  fontSize: '22px',
+  fontWeight: 800,
+  lineHeight: '100%',
+  color: '#FFFFFF',
+  marginBottom: '30px',
+});
+
+const LoadingWrapper = styled(Box)({
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: 'center',
+  height: '80px',
+  opacity: 0,
+  transition: 'opacity 0.3s ease-in-out',
+  '&.visible': {
+    opacity: 1,
+  },
+});
+
+// 模拟 API 调用，返回不同高度的图片数据
+const fetchGalleryItems = (page: number, pageSize: number): Promise<any[]> => {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      const start = page * pageSize;
+      const items = Array.from({ length: pageSize }, (_, index) => ({
+        id: `g${start + index}`,
+        imageUrl: `/mock/gallery${(start + index) % 10 + 1}.jpg`,
+        height: Math.floor(Math.random() * 200 + 300), // 随机高度 300-500px
+        title: `Gallery Item ${start + index + 1}`,
+        author: {
+          avatar: `${avatar}`,  // 统一使用 image_avatar.png
+          address: `0x${Math.random().toString(16).slice(2, 10)}...${Math.random().toString(16).slice(2, 6)}` // 生成模拟的地址
+        }
+      }));
+      resolve(items);
+    }, 1000);
+  });
+};
+
+const CARD_WIDTH = 268.5;
+const CARD_GAP = 12;
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -243,10 +290,86 @@ function CustomTabPanel(props: TabPanelProps) {
   );
 }
 
+// 添加防抖函数
+function useDebounce<T>(value: T, delay: number): T {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [value, delay]);
+
+  return debouncedValue;
+}
+
 export default function ModelDetail() {
   const navigate = useNavigate();
   const [tabValue, setTabValue] = useState(0);
-  
+  const [galleryItems, setGalleryItems] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const [page, setPage] = useState(0);
+  const pageSize = 10;
+  const loadingRef = useRef(false);
+  const galleryContainerRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [isLoadingVisible, setIsLoadingVisible] = useState(false);
+  const debouncedItems = useDebounce(galleryItems, 150); // 防抖处理列表数据
+
+  const loadMoreItems = useCallback(async () => {
+    if (loadingRef.current || !hasMore) return;
+    
+    loadingRef.current = true;
+    setIsLoading(true);
+    
+    try {
+      const newItems = await fetchGalleryItems(page, pageSize);
+      
+      setGalleryItems(prev => {
+        const existingIds = new Set(prev.map(item => item.id));
+        const uniqueNewItems = newItems.filter(item => !existingIds.has(item.id));
+        
+        if (uniqueNewItems.length === 0 && newItems.length > 0) {
+          setHasMore(false);
+          return prev;
+        }
+        
+        return [...prev, ...uniqueNewItems];
+      });
+      
+      setPage(prev => prev + 1);
+      setHasMore(newItems.length === pageSize);
+    } catch (error) {
+      console.error('Failed to load gallery items:', error);
+    } finally {
+      setIsLoading(false);
+      loadingRef.current = false;
+    }
+  }, [page, hasMore, pageSize]);
+
+  const handleScroll = useCallback((scrollInfo: { scrollTop: number, scrollHeight: number, clientHeight: number }) => {
+    const { scrollTop, scrollHeight, clientHeight } = scrollInfo;
+    
+    if (!loadingRef.current && 
+        hasMore && 
+        scrollTop > 0 &&
+        scrollHeight - (scrollTop + clientHeight) < 200) {
+      loadMoreItems();
+    }
+  }, [loadMoreItems, hasMore]);
+
+  // 初始加载只加载一次
+  useEffect(() => {
+    if (galleryItems.length === 0) {
+      loadMoreItems();
+    }
+  }, [loadMoreItems]);
+
   // 示例图片数组
   const images = [
     '/mock/model1.jpg',
@@ -269,8 +392,21 @@ export default function ModelDetail() {
     setTabValue(newValue);
   };
 
+  // 处理加载状态的显示
+  useEffect(() => {
+    let timer: number;
+    if (isLoading) {
+      timer = setTimeout(() => {
+        setIsLoadingVisible(true);
+      }, 200);
+    } else {
+      setIsLoadingVisible(false);
+    }
+    return () => clearTimeout(timer);
+  }, [isLoading]);
+
   return (
-    <PageContainer>
+    <PageContainer ref={containerRef} id="galleryContainer">
       <ContentContainer>
         <Header>
           <BackButton onClick={handleBack}>
@@ -352,9 +488,35 @@ export default function ModelDetail() {
         Additionally, there are some differences in hair, skin, and material rendering. Finally, the XPlus 3 Dark model is undoubtedly the darkest version, evoking lighting and atmosphere similar to images set in dungeons. The Dark 3 also introduces more noise, making it ideal for dark art, horror themes, and images that require a gloomy atmosphere.
         </CustomTabPanel>
 
-        <Gallery>
-          {/* Gallery content will go here */}
-        </Gallery>
+        <GallerySection>
+          <GalleryTitle>GALLERY</GalleryTitle>
+          
+          <WaterfallGrid
+            items={debouncedItems} // 使用防抖后的数据
+            renderItem={(item) => (
+              <GalleryCard
+                key={item.id}
+                {...item}
+                width={CARD_WIDTH}
+                onClick={() => navigate(`/gallery/${item.id}`)}
+                style={{
+                  opacity: 0,
+                  animation: 'fadeIn 0.3s ease-in-out forwards',
+                }}
+              />
+            )}
+            itemWidth={CARD_WIDTH}
+            itemHeight={(item) => item.height}
+            gap={CARD_GAP}
+            containerWidth={1110}
+            onScroll={handleScroll}
+            containerRef={containerRef}
+          />
+
+          <LoadingWrapper className={isLoadingVisible ? 'visible' : ''}>
+            <CircularProgress size={24} sx={{ color: '#C7FF8C' }} />
+          </LoadingWrapper>
+        </GallerySection>
       </ContentContainer>
       
     </PageContainer>

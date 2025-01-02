@@ -53,6 +53,11 @@ const LoadingWrapper = styled(Box)({
   justifyContent: 'center',
   alignItems: 'center',
   height: '80px',
+  opacity: 0,
+  transition: 'opacity 0.3s ease-in-out',
+  '&.visible': {
+    opacity: 1,
+  },
 });
 
 const Title = styled(Typography)({
@@ -118,6 +123,23 @@ const fetchGalleryItems = (page: number, pageSize: number): Promise<any[]> => {
   });
 };
 
+// 添加防抖函数
+function useDebounce<T>(value: T, delay: number): T {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [value, delay]);
+
+  return debouncedValue;
+}
+
 export default function Gallery() {
   const navigate = useNavigate();
   const [containerPadding, setContainerPadding] = useState(MIN_PADDING);
@@ -129,6 +151,9 @@ export default function Gallery() {
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const loadingRef = useRef(false);
+  const galleryContainerRef = useRef<HTMLDivElement>(null); // 添加 ref
+  const [isLoadingVisible, setIsLoadingVisible] = useState(false);
+  const debouncedItems = useDebounce(galleryItems, 150);
 
   const loadMoreItems = useCallback(async () => {
     if (loadingRef.current || !hasMore) return;
@@ -225,12 +250,25 @@ export default function Gallery() {
     checkAndLoadMore();
   }, [galleryItems.length, checkAndLoadMore]);
 
+  // 处理加载状态的显示
+  useEffect(() => {
+    let timer: number;
+    if (isLoading) {
+      timer = setTimeout(() => {
+        setIsLoadingVisible(true);
+      }, 200);
+    } else {
+      setIsLoadingVisible(false);
+    }
+    return () => clearTimeout(timer);
+  }, [isLoading]);
+
   return (
-    <PageContainer id="galleryContainer" $padding={containerPadding}>
+    <PageContainer id="galleryContainer" $padding={containerPadding} ref={galleryContainerRef}>
       <Title>GALLERY</Title>
         
       <WaterfallGrid
-        items={[{ id: 'add', isAddCard: true }, ...galleryItems]}
+        items={[{ id: 'add', isAddCard: true }, ...debouncedItems]}
         renderItem={(item) => (
           item.isAddCard ? (
             <AddGalleryCard key="add">
@@ -245,6 +283,10 @@ export default function Gallery() {
               {...item}
               width={CARD_WIDTH}
               onClick={() => navigate(`/gallery/${item.id}`)}
+              style={{
+                opacity: 0,
+                animation: 'fadeIn 0.3s ease-in-out forwards',
+              }}
             />
           )
         )}
@@ -253,13 +295,12 @@ export default function Gallery() {
         gap={CARD_GAP}
         containerWidth={(document.getElementById('galleryContainer')?.offsetWidth ?? 0) - containerPadding * 2}
         onScroll={handleScroll}
+        containerRef={galleryContainerRef}
       />
 
-      {isLoading && (
-        <LoadingWrapper>
-          <CircularProgress size={24} sx={{ color: '#C7FF8C' }} />
-        </LoadingWrapper>
-      )}
+      <LoadingWrapper className={isLoadingVisible ? 'visible' : ''}>
+        <CircularProgress size={24} sx={{ color: '#C7FF8C' }} />
+      </LoadingWrapper>
     </PageContainer>
   );
 }

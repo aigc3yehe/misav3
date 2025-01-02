@@ -10,6 +10,7 @@ interface WaterfallGridProps<T> {
   containerWidth: number;
   threshold?: number;
   onScroll?: (scrollInfo: { scrollTop: number; scrollHeight: number; clientHeight: number }) => void;
+  containerRef: React.RefObject<HTMLDivElement>;
 }
 
 const GridContainer = styled('div')({
@@ -35,19 +36,25 @@ function WaterfallGrid<T>({
   containerWidth,
   threshold = 200,
   onScroll,
+  containerRef,
 }: WaterfallGridProps<T>) {
   const [visibleItems, setVisibleItems] = useState<Array<T & { position: { left: number; top: number } }>>([]);
   const [totalHeight, setTotalHeight] = useState(0);
 
   useEffect(() => {
-    const container = document.getElementById('galleryContainer');
-    if (!container || containerWidth <= 0) return;
+    const container = containerRef.current;
+    if (!container || containerWidth <= 0) {
+      console.log('Container not found or invalid width:', { container, containerWidth });
+      return;
+    }
 
     const handleScroll = () => {
       const { scrollTop, clientHeight, scrollHeight } = container;
 
       // 确保至少有1列
       const itemsPerRow = Math.max(1, Math.floor((containerWidth + gap) / (itemWidth + gap)));
+      console.log('Layout calculation:', { itemsPerRow, containerWidth, itemWidth, gap });
+
       const totalRowWidth = (itemWidth * itemsPerRow) + (gap * (itemsPerRow - 1));
       const sidePadding = Math.max(0, (containerWidth - totalRowWidth) / 2);
 
@@ -77,6 +84,7 @@ function WaterfallGrid<T>({
 
       // 更新总高度
       const maxHeight = Math.max(...columnHeights);
+      console.log('Height calculation:', { columnHeights, maxHeight });
       setTotalHeight(maxHeight > 0 ? maxHeight - gap : 0);
 
       // 计算可见区域的项目
@@ -88,6 +96,11 @@ function WaterfallGrid<T>({
       );
 
       setVisibleItems(visible);
+
+      console.log('scrollHeight', scrollHeight);
+      console.log('clientHeight', clientHeight);
+      console.log('scrollTop', scrollTop);
+      console.log('threshold', threshold);
       
       // 直接检查是否需要加载更多
       if (scrollHeight > 0 && 
@@ -106,7 +119,7 @@ function WaterfallGrid<T>({
     return () => {
       container.removeEventListener('scroll', handleScroll);
     };
-  }, [items, itemHeight, gap, containerWidth, threshold, onScroll, itemWidth]);
+  }, [items, itemHeight, gap, containerWidth, threshold, onScroll, itemWidth, containerRef]);
 
   return (
     <GridContainer>
