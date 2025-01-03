@@ -29,6 +29,8 @@ import xIcon from '../assets/x.svg';
 import docsIcon from '../assets/docs.svg';
 import discardIcon from '../assets/discard.svg';
 import logoImage from '../assets/mirae_studio.png';
+import { useSelector } from 'react-redux';
+import { RootState } from '../store';
 
 const SIDEBAR_WIDTH = 250;
 
@@ -60,7 +62,13 @@ const collapseAnimation = keyframes`
   }
 `;
 
-const StyledDrawer = styled(Drawer)<{ $isOpen: boolean }>(({ $isOpen }) => ({
+interface StyledDrawerProps {
+  isOpen: boolean;
+}
+
+const StyledDrawer = styled(Drawer, {
+  shouldForwardProp: (prop) => prop !== 'isOpen',
+})<StyledDrawerProps>(({ isOpen }) => ({
   width: SIDEBAR_WIDTH,
   flexShrink: 0,
   '& .MuiDrawer-paper': {
@@ -69,7 +77,7 @@ const StyledDrawer = styled(Drawer)<{ $isOpen: boolean }>(({ $isOpen }) => ({
     backgroundColor: '#2B1261',
     border: 'none',
     overflow: 'hidden',
-    animation: $isOpen 
+    animation: isOpen 
       ? `${expandAnimation} 0.3s ease-out forwards`
       : `${collapseAnimation} 0.3s ease-in forwards`,
   },
@@ -182,14 +190,13 @@ const StyledList = styled(List)({
 });
 
 const SocialBar = styled(Box)({
-  position: 'absolute',
-  bottom: 30,
-  left: 20,
   width: 210,
   height: 40,
+  margin: '30px 20px',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'space-between',
+  backgroundColor: '#2B1261',
 });
 
 const SocialIconsWrapper = styled(Box)({
@@ -255,6 +262,32 @@ const LogoImage = styled('img')({
   marginBottom: '10px',
 });
 
+const ContentWrapper = styled(Box)({
+  position: 'relative',
+  height: '100%',
+  display: 'flex',
+  flexDirection: 'column',
+});
+
+const ScrollableSection = styled(Box)({
+  flex: 1,
+  overflowY: 'auto',
+  // 自定义滚动条样式
+  '&::-webkit-scrollbar': {
+    width: '4px',
+  },
+  '&::-webkit-scrollbar-track': {
+    background: 'transparent',
+  },
+  '&::-webkit-scrollbar-thumb': {
+    background: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: '2px',
+  },
+  '&::-webkit-scrollbar-thumb:hover': {
+    background: 'rgba(255, 255, 255, 0.2)',
+  },
+});
+
 interface SidebarProps {
   open: boolean;
   onClose: () => void;
@@ -265,7 +298,8 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
   const navigate = useNavigate();
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
   const [selectedChat, setSelectedChat] = useState<string | null>(null);
-  
+  const currentAgent = useSelector((state: RootState) => state.agent.currentAgent);
+
   const formatAddress = (address: string) => {
     return `${address.slice(0, 6)}...${address.slice(-4)}`;
   };
@@ -277,15 +311,15 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
 
   const navigationItems = [
     { 
-      path: '/living-room', 
-      label: 'Living Room', 
+      path: '/app/workstation', 
+      label: 'Workstation', 
       icon: {
         normal: livingroomNormal,
         selected: livingroomSelected
       }
     },
     { 
-      path: '/models', 
+      path: '/app/models', 
       label: 'Models', 
       icon: {
         normal: modelsNormal,
@@ -293,7 +327,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
       }
     },
     { 
-      path: '/gallery', 
+      path: '/app/gallery', 
       label: 'Gallery', 
       icon: {
         normal: galleryNormal,
@@ -304,7 +338,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
 
   const mySpaceItems = [
     {
-      path: '/my-models',
+      path: '/app/my-models',
       label: 'My Models',
       icon: {
         normal: modelsNormal, // 使用与 Models 相同的图标
@@ -312,7 +346,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
       }
     },
     {
-      path: '/my-nfts',
+      path: '/app/my-nfts',
       label: 'My NFTs',
       icon: {
         normal: galleryNormal, // 使用与 Gallery 相同的图标
@@ -341,6 +375,14 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
   const recentChats = [
     { id: '1', label: 'Chat 2024.12.23' },
     { id: '2', label: 'Chat 2024.12.22' },
+    { id: '3', label: 'Chat 2024.12.21' },
+    { id: '4', label: 'Chat 2024.12.20' },
+    { id: '5', label: 'Chat 2024.12.19' },
+    { id: '6', label: 'Chat 2024.12.18' },
+    { id: '7', label: 'Chat 2024.12.17' },
+    { id: '8', label: 'Chat 2024.12.16' },
+    { id: '9', label: 'Chat 2024.12.15' },
+    { id: '10', label: 'Chat 2024.12.14' },
   ];
 
   const renderNavItems = (items: typeof navigationItems) => {
@@ -368,86 +410,118 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
       anchor="left"
       open={open}
       onClose={onClose}
-      $isOpen={open}
+      isOpen={open}
     >
-      <ProfileSection>
-        <ProfileHeader>
-          <ProfileInfo>
-            <Box sx={{ width: 34, height: 34 }} />
-            <Box>
-              <NameSection>
-                <Typography 
-                  variant="subtitle1" 
-                  sx={{ 
-                    fontWeight: 700,
-                    fontSize: '16px',
-                    lineHeight: '100%',
-                  }}
-                >
-                  NVIYOKO
-                </Typography>
-                <IconButton 
-                  size="small" 
-                  onClick={() => handleCopyAddress('0x1234567890abcdef1234567890abcdef12345678')}
-                  sx={{ padding: 1, width: 28, height: 28 }}
-                >
-                  <ArrowIcon src={arrowDropDown} alt="expand" />
-                </IconButton>
-                
-              </NameSection>
-              <AddressSection>
-                <AddressText>
-                  {formatAddress('0x1234567890abcdef1234567890abcdef12345678')}
-                </AddressText>
-                <IconButton 
-                  size="small" 
-                  onClick={() => handleCopyAddress('0x1234567890abcdef1234567890abcdef12345678')}
-                  sx={{ padding: 1, width: 28, height: 28  }}
-                >
-                  <CopyIcon src={copyIcon} alt="copy" />
-                </IconButton>
-              </AddressSection>
-            </Box>
-          </ProfileInfo>
-          <InfoIconButton style={{ padding: 5, marginTop: -16, marginRight: 21 }}>
-            <img src={infoIcon} alt="info" />
-          </InfoIconButton>  
-          
-        </ProfileHeader>
-      </ProfileSection>
+      <ContentWrapper>
+        <ProfileSection>
+          <ProfileHeader>
+            <ProfileInfo>
+              <Box sx={{ width: 34, height: 34 }} />
+              <Box>
+                <NameSection>
+                  <Typography 
+                    variant="subtitle1" 
+                    sx={{ 
+                      fontWeight: 700,
+                      fontSize: '16px',
+                      lineHeight: '100%',
+                    }}
+                  >
+                    {currentAgent?.name}
+                  </Typography>
+                  <IconButton 
+                    size="small" 
+                    onClick={() => handleCopyAddress(currentAgent?.address || '')}
+                    sx={{ padding: 1, width: 28, height: 28 }}
+                  >
+                    <ArrowIcon src={arrowDropDown} alt="expand" />
+                  </IconButton>
+                  
+                </NameSection>
+                <AddressSection>
+                  <AddressText>
+                    {formatAddress('0x1234567890abcdef1234567890abcdef12345678')}
+                  </AddressText>
+                  <IconButton 
+                    size="small" 
+                    onClick={() => handleCopyAddress('0x1234567890abcdef1234567890abcdef12345678')}
+                    sx={{ padding: 1, width: 28, height: 28  }}
+                  >
+                    <CopyIcon src={copyIcon} alt="copy" />
+                  </IconButton>
+                </AddressSection>
+              </Box>
+            </ProfileInfo>
+            <InfoIconButton style={{ padding: 5, marginTop: -16, marginRight: 21 }}>
+              <img src={infoIcon} alt="info" />
+            </InfoIconButton>  
+            
+          </ProfileHeader>
+        </ProfileSection>
 
-      <StyledList>
-        {renderNavItems(navigationItems)}
-      </StyledList>
+        <ScrollableSection>
+          <StyledList>
+            {renderNavItems(navigationItems)}
+          </StyledList>
 
-      <Divider sx={{ borderColor: 'rgba(255, 255, 255, 0.1)', margin: '0 20px' }} />
+          <Divider sx={{ borderColor: 'rgba(255, 255, 255, 0.1)', margin: '0 20px' }} />
 
-      <GroupTitle>My Space</GroupTitle>
-      <StyledList>
-        {renderNavItems(mySpaceItems)}
-      </StyledList>
+          <GroupTitle>My Space</GroupTitle>
+          <StyledList>
+            {renderNavItems(mySpaceItems)}
+          </StyledList>
 
-      <Divider sx={{ borderColor: 'rgba(255, 255, 255, 0.1)', margin: '0 20px' }} />
+          <Divider sx={{ borderColor: 'rgba(255, 255, 255, 0.1)', margin: '0 20px' }} />
 
-      <GroupTitle>Recent Chat</GroupTitle>
-      <StyledList>
-        {recentChats.map((chat) => (
-          <StyledListItemButton key={chat.id}>
-            <ChatListItem>
-              <NavIcon src={livingroomNormal} alt="chat" />
-              <NavText>{chat.label}</NavText>
-              <IconButton
-                className="chat-more-button"
-                size="small"
-                sx={{ marginRight: '-5px' }}
-                onClick={(e) => handleMoreClick(e, chat.id)}
-              >
-                <NavIcon src={moreIcon} alt="more" />
-              </IconButton>
-            </ChatListItem>
-          </StyledListItemButton>
-        ))}
-      </StyledList>
+          <GroupTitle>Recent Chat</GroupTitle>
+          <StyledList>
+            {recentChats.map((chat) => (
+              <StyledListItemButton key={chat.id}>
+                <ChatListItem>
+                  <NavIcon src={livingroomNormal} alt="chat" />
+                  <NavText>{chat.label}</NavText>
+                  <IconButton
+                    className="chat-more-button"
+                    size="small"
+                    sx={{ marginRight: '-5px' }}
+                    onClick={(e) => handleMoreClick(e, chat.id)}
+                  >
+                    <NavIcon src={moreIcon} alt="more" />
+                  </IconButton>
+                </ChatListItem>
+              </StyledListItemButton>
+            ))}
+          </StyledList>
+        </ScrollableSection>
+
+        <SocialBar>
+          <LogoImage src={logoImage} alt="Mirae Studio" />
+          <SocialIconsWrapper>
+            <SocialIconLink
+              href="https://twitter.com/yourhandle"
+              target="_blank"
+              rel="noopener noreferrer"
+              underline="none"
+            >
+              <SocialIcon src={xIcon} alt="Twitter" />
+            </SocialIconLink>
+            <SocialIconLink
+              href="https://discord.gg/yourinvite"
+              target="_blank"
+              rel="noopener noreferrer"
+              underline="none"
+            >
+              <SocialIcon src={discardIcon} alt="Discard" />
+            </SocialIconLink>
+            <SocialIconLink
+              href="/docs"
+              underline="none"
+            >
+              <SocialIcon src={docsIcon} alt="Docs" />
+            </SocialIconLink>
+          </SocialIconsWrapper>
+        </SocialBar>
+      </ContentWrapper>
 
       <Menu
         anchorEl={menuAnchor}
@@ -468,34 +542,6 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
           Delete Chat
         </MenuItem>
       </Menu>
-
-      <SocialBar>
-        <LogoImage src={logoImage} alt="Mirae Studio" />
-        <SocialIconsWrapper>
-          <SocialIconLink
-            href="https://twitter.com/yourhandle"
-            target="_blank"
-            rel="noopener noreferrer"
-            underline="none"
-          >
-            <SocialIcon src={xIcon} alt="Twitter" />
-          </SocialIconLink>
-          <SocialIconLink
-            href="https://discord.gg/yourinvite"
-            target="_blank"
-            rel="noopener noreferrer"
-            underline="none"
-          >
-            <SocialIcon src={discardIcon} alt="Discard" />
-          </SocialIconLink>
-          <SocialIconLink
-            href="/docs"
-            underline="none"
-          >
-            <SocialIcon src={docsIcon} alt="Docs" />
-          </SocialIconLink>
-        </SocialIconsWrapper>
-      </SocialBar>
     </StyledDrawer>
   );
 } 

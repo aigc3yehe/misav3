@@ -1,5 +1,5 @@
 import { createTheme } from '@mui/material';
-import pointingCursor from '../assets/pointer.png';  // 确保图片路径正确
+import pointingCursor from '../assets/pointer.png';
 
 export const theme = createTheme({
   palette: {
@@ -14,7 +14,6 @@ export const theme = createTheme({
   },
   typography: {
     fontFamily: 'Tektur, sans-serif',
-    // 设置默认字体权重
     fontWeightRegular: 400,
     fontWeightMedium: 500,
     fontWeightBold: 700,
@@ -22,7 +21,6 @@ export const theme = createTheme({
   components: {
     MuiCssBaseline: {
       styleOverrides: {
-        '@import': "url('https://fonts.googleapis.com/css2?family=Tektur:wght@400;500;700&display=swap')",
         body: {
           backgroundColor: '#150F20',
           minHeight: '100vh',
@@ -42,11 +40,11 @@ export const theme = createTheme({
           borderRadius: '8px',
           border: '5px solid transparent',
           backgroundClip: 'content-box',
-          '&:hover': {
-            background: 'rgba(255, 255, 255, 0.25)',
-            border: '5px solid transparent',
-            backgroundClip: 'content-box',
-          },
+        },
+        '*::-webkit-scrollbar-thumb:hover': {
+          background: 'rgba(255, 255, 255, 0.25)',
+          border: '5px solid transparent',
+          backgroundClip: 'content-box',
         },
       },
     },

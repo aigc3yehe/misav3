@@ -1,6 +1,6 @@
 import { createBrowserRouter } from 'react-router-dom';
 import MainLayout from '../layouts/MainLayout';
-import LivingRoom from '../pages/LivingRoom';
+import Workstation from '../pages/Workstation/index';
 import Models from '../pages/Models';
 import ModelDetail from '../pages/ModelDetail';
 import Gallery from '../pages/Gallery';
@@ -16,8 +16,8 @@ export const router = createBrowserRouter([
     element: <MainLayout />,
     children: [
       {
-        path: '/app/living-room',
-        element: <LivingRoom />,
+        path: '/app/workstation',
+        element: <Workstation />,
       },
       {
         path: '/app/models',

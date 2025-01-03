@@ -343,7 +343,7 @@ export default function LandingPage() {
     const selectedAgent = agents.find(agent => agent.id === agentId);
     if (selectedAgent) {
       dispatch(setCurrentAgent(selectedAgent));
-      navigate('/app/living-room');
+      navigate('/app/workstation');
     }
   };
 

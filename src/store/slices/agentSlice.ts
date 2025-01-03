@@ -4,7 +4,6 @@ interface Agent {
   id: string;
   name: string;
   avatar: string;
-  email: string;
   address: string;
 }
 

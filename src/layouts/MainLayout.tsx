@@ -7,7 +7,7 @@ import SharedAvatar from '../components/SharedAvatar';
 import SharedMenuButton from '../components/SharedMenuButton';
 import { useSelector } from 'react-redux';
 import { RootState } from '../store';
-import { Navigate } from 'react-router-dom';
+import { useLocation, Navigate } from 'react-router-dom';
 
 const LayoutRoot = styled('div')(({ theme }) => ({
   display: 'flex',
@@ -17,21 +17,23 @@ const LayoutRoot = styled('div')(({ theme }) => ({
   backgroundColor: theme.palette.background.default
 }));
 
-const LayoutWrapper = styled('div')<{ sidebarOpen: boolean }>(({ sidebarOpen }) => ({
+const LayoutWrapper = styled('div')<{ sidebarOpen: boolean, isWorkstation: boolean }>(({ sidebarOpen, isWorkstation }) => ({
   position: 'fixed',
   top: 0,
   left: 0,
   right: 0,
   bottom: 0,
-  paddingTop: 84,
+  paddingTop: isWorkstation ? 0 : 84,
   paddingLeft: sidebarOpen ? 250 : 0,
   transition: 'padding-left 0.3s ease-in-out',
   overflow: 'auto',
 }));
 
 export default function MainLayout() {
+  const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const currentAgent = useSelector((state: RootState) => state.agent.currentAgent);
+  const isWorkstation = location.pathname === '/app/workstation';
 
   if (!currentAgent) {
     return <Navigate to="/" replace />;
@@ -48,7 +50,7 @@ export default function MainLayout() {
         src={currentAgent.avatar} 
       />
       <SharedMenuButton 
-        expanded={sidebarOpen}
+        isExpanded={sidebarOpen}
         onClick={handleToggleSidebar}
       />
       <Navbar 
@@ -59,7 +61,7 @@ export default function MainLayout() {
         open={sidebarOpen}
         onClose={handleToggleSidebar}
       />
-      <LayoutWrapper sidebarOpen={sidebarOpen}>
+      <LayoutWrapper sidebarOpen={sidebarOpen} isWorkstation={isWorkstation}>
         <Box sx={{ 
           width: '100%',
           height: '100%',

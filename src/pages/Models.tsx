@@ -14,8 +14,8 @@ const CARD_GAP = 12;
 const MIN_PADDING = 40;
 const SCROLLBAR_WIDTH = 17; // Windows 系统默认滚动条宽度
 
-const PageContainer = styled(Box)<{ $padding: number }>(({ $padding }) => ({
-  padding: `0 ${$padding}px`,
+const PageContainer = styled(Box)<{ padding: number }>(({ padding }) => ({
+  padding: `0 ${padding}px`,
   height: '100%',
   overflow: 'auto',
 }));
@@ -261,7 +261,7 @@ export default function Models() {
   }, [loadMoreModels]);
 
   return (
-    <PageContainer id="modelsContainer" $padding={containerPadding}>
+    <PageContainer id="modelsContainer" padding={containerPadding}>
       <SectionHeader>
         <TitleSection>
           <Title>VOTING MODELS</Title>

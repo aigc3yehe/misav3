@@ -4,11 +4,13 @@ import menuExpanded from '../assets/menu_expanded.svg';
 import menuNormal from '../assets/menu_normal.svg';
 
 interface SharedMenuButtonProps {
-  expanded: boolean;
+  isExpanded: boolean;
   onClick: () => void;
 }
 
-const TransitionIconButton = styled(IconButton)<{ $expanded: boolean }>(({ $expanded }) => ({
+const TransitionIconButton = styled(IconButton, {
+  shouldForwardProp: (prop) => prop !== 'isExpanded',
+})<{ isExpanded: boolean }>(({ isExpanded }) => ({
   position: 'fixed',
   zIndex: 1300,
   color: 'white',
@@ -19,33 +21,33 @@ const TransitionIconButton = styled(IconButton)<{ $expanded: boolean }>(({ $expa
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  ...$expanded ? {
+  ...(isExpanded ? {
     left: '207px',
     top: '19px',
   } : {
     left: '90px',
     top: '27px',
-  },
+  }),
   '&:hover': {
     backgroundColor: alpha('#fff', 0.08),
   },
 }));
 
-const MenuIcon = styled('img')<{ $expanded: boolean }>(({ $expanded }) => ({
-  width: $expanded ? '16px' : '18px',
-  height: $expanded ? '20px' : '16px',
+const MenuIcon = styled('img')<{ isExpanded: boolean }>(({ isExpanded }) => ({
+  width: isExpanded ? '16px' : '18px',
+  height: isExpanded ? '20px' : '16px',
   transition: 'all 0.3s ease-in-out',
 }));
 
-export default function SharedMenuButton({ expanded, onClick }: SharedMenuButtonProps) {
+export default function SharedMenuButton({ isExpanded, onClick }: SharedMenuButtonProps) {
   return (
     <TransitionIconButton
-      $expanded={expanded}
+      isExpanded={isExpanded}
       onClick={onClick}
     >
       <MenuIcon 
-        $expanded={expanded}
-        src={expanded ? menuExpanded : menuNormal}
+        isExpanded={isExpanded}
+        src={isExpanded ? menuExpanded : menuNormal}
         alt="menu"
       />
     </TransitionIconButton>

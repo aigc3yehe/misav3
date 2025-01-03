@@ -9,10 +9,12 @@ import xIcon from '../assets/x.svg';
 import logoutIcon from '../assets/logout.svg';
 import avatarImage from '../assets/avatar.png';
 import pointingCursor from '../assets/pointer.png';
+import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
+import ToggleButton from '@mui/material/ToggleButton';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 
 const StyledAppBar = styled(AppBar)(() => ({
   background: 'transparent',
-  backdropFilter: 'blur(8px)',
 }));
 
 const StyledToolbar = styled(Toolbar)(({ theme }) => ({
@@ -160,6 +162,63 @@ const RightSection = styled(Box)({
   gap: '1rem',
 });
 
+// 添加新的样式组件
+const StyledToggleButtonGroup = styled(ToggleButtonGroup)(({ mode }: { mode: string }) => ({
+  position: 'absolute',
+  left: '290px',
+  width: '214px',
+  height: '40px',
+  '& .MuiToggleButtonGroup-grouped': {
+    transition: 'all 0.3s ease',
+    border: `1px solid ${mode === 'chat' ? '#C9ACFF' : '#A1FF3C'}`,
+    borderWidth: '1px',
+    '&:not(:first-of-type)': {
+      marginLeft: '0',
+    },
+  },
+}));
+
+const StyledToggleButton = styled(ToggleButton)({
+  width: '87px',
+  height: '40px',
+  padding: '8px 16px',
+  fontFamily: 'Tektur, sans-serif',
+  fontSize: '16px',
+  fontWeight: 700,
+  lineHeight: '24px',
+  color: '#FFFFFF',
+  transition: 'all 0.3s ease',
+  
+  '&:hover': {
+    backgroundColor: 'rgba(201, 172, 255, 0.08)',
+  },
+
+  '&:first-of-type': {
+    width: '87px',
+    '&.Mui-selected': {
+      backgroundColor: '#C9ACFF',
+      color: '#000000',
+      '&:hover': {
+        backgroundColor: '#C9ACFF',
+      },
+    },
+  },
+
+  '&:last-of-type': {
+    width: '127px',
+    '&.Mui-selected': {
+      backgroundColor: '#A1FF3C',
+      color: '#000000',
+      '&:hover': {
+        backgroundColor: '#A1FF3C',
+      },
+    },
+    '&:hover:not(.Mui-selected)': {
+      backgroundColor: 'rgba(161, 255, 60, 0.08)',
+    },
+  },
+});
+
 interface NavbarProps {
   onSidebarOpen: () => void;
   sidebarOpen: boolean;
@@ -172,6 +231,11 @@ export default function Navbar({ sidebarOpen }: NavbarProps) {
   const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const openMenu = Boolean(anchorEl);
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const isWorkstation = location.pathname === '/app/workstation';
+  const mode = searchParams.get('mode') || 'chat';
 
   const handleDisconnect = () => {
     disconnect();
@@ -190,12 +254,38 @@ export default function Navbar({ sidebarOpen }: NavbarProps) {
     setAnchorEl(null);
   };
 
+  const handleModeChange = (
+    event: React.MouseEvent<HTMLElement>,
+    newMode: string,
+  ) => {
+    if (newMode !== null) {
+      const newSearchParams = new URLSearchParams(searchParams);
+      newSearchParams.set('mode', newMode);
+      navigate(`${location.pathname}?${newSearchParams.toString()}`);
+    }
+  };
+
   return (
     <StyledAppBar position="fixed">
       <StyledToolbar>
         <LeftSection>
           {!sidebarOpen && (
             <Box sx={{ width: 40, height: 40 }} />
+          )}
+          {isWorkstation && (
+            <StyledToggleButtonGroup
+              value={mode}
+              exclusive
+              onChange={handleModeChange}
+              mode={mode}
+            >
+              <StyledToggleButton value="chat">
+                CHAT
+              </StyledToggleButton>
+              <StyledToggleButton value="terminal">
+                TERMINAL
+              </StyledToggleButton>
+            </StyledToggleButtonGroup>
           )}
         </LeftSection>
 
