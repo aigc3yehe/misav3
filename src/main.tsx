@@ -10,6 +10,8 @@ import CssBaseline from '@mui/material/CssBaseline';
 import { theme } from './theme';
 import { RouterProvider } from 'react-router-dom';
 import { router } from './routes';
+import { Provider } from 'react-redux';
+import { store } from './store';
 
 const queryClient = new QueryClient()
 
@@ -50,11 +52,13 @@ function AppKitProvider({ children }: { children: React.ReactNode }) {
 
 createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <AppKitProvider>
-        <RouterProvider router={router} />
-      </AppKitProvider>
-    </ThemeProvider>
+    <Provider store={store}>
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        <AppKitProvider>
+          <RouterProvider router={router} />
+        </AppKitProvider>
+      </ThemeProvider>
+    </Provider>
   </React.StrictMode>
 );

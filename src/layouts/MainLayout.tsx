@@ -5,6 +5,9 @@ import { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import SharedAvatar from '../components/SharedAvatar';
 import SharedMenuButton from '../components/SharedMenuButton';
+import { useSelector } from 'react-redux';
+import { RootState } from '../store';
+import { Navigate } from 'react-router-dom';
 
 const LayoutRoot = styled('div')(({ theme }) => ({
   display: 'flex',
@@ -28,24 +31,21 @@ const LayoutWrapper = styled('div')<{ sidebarOpen: boolean }>(({ sidebarOpen }) 
 
 export default function MainLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const currentAgent = useSelector((state: RootState) => state.agent.currentAgent);
+
+  if (!currentAgent) {
+    return <Navigate to="/" replace />;
+  }
 
   const handleToggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
   };
 
-  const agent = {
-    name: 'Niyoko',
-    avatar: '/mock/niyosko.png',
-    email: 'niyoko@niyoko.studio',
-    phone: '1234567890',
-    address: '1234567890',
-  }
-
   return (
     <LayoutRoot>
       <SharedAvatar 
         expanded={sidebarOpen} 
-        src={agent.avatar} 
+        src={currentAgent.avatar} 
       />
       <SharedMenuButton 
         expanded={sidebarOpen}

@@ -4,30 +4,31 @@ import LivingRoom from '../pages/LivingRoom';
 import Models from '../pages/Models';
 import ModelDetail from '../pages/ModelDetail';
 import Gallery from '../pages/Gallery';
+import LandingPage from '../pages/LandingPage';
 
 export const router = createBrowserRouter([
   {
     path: '/',
+    element: <LandingPage />,
+  },
+  {
+    path: '/app',
     element: <MainLayout />,
     children: [
       {
-        path: '/',
+        path: '/app/living-room',
         element: <LivingRoom />,
       },
       {
-        path: '/living-room',
-        element: <LivingRoom />,
-      },
-      {
-        path: '/models',
+        path: '/app/models',
         element: <Models />,
       },
       {
-        path: '/models/:id',
+        path: '/app/models/:id',
         element: <ModelDetail />,
       },
       {
-        path: '/gallery',
+        path: '/app/gallery',
         element: <Gallery />,
       },
     ],
