@@ -13,8 +13,8 @@ const ADD_CARD_HEIGHT = 463;
 const CARD_GAP = 12;
 const MIN_PADDING = 40;
 
-const PageContainer = styled(Box)<{ $padding: number }>(({ $padding }) => ({
-  padding: `0 ${$padding}px`,
+const PageContainer = styled(Box)<{ padding: number }>(({ padding }) => ({
+  padding: `0 ${padding}px`,
   height: '100%',
   overflow: 'auto',
   '&::-webkit-scrollbar': {
@@ -144,7 +144,6 @@ export default function Gallery() {
   const navigate = useNavigate();
   const [containerPadding, setContainerPadding] = useState(MIN_PADDING);
   const [galleryItems, setGalleryItems] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [page, setPage] = useState(0);
   const pageSize = 10;
@@ -264,7 +263,7 @@ export default function Gallery() {
   }, [isLoading]);
 
   return (
-    <PageContainer id="galleryContainer" $padding={containerPadding} ref={galleryContainerRef}>
+    <PageContainer id="galleryContainer" padding={containerPadding} ref={galleryContainerRef}>
       <Title>GALLERY</Title>
         
       <WaterfallGrid
@@ -281,7 +280,6 @@ export default function Gallery() {
             <GalleryCard
               key={item.id}
               {...item}
-              width={CARD_WIDTH}
               onClick={() => navigate(`/gallery/${item.id}`)}
               style={{
                 opacity: 0,

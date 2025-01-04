@@ -14,9 +14,9 @@ interface GalleryCardProps {
   onClick: () => void;
 }
 
-const Card = styled(Box)<{ $height: number }>(({ $height }) => ({
+const Card = styled(Box)<{ height: number }>(({ height }) => ({
   width: '100%',
-  height: $height,
+  height: height,
   borderRadius: 10,
   overflow: 'hidden',
   position: 'relative',
@@ -92,12 +92,11 @@ export default function GalleryCard({
   imageUrl, 
   title, 
   author,
-  width, 
   height, 
   onClick 
 }: GalleryCardProps) {
   return (
-    <Card $height={height} onClick={onClick}>
+    <Card height={height} onClick={onClick} id={id}>
       <Image className="main-image" src={imageUrl} alt={title} />
       <Overlay className="overlay">
         <Title>{title}</Title>

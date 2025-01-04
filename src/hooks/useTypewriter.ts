@@ -9,8 +9,7 @@ interface TypewriterOptions {
 
 export const useTypewriter = ({ 
   text, 
-  speed = 50, 
-  delay = 0,
+  speed = 50,
   onComplete 
 }: TypewriterOptions) => {
   const [displayText, setDisplayText] = useState('');

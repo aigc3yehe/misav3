@@ -103,6 +103,10 @@ export default function TerminalView() {
     }
   });
 
+  if (isTyping === false) {
+    console.log('isTyping', isTyping);
+  }
+
   useEffect(() => {
     const element = document.getElementById('terminal-output');
     if (element) {

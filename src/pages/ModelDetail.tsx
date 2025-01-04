@@ -317,7 +317,6 @@ export default function ModelDetail() {
   const [page, setPage] = useState(0);
   const pageSize = 10;
   const loadingRef = useRef(false);
-  const galleryContainerRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [isLoadingVisible, setIsLoadingVisible] = useState(false);
   const debouncedItems = useDebounce(galleryItems, 150); // 防抖处理列表数据
@@ -391,6 +390,9 @@ export default function ModelDetail() {
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
+    if (newValue > 3) {
+      console.log('tab change to 3', event);
+    }
   };
 
   // 处理加载状态的显示

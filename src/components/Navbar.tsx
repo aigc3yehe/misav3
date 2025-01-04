@@ -262,6 +262,8 @@ export default function Navbar({ sidebarOpen }: NavbarProps) {
       const newSearchParams = new URLSearchParams(searchParams);
       newSearchParams.set('mode', newMode);
       navigate(`${location.pathname}?${newSearchParams.toString()}`);
+    } else {
+      console.log('newMode is null', event);
     }
   };
 

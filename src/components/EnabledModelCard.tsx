@@ -76,7 +76,7 @@ export default function EnabledModelCard({ id, coverUrl, name, status, onCardCli
   const [imageLoaded, setImageLoaded] = useState(false);
 
   return (
-    <Card onClick={onCardClick}>
+    <Card onClick={onCardClick} id={id}>
       <CoverImage 
         src={coverUrl} 
         alt={name} 
