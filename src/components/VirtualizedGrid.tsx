@@ -10,6 +10,7 @@ interface VirtualizedGridProps<T> {
   containerWidth: number;
   threshold?: number;
   onScroll?: (scrollInfo: { scrollTop: number; scrollHeight: number; clientHeight: number }) => void;
+  containerId?: string;
 }
 
 const GridContainer = styled('div')({
@@ -29,12 +30,13 @@ function VirtualizedGrid<T>({
   containerWidth,
   threshold = 200,
   onScroll,
+  containerId = 'modelsContainer',
 }: VirtualizedGridProps<T>) {
   const [visibleItems, setVisibleItems] = useState<T[]>([]);
   const [startIndex, setStartIndex] = useState(0);
 
   // 添加滚动条宽度计算
-  const container = document.getElementById('modelsContainer');
+  const container = document.getElementById(containerId);
   const hasVerticalScrollbar = container ? container.scrollHeight > container.clientHeight : false;
   const SCROLLBAR_WIDTH = 17;
   const adjustedContainerWidth = containerWidth - (hasVerticalScrollbar ? SCROLLBAR_WIDTH : 0);
@@ -49,7 +51,7 @@ function VirtualizedGrid<T>({
   const sidePadding = (adjustedContainerWidth - totalRowWidth) / 2;
 
   useEffect(() => {
-    const container = document.getElementById('modelsContainer');
+    const container = document.getElementById(containerId);
     if (!container) return;
 
     const handleScroll = () => {
@@ -83,7 +85,7 @@ function VirtualizedGrid<T>({
     handleScroll();
     container.addEventListener('scroll', handleScroll);
     return () => container.removeEventListener('scroll', handleScroll);
-  }, [items, itemHeight, gap, itemsPerRow, totalRows, onScroll]);
+  }, [items, itemHeight, gap, itemsPerRow, totalRows, onScroll, containerId]);
 
   return (
     <GridContainer style={{ marginTop: '22px' }}>

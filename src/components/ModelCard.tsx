@@ -114,13 +114,13 @@ export default function ModelCard({ id, coverUrl, name, likes, isliked, onLike, 
             onClick={onLike}
             data-action="like"
           >
-            <LikeIcon src={isLiked ? likedIcon : likeIcon} alt="like" />
+            <LikeIcon src={isliked ? likedIcon : likeIcon} alt="like" />
             <Typography
               sx={{
                 fontSize: 14,
                 fontWeight: 700,
                 lineHeight: '100%',
-                color: isLiked ? '#000' : '#fff',
+                color: isliked ? '#000' : '#fff',
               }}
             >
               {likes}

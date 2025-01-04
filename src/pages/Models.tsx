@@ -245,7 +245,7 @@ export default function Models() {
   };
 
   const handleCardClick = (id: string) => {
-    navigate(`/models/${id}`);
+    navigate(`/app/models/${id}`);
   };
 
   // 只显示一行数据（cardsPerRow - 1 是为了给添加按钮留位置）
@@ -311,6 +311,7 @@ export default function Models() {
         gap={12}
         containerWidth={(document.getElementById('modelsContainer')?.offsetWidth ?? 0) - containerPadding * 2}
         onScroll={handleScroll}
+        containerId="modelsContainer"
       />
 
       {loading && (
