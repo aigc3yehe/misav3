@@ -5,6 +5,7 @@ import Models from '../pages/Models';
 import ModelDetail from '../pages/ModelDetail';
 import Gallery from '../pages/Gallery';
 import LandingPage from '../pages/LandingPage';
+import Collections from '../pages/Collections';
 
 export const router = createBrowserRouter([
   {
@@ -26,6 +27,10 @@ export const router = createBrowserRouter([
       {
         path: '/app/models/:id',
         element: <ModelDetail />,
+      },
+      {
+        path: '/app/collections',
+        element: <Collections />,
       },
       {
         path: '/app/gallery',

@@ -29,8 +29,9 @@ import xIcon from '../assets/x.svg';
 import docsIcon from '../assets/docs.svg';
 import discardIcon from '../assets/discard.svg';
 import logoImage from '../assets/mirae_studio.png';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../store';
+import { setCurrentAgent } from '../store/slices/agentSlice';
 
 const SIDEBAR_WIDTH = 250;
 
@@ -288,6 +289,53 @@ const ScrollableSection = styled(Box)({
   },
 });
 
+// 添加 AgentMenu 样式组件
+const StyledAgentMenu = styled(Menu)(() => ({
+  '& .MuiPaper-root': {
+    backgroundColor: '#2B1261',
+    minWidth: 200,
+    borderRadius: 4,
+  },
+}));
+
+const AgentMenuItem = styled(MenuItem)({
+  padding: '12px 16px',
+  '&:hover': {
+    backgroundColor: '#4E318D',
+  },
+});
+
+const AgentItemContent = styled(Box)({
+  display: 'flex',
+  alignItems: 'center',
+  gap: '12px',
+});
+
+const AgentAvatar = styled(Box)({
+  width: 34,
+  height: 34,
+  borderRadius: '50%',
+  overflow: 'hidden',
+  '& img': {
+    width: '100%',
+    height: '100%',
+    objectFit: 'cover',
+  },
+});
+
+const AgentInfo = styled(Box)({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '4px',
+});
+
+const AgentName = styled(Typography)({
+  color: '#FFFFFF',
+  fontSize: '14px',
+  fontWeight: 700,
+  lineHeight: '100%',
+});
+
 interface SidebarProps {
   open: boolean;
   onClose: () => void;
@@ -299,6 +347,8 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
   const [selectedChat, setSelectedChat] = useState<string | null>(null);
   const currentAgent = useSelector((state: RootState) => state.agent.currentAgent);
+  const dispatch = useDispatch();
+  const [agentMenuAnchor, setAgentMenuAnchor] = useState<null | HTMLElement>(null);
 
   const formatAddress = (address: string) => {
     return `${address.slice(0, 6)}...${address.slice(-4)}`;
@@ -309,32 +359,56 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
     // 可以添加复制成功的提示
   };
 
-  const navigationItems = [
-    { 
-      path: '/app/workstation', 
-      label: 'Workstation', 
-      icon: {
-        normal: livingroomNormal,
-        selected: livingroomSelected
+  // 根据当前agent决定显示哪些导航项
+  const getNavigationItems = () => {
+    const baseItems = [
+      { 
+        path: '/app/workstation', 
+        label: 'Workstation', 
+        icon: {
+          normal: livingroomNormal,
+          selected: livingroomSelected
+        }
       }
-    },
-    { 
-      path: '/app/models', 
-      label: 'Models', 
-      icon: {
-        normal: modelsNormal,
-        selected: modelsSelected
-      }
-    },
-    { 
+    ];
+
+    // 如果是 misato，显示 Collections
+    if (currentAgent?.id === 'misato') {
+      baseItems.push({ 
+        path: '/app/collections', 
+        label: 'Collections', 
+        icon: {
+          normal: modelsNormal,
+          selected: modelsSelected
+        }
+      });
+    } else {
+      // 其他 agent 显示 Models
+      baseItems.push({ 
+        path: '/app/models', 
+        label: 'Models', 
+        icon: {
+          normal: modelsNormal,
+          selected: modelsSelected
+        }
+      });
+    }
+
+    // Gallery 对所有 agent 都显示
+    baseItems.push({ 
       path: '/app/gallery', 
       label: 'Gallery', 
       icon: {
         normal: galleryNormal,
         selected: gallerySelected
       }
-    },
-  ];
+    });
+
+    return baseItems;
+  };
+
+  // 更新 navigationItems 的使用
+  const navigationItems = getNavigationItems();
 
   const mySpaceItems = [
     {
@@ -404,6 +478,38 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
     });
   };
 
+  // 添加可用的 agents 列表
+  const availableAgents = [
+    {
+      id: 'misato',
+      name: '$MISATO',
+      avatar: '/misato.jpg',
+      address: '0xabcdef1234567890abcdef1234567890abcdef12',
+    },
+    {
+      id: 'agent2',
+      name: 'Agent 2',
+      avatar: '/agent2.jpg',
+      address: '0x1234567890abcdef1234567890abcdef12345678',
+    },
+    // 可以添加更多 agent
+  ];
+
+  const handleAgentMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
+    event.stopPropagation();
+    setAgentMenuAnchor(event.currentTarget);
+  };
+
+  const handleAgentMenuClose = () => {
+    setAgentMenuAnchor(null);
+  };
+
+  const handleAgentChange = (agent: typeof availableAgents[0]) => {
+    dispatch(setCurrentAgent(agent));
+    handleAgentMenuClose();
+    navigate('/app/workstation');
+  };
+
   return (
     <StyledDrawer
       variant="persistent"
@@ -431,21 +537,20 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
                   </Typography>
                   <IconButton 
                     size="small" 
-                    onClick={() => handleCopyAddress(currentAgent?.address || '')}
+                    onClick={handleAgentMenuOpen}
                     sx={{ padding: 1, width: 28, height: 28 }}
                   >
                     <ArrowIcon src={arrowDropDown} alt="expand" />
                   </IconButton>
-                  
                 </NameSection>
                 <AddressSection>
                   <AddressText>
-                    {formatAddress('0x1234567890abcdef1234567890abcdef12345678')}
+                    {formatAddress(currentAgent?.address || '')}
                   </AddressText>
                   <IconButton 
                     size="small" 
-                    onClick={() => handleCopyAddress('0x1234567890abcdef1234567890abcdef12345678')}
-                    sx={{ padding: 1, width: 28, height: 28  }}
+                    onClick={() => handleCopyAddress(currentAgent?.address || '')}
+                    sx={{ padding: 1, width: 28, height: 28 }}
                   >
                     <CopyIcon src={copyIcon} alt="copy" />
                   </IconButton>
@@ -454,10 +559,44 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
             </ProfileInfo>
             <InfoIconButton style={{ padding: 5, marginTop: -16, marginRight: 21 }}>
               <img src={infoIcon} alt="info" />
-            </InfoIconButton>  
-            
+            </InfoIconButton>
           </ProfileHeader>
         </ProfileSection>
+
+        {/* Agent 切换菜单 */}
+        <StyledAgentMenu
+          anchorEl={agentMenuAnchor}
+          open={Boolean(agentMenuAnchor)}
+          onClose={handleAgentMenuClose}
+          anchorOrigin={{
+            vertical: 'bottom',
+            horizontal: 'left',
+          }}
+          transformOrigin={{
+            vertical: 'top',
+            horizontal: 'left',
+          }}
+        >
+          {availableAgents.map((agent) => (
+            <AgentMenuItem 
+              key={agent.id}
+              onClick={() => handleAgentChange(agent)}
+              selected={agent.id === currentAgent?.id}
+            >
+              <AgentItemContent>
+                <AgentAvatar>
+                  <img src={agent.avatar} alt={agent.name} />
+                </AgentAvatar>
+                <AgentInfo>
+                  <AgentName>{agent.name}</AgentName>
+                  <AddressText>
+                    {formatAddress(agent.address)}
+                  </AddressText>
+                </AgentInfo>
+              </AgentItemContent>
+            </AgentMenuItem>
+          ))}
+        </StyledAgentMenu>
 
         <ScrollableSection>
           <StyledList>

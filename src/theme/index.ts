@@ -1,5 +1,6 @@
 import { createTheme } from '@mui/material';
 import pointingCursor from '../assets/pointer.png';
+import backgroundImage from '../assets/Niyoko_bg.png';
 
 export const theme = createTheme({
   palette: {
@@ -24,6 +25,10 @@ export const theme = createTheme({
         body: {
           backgroundColor: '#150F20',
           minHeight: '100vh',
+          backgroundImage: `url(${backgroundImage})`,
+          backgroundPosition: 'left top',
+          backgroundRepeat: 'no-repeat',
+          backgroundSize: 'cover',
         },
         'button, a, [role="button"], .MuiButtonBase-root, .clickable, .MuiIconButton-root, .MuiMenuItem-root:not([aria-disabled="true"])': {
           cursor: `url(${pointingCursor}), pointer !important`,

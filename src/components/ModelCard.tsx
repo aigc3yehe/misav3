@@ -9,7 +9,7 @@ interface ModelCardProps {
   coverUrl: string;
   name: string;
   likes: number;
-  isLiked: boolean;
+  isliked: boolean;
   onLike: () => void;
   onUnlike: () => void;
   onCardClick: () => void;
@@ -55,14 +55,14 @@ const ActionRow = styled(Box)({
   marginBottom: '8px',
 });
 
-const LikeButton = styled(Box)<{ isLiked: boolean }>(({ isLiked }) => ({
+const LikeButton = styled(Box)<{ isliked: boolean }>(({ isliked }) => ({
   display: 'flex',
   alignItems: 'center',
   padding: '8px',
   gap: '10px',
   borderRadius: 4,
   cursor: `url(${pointingCursor}), pointer`,
-  backgroundColor: isLiked ? '#39EDFF' : 'rgba(0, 0, 0, 0.7)',
+  backgroundColor: isliked ? '#39EDFF' : 'rgba(0, 0, 0, 0.7)',
   '&:hover': {
     opacity: 0.8,
   },
@@ -97,7 +97,7 @@ const ModelName = styled(Typography)({
   textOverflow: 'ellipsis',
 });
 
-export default function ModelCard({ id, coverUrl, name, likes, isLiked, onLike, onUnlike, onCardClick }: ModelCardProps) {
+export default function ModelCard({ id, coverUrl, name, likes, isliked, onLike, onUnlike, onCardClick }: ModelCardProps) {
   const handleClick = (e: React.MouseEvent) => {
     if (!(e.target as HTMLElement).closest('[data-action]')) {
       onCardClick();
@@ -110,7 +110,7 @@ export default function ModelCard({ id, coverUrl, name, likes, isLiked, onLike, 
       <ContentOverlay>
         <ActionRow>
           <LikeButton 
-            isLiked={isLiked} 
+            isliked={isliked} 
             onClick={onLike}
             data-action="like"
           >

@@ -89,6 +89,7 @@ export default function TerminalView() {
     { id: 'line-27', text: '27 Ready for input' },
   ];
 
+  //@ts-ignore
   const { displayText, isTyping } = useTypewriter({
     text: currentLineIndex < terminalLines.length ? terminalLines[currentLineIndex].text : '',
     speed: 30,
@@ -102,10 +103,6 @@ export default function TerminalView() {
       }
     }
   });
-
-  if (isTyping === false) {
-    console.log('isTyping', isTyping);
-  }
 
   useEffect(() => {
     const element = document.getElementById('terminal-output');

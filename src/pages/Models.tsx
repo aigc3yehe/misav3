@@ -224,16 +224,16 @@ export default function Models() {
 
   // 扩展模拟数据到10条
   const mockModels = [
-    { id: '1', coverUrl: '/mock/model1.jpg', name: 'Cool Style Model', likes: 128, isLiked: true },
-    { id: '2', coverUrl: '/mock/model2.jpg', name: 'Awesome Long Name Style That Will Be Truncated', likes: 256, isLiked: false },
-    { id: '3', coverUrl: '/mock/model3.jpg', name: 'Another Style', likes: 64, isLiked: false },
-    { id: '4', coverUrl: '/mock/model4.jpg', name: 'Great Style', likes: 512, isLiked: true },
-    { id: '5', coverUrl: '/mock/model5.jpg', name: 'Amazing Style', likes: 1024, isLiked: false },
-    { id: '6', coverUrl: '/mock/model6.jpg', name: 'Super Style', likes: 2048, isLiked: true },
-    { id: '7', coverUrl: '/mock/model7.jpg', name: 'Fantastic Style', likes: 4096, isLiked: false },
-    { id: '8', coverUrl: '/mock/model8.jpg', name: 'Incredible Style', likes: 8192, isLiked: true },
-    { id: '9', coverUrl: '/mock/model9.jpg', name: 'Ultimate Style', likes: 16384, isLiked: false },
-    { id: '10', coverUrl: '/mock/model10.jpg', name: 'Perfect Style', likes: 32768, isLiked: true },
+    { id: '1', coverUrl: '/mock/model1.jpg', name: 'Cool Style Model', likes: 128, isliked: true },
+    { id: '2', coverUrl: '/mock/model2.jpg', name: 'Awesome Long Name Style That Will Be Truncated', likes: 256, isliked: false },
+    { id: '3', coverUrl: '/mock/model3.jpg', name: 'Another Style', likes: 64, isliked: false },
+    { id: '4', coverUrl: '/mock/model4.jpg', name: 'Great Style', likes: 512, isliked: true },
+    { id: '5', coverUrl: '/mock/model5.jpg', name: 'Amazing Style', likes: 1024, isliked: false },
+    { id: '6', coverUrl: '/mock/model6.jpg', name: 'Super Style', likes: 2048, isliked: true },
+    { id: '7', coverUrl: '/mock/model7.jpg', name: 'Fantastic Style', likes: 4096, isliked: false },
+    { id: '8', coverUrl: '/mock/model8.jpg', name: 'Incredible Style', likes: 8192, isliked: true },
+    { id: '9', coverUrl: '/mock/model9.jpg', name: 'Ultimate Style', likes: 16384, isliked: false },
+    { id: '10', coverUrl: '/mock/model10.jpg', name: 'Perfect Style', likes: 32768, isliked: true },
   ];
 
   const handleLike = (id: string) => {
