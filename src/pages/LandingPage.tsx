@@ -1,6 +1,6 @@
-import { Box, Card, Typography, Button, styled, InputBase } from '@mui/material';
+import { Box, Card, Typography, Button, styled, InputBase, Snackbar } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { setCurrentAgent } from '../store/slices/agentSlice';
 import livingroomIcon from '../assets/livingroom.svg';
 import pointingCursor from '../assets/pointer.png';
@@ -8,6 +8,8 @@ import logoImage from '../assets/mirae_studio.png';
 import enterIcon from '../assets/uil_enter.svg';
 import { useState } from 'react';
 import lineSvg from '../assets/line.svg';
+import { RootState } from '../store';
+import { hideToast, showToast } from '../store/slices/toastSlice';
 
 const PageContainer = styled(Box)({
   width: '100vw',
@@ -328,6 +330,11 @@ export default function LandingPage() {
   const [focused, setFocused] = useState(false);
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const toast = useSelector((state: RootState) => state.toast);
+
+  const handleCloseToast = () => {
+    dispatch(hideToast());
+  };
 
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setInputValue(event.target.value);
@@ -336,6 +343,10 @@ export default function LandingPage() {
   const handleGenerate = () => {
     if (!inputValue) return;
     // 处理生成逻辑
+    dispatch(showToast({
+      message: 'Waiting for response...',
+      severity: 'info'
+    }));
   };
 
   const handleSelectAgent = (agentId: string) => {
@@ -437,6 +448,14 @@ export default function LandingPage() {
           </GenerateButton>
         </InputContainer>
       </Footer>
+
+      <Snackbar
+        open={toast.open}
+        onClose={handleCloseToast}
+        message={toast.message}
+        autoHideDuration={1500}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      />
     </PageContainer>
   );
 } 

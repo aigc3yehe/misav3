@@ -1,13 +1,14 @@
-import { Box, styled } from '@mui/material';
+import { Box, styled, Alert, Snackbar } from '@mui/material';
 import Sidebar from '../components/Sidebar';
 import Navbar from '../components/Navbar';
 import { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import SharedAvatar from '../components/SharedAvatar';
 import SharedMenuButton from '../components/SharedMenuButton';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../store';
 import { useLocation, Navigate } from 'react-router-dom';
+import { hideToast } from '../store/slices/toastSlice';
 
 const LayoutRoot = styled('div')(({ theme }) => ({
   display: 'flex',
@@ -34,6 +35,8 @@ export default function MainLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const currentAgent = useSelector((state: RootState) => state.agent.currentAgent);
   const isWorkstation = location.pathname === '/app/workstation';
+  const dispatch = useDispatch();
+  const toast = useSelector((state: RootState) => state.toast);
 
   if (!currentAgent) {
     return <Navigate to="/" replace />;
@@ -41,6 +44,10 @@ export default function MainLayout() {
 
   const handleToggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
+  };
+
+  const handleCloseToast = () => {
+    dispatch(hideToast());
   };
 
   return (
@@ -69,6 +76,20 @@ export default function MainLayout() {
           <Outlet />
         </Box>
       </LayoutWrapper>
+      <Snackbar
+        open={toast.open}
+        autoHideDuration={2000}
+        onClose={handleCloseToast}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Alert 
+          onClose={handleCloseToast} 
+          severity={toast.severity}
+          sx={{ width: '100%' }}
+        >
+          {toast.message}
+        </Alert>
+      </Snackbar>
     </LayoutRoot>
   );
 } 

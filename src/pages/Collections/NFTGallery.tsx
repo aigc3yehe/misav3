@@ -12,6 +12,7 @@ import copyNFTAddressIcon from '../../assets/copy_nft_address.svg';
 import nftMeIcon from '../../assets/nft_me.svg';
 import pointingCursor from '../../assets/pointer.png';
 import { useAccount } from 'wagmi';
+import { showToast } from '../../store/slices/toastSlice';
 
 const CARD_WIDTH = 212;
 const CARD_HEIGHT = 212;
@@ -208,7 +209,10 @@ export default function NFTGallery() {
 
   const handleOwnedChange = async () => {
     if (!isConnected || !address) {
-      // toast.error('Please connect your wallet first');
+      dispatch(showToast({
+        message: 'Please connect your wallet first',
+        severity: 'error'
+      }));
       return;
     }
 
@@ -224,6 +228,22 @@ export default function NFTGallery() {
 
   const handleNFTMeClick = () => {
     window.open(`https://magiceden.io/collections/${collection.chain}/${collection.symbol}`, '_blank');
+  };
+
+  const handleCopyAddress = async () => {
+    try {
+      await navigator.clipboard.writeText(collection.contract);
+      dispatch(showToast({
+        message: 'Copy success',
+        severity: 'success'
+      }));
+    } catch (err) {
+      console.error('Copy error:', err);
+      dispatch(showToast({
+        message: 'Copy failed',
+        severity: 'error'
+      }));
+    }
   };
 
   if (!collection) {
@@ -243,7 +263,7 @@ export default function NFTGallery() {
         <TopRow>
           <LeftSection>
             <CollectionName>{collection.name}</CollectionName>
-            <NftIconButton>
+            <NftIconButton onClick={handleCopyAddress}>
               <img src={copyNFTAddressIcon} alt="Copy NFT Address" />
             </NftIconButton>
             <NftIconButton onClick={handleNFTMeClick}>
