@@ -7,6 +7,8 @@ import Gallery from '../pages/Gallery';
 import LandingPage from '../pages/LandingPage';
 import Collections from '../pages/Collections';
 import NFTGallery from '../pages/Collections/NFTGallery';
+import VoiceCall from '../pages/VoiceCall';
+import VisualizeX from '../pages/VisualizeX';
 
 export const router = createBrowserRouter([
   {
@@ -40,6 +42,14 @@ export const router = createBrowserRouter([
       {
         path: '/app/gallery',
         element: <Gallery />,
+      },
+      {
+        path: '/app/voice_call',
+        element: <VoiceCall />,
+      },
+      {
+        path: '/app/visualize_x',
+        element: <VisualizeX />,
       },
     ],
   },

@@ -32,6 +32,10 @@ import logoImage from '../assets/mirae_studio.png';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../store';
 import { setCurrentAgent } from '../store/slices/agentSlice';
+import callNormal from '../assets/call_normal.svg';
+import callSelected from '../assets/call_selected.svg';
+import visualizeXNormal from '../assets/visualize_x_normal.svg';
+import visualizeXSelected from '../assets/visualize_x_selected.svg';
 
 const SIDEBAR_WIDTH = 250;
 
@@ -372,62 +376,97 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
       }
     ];
 
-    // 如果是 misato，显示 Collections
     if (currentAgent?.id === 'misato') {
-      baseItems.push({ 
-        path: '/app/collections', 
-        label: 'Collections', 
-        icon: {
-          normal: modelsNormal,
-          selected: modelsSelected
+      // misato 特定的导航项
+      baseItems.push(
+        { 
+          path: '/app/collections', 
+          label: 'Collections', 
+          icon: {
+            normal: modelsNormal,
+            selected: modelsSelected
+          }
+        },
+        {
+          path: '/app/voice_call',
+          label: 'Voice Call',
+          icon: {
+            normal: callNormal,
+            selected: callSelected
+          }
+        },
+        {
+          path: '/app/visualize_x',
+          label: 'Visualize X',
+          icon: {
+            normal: visualizeXNormal,
+            selected: visualizeXSelected
+          }
         }
-      });
+      );
     } else {
-      // 其他 agent 显示 Models
-      baseItems.push({ 
-        path: '/app/models', 
-        label: 'Models', 
-        icon: {
-          normal: modelsNormal,
-          selected: modelsSelected
+      // 其他 agent 的导航项
+      baseItems.push(
+        { 
+          path: '/app/models', 
+          label: 'Models', 
+          icon: {
+            normal: modelsNormal,
+            selected: modelsSelected
+          }
+        },
+        { 
+          path: '/app/gallery', 
+          label: 'Gallery', 
+          icon: {
+            normal: galleryNormal,
+            selected: gallerySelected
+          }
         }
-      });
+      );
     }
-
-    // Gallery 对所有 agent 都显示
-    baseItems.push({ 
-      path: '/app/gallery', 
-      label: 'Gallery', 
-      icon: {
-        normal: galleryNormal,
-        selected: gallerySelected
-      }
-    });
 
     return baseItems;
   };
 
+  // 根据当前agent决定显示哪些My Space项
+  const getMySpaceItems = () => {
+    if (currentAgent?.id === 'misato') {
+      return [
+        {
+          path: '/app/my-nfts',
+          label: 'My NFTs',
+          icon: {
+            normal: galleryNormal,
+            selected: gallerySelected
+          }
+        }
+      ];
+    }
+    
+    return [
+      {
+        path: '/app/my-models',
+        label: 'My Models',
+        icon: {
+          normal: modelsNormal,
+          selected: modelsSelected
+        }
+      },
+      {
+        path: '/app/my-nfts',
+        label: 'My NFTs',
+        icon: {
+          normal: galleryNormal,
+          selected: gallerySelected
+        }
+      }
+    ];
+  };
+
   // 更新 navigationItems 的使用
   const navigationItems = getNavigationItems();
-
-  const mySpaceItems = [
-    {
-      path: '/app/my-models',
-      label: 'My Models',
-      icon: {
-        normal: modelsNormal, // 使用与 Models 相同的图标
-        selected: modelsSelected
-      }
-    },
-    {
-      path: '/app/my-nfts',
-      label: 'My NFTs',
-      icon: {
-        normal: galleryNormal, // 使用与 Gallery 相同的图标
-        selected: gallerySelected
-      }
-    },
-  ];
+  const mySpaceItems = getMySpaceItems();
 
   const handleMoreClick = (event: React.MouseEvent<HTMLElement>, chatId: string) => {
     event.stopPropagation();
