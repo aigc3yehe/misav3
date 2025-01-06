@@ -9,7 +9,7 @@ const SMALL_GRID_SIZE = 8;  // 小网格大小相应调整为原来的2倍
 const BASE_LINE_WIDTH = 1.6;  // 基础线宽相应调整为原来的2倍
 const SMALL_LINE_WIDTH = 0.8;  // 小线宽相应调整为原来的2倍
 
-const TerminalContainer = styled(Box)(({ theme }) => {
+const TerminalContainer = styled(Box)(() => {
   // 动态计算网格尺寸
   const heightRatio = `min(1, ${window.innerHeight}/${ORIGINAL_TERMINAL_HEIGHT})`;
   const calculatedBaseGrid = `calc(${BASE_GRID_SIZE}px * ${heightRatio})`;
@@ -38,10 +38,6 @@ const TerminalContainer = styled(Box)(({ theme }) => {
   };
 });
 
-const ORIGINAL_HEIGHT = 1800;  // 原始设计高度
-const ORIGINAL_WIDTH = 1742;   // 原始设计宽度
-const ORIGINAL_RATIO = ORIGINAL_WIDTH / ORIGINAL_HEIGHT;  // 原始宽高比
-
 const BackgroundImage = styled('img')({
   position: 'absolute',
   bottom: 0,
@@ -52,16 +48,17 @@ const BackgroundImage = styled('img')({
   objectFit: 'contain',
   pointerEvents: 'none',
   '@media (min-height: 1800px)': {
-    width: '1742px',    // 在超过原始设计高度时使用原始宽度
-    height: '1754px',   // 在超过原始设计高度时使用原始高度
+    width: '2380',    // 在超过原始设计高度时使用原始宽度
+    height: '1800px',   // 在超过原始设计高度时使用原始高度
   }
 });
 
-const ORIGINAL_OUTPUT_HEIGHT = 1056;     // 原始输出框高度
+const ORIGINAL_OUTPUT_HEIGHT = 1056;        // 原始输出框高度
+const ORIGINAL_OUTPUT_RATIO = 1110/528;    // 原始输出框宽高比
 
 const TerminalOutput = styled(Box)({
   position: 'relative',
-  width: 'calc(100% - 80px)',
+  width: `min(calc(100% - 80px), calc(${ORIGINAL_OUTPUT_RATIO} * ${ORIGINAL_OUTPUT_HEIGHT}px * min(1, ${window.innerHeight}/${ORIGINAL_TERMINAL_HEIGHT})))`,
   height: `calc(${ORIGINAL_OUTPUT_HEIGHT}px * min(1, ${window.innerHeight}/${ORIGINAL_TERMINAL_HEIGHT}))`,
   fontFamily: '"Azeret Mono", monospace',
   fontSize: '14px',
