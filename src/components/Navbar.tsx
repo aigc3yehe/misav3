@@ -275,7 +275,7 @@ export default function Navbar({ sidebarOpen }: NavbarProps) {
       setIsLogoutDialogOpen(false);
       dispatch(showToast({
         message: 'Logout successfully',
-        type: 'success'
+        severity: 'success'
       }));
     } catch (error) {
       console.error('Logout failed:', error);

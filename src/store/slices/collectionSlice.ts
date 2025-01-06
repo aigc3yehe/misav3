@@ -9,6 +9,13 @@ export interface Collection {
   imageUrl: string;
   contract: string;
   nfts: string;
+  fee?: {
+    feeCheck: boolean;
+    treasury: string;
+    feeToken: string;
+    feeDecimals: number;
+    feeAmount: number;
+  };
 }
 
 interface CollectionState {
@@ -23,33 +30,66 @@ const initialState: CollectionState = {
   error: null,
 };
 
-const CONTRACT_ADDRESS = '0xccb6B629f5434102e37175BDac8262722180a62f';
+// 获取基本列表信息
+const fetchStudioCollections = async (network: number) => {
+  const response = await fetch(`/studio-api/studio/collections?network=${network}`);
+  if (!response.ok) throw new Error('Failed to fetch studio collections');
+  return await response.json();
+};
+
+// 获取合约元数据
+const fetchContractMetadata = async (contractAddresses: string[]) => {
+  const response = await fetch(
+    'https://base-mainnet.g.alchemy.com/nft/v3/goUyG3r-JBxlrxzsqIoyv0b_W-LwScsN/getContractMetadataBatch',
+    {
+      method: 'POST',
+      headers: {
+        'accept': 'application/json',
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({ contractAddresses })
+    }
+  );
+  if (!response.ok) throw new Error('Failed to fetch contract metadata');
+  return await response.json();
+};
 
 export const fetchCollections = createAsyncThunk(
   'collection/fetchCollections',
   async () => {
-    const response = await fetch(
-      `https://base-mainnet.g.alchemy.com/nft/v3/goUyG3r-JBxlrxzsqIoyv0b_W-LwScsN/getContractMetadata?contractAddress=${CONTRACT_ADDRESS}`,
-      {
-        method: 'GET',
-        headers: { accept: 'application/json' }
+    try {
+      // 1. 获取基本列表信息
+      const studioData = await fetchStudioCollections(8453);
+      if (!studioData.data || !studioData.data.length) {
+        throw new Error('No collections found');
       }
-    );
-    
-    const data = await response.json();
-    
-    // 创建10个测试数据
-    return [
-      {
-      id: data.address,
-      chain: "base",
-      name: data.name,
-      symbol: 'misato-frens',
-      description: "The world's first Agent-operated creative studio, $MISATO Studio, presents its NFT collection.",
-      imageUrl: "/misato_icon.jpg",
-      contract: data.address,
-      nfts: data.totalSupply
-    }];
+
+      // 2. 获取合约元数据
+      const contractAddresses = studioData.data.map(item => item.collection);
+      const contractData = await fetchContractMetadata(contractAddresses);
+
+      // 3. 合并数据
+      return studioData.data.map((item: any) => {
+        const contractInfo = contractData.contracts.find(
+          (c: any) => c.address.toLowerCase() === item.collection.toLowerCase()
+        );
+
+        return {
+          id: item.collection,
+          chain: "base",
+          name: item.metadata.name || contractInfo?.name,
+          symbol: contractInfo?.symbol || '',
+          description: item.metadata.description,
+          imageUrl: item.metadata.imageUrl || "/misato_icon.jpg",
+          contract: item.collection,
+          nfts: contractInfo?.totalSupply || '0',
+          fee: item.fee
+        };
+      });
+    } catch (error) {
+      console.error('Error fetching collections:', error);
+      throw error;
+    }
   }
 );
 
