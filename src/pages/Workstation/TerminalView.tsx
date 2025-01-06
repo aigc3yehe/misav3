@@ -48,7 +48,7 @@ const BackgroundImage = styled('img')({
   objectFit: 'contain',
   pointerEvents: 'none',
   '@media (min-height: 1800px)': {
-    width: '2380',    // 在超过原始设计高度时使用原始宽度
+    width: '2380px',    // 在超过原始设计高度时使用原始宽度
     height: '1800px',   // 在超过原始设计高度时使用原始高度
   }
 });

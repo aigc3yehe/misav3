@@ -19,7 +19,7 @@ const OuterContainer = styled('div', {
 
 const InputContainer = styled('div')<{ disabled?: boolean }>(({ disabled }) => ({
   width: 655,
-  height: 61,
+  height: 50,
   padding: '0 30px',
   borderRadius: 30,
   display: 'flex',
