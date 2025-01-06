@@ -7,7 +7,9 @@ import msgUp from '../assets/msg_up.svg';
 const ORIGINAL_HEIGHT = 1800;  // 原始设计高度
 const WINDOW_HEIGHT = 1180;    // 原始窗口高度
 
-const WindowContainer = styled(Box)<{ isExpanded: boolean }>(({ isExpanded }) => ({
+const WindowContainer = styled(Box, {
+  shouldForwardProp: (prop) => prop !== 'isExpanded'
+})<{ isExpanded: boolean }>(({ isExpanded }) => ({
   width: 722,
   height: isExpanded ? `calc(${WINDOW_HEIGHT}px * min(1, ${window.innerHeight}/${ORIGINAL_HEIGHT}))` : 70,
   padding: 20,

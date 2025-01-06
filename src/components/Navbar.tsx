@@ -1,7 +1,11 @@
 import { AppBar, Button, Toolbar, styled, alpha, Dialog, DialogTitle, DialogActions, Box } from '@mui/material';
 import { useAppKit } from '@reown/appkit/react'
-import { useAccount, useDisconnect } from 'wagmi';
+import { useSelector } from 'react-redux';
+import { RootState } from '../store';
+import { useWallet } from '../hooks/useWallet';
 import { useState } from 'react';
+import { useDispatch } from 'react-redux';
+import { showToast } from '../store/slices/toastSlice';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import Avatar from '@mui/material/Avatar';
@@ -226,8 +230,15 @@ interface NavbarProps {
 
 export default function Navbar({ sidebarOpen }: NavbarProps) {
   const { open } = useAppKit();
-  const { address, isConnected } = useAccount();
-  const { disconnect } = useDisconnect();
+  const { handleDisconnect, formatAddress } = useWallet();
+  const dispatch = useDispatch();
+
+  const {
+    address,
+    isConnected,
+    walletInfo
+  } = useSelector((state: RootState) => state.wallet);
+
   const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const openMenu = Boolean(anchorEl);
@@ -236,15 +247,6 @@ export default function Navbar({ sidebarOpen }: NavbarProps) {
   const [searchParams] = useSearchParams();
   const isWorkstation = location.pathname === '/app/workstation';
   const mode = searchParams.get('mode') || 'chat';
-
-  const handleDisconnect = () => {
-    disconnect();
-    setIsLogoutDialogOpen(false);
-  };
-
-  const formatAddress = (address: string) => {
-    return `${address.slice(0, 6)}...${address.slice(-4)}`;
-  };
 
   const handleClick = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
@@ -264,6 +266,19 @@ export default function Navbar({ sidebarOpen }: NavbarProps) {
       navigate(`${location.pathname}?${newSearchParams.toString()}`);
     } else {
       console.log('newMode is null', event);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await handleDisconnect();
+      setIsLogoutDialogOpen(false);
+      dispatch(showToast({
+        message: 'Logout successfully',
+        type: 'success'
+      }));
+    } catch (error) {
+      console.error('Logout failed:', error);
     }
   };
 
@@ -311,7 +326,7 @@ export default function Navbar({ sidebarOpen }: NavbarProps) {
           ) : (
             <>
               <Avatar
-                src={avatarImage}
+                src={walletInfo.icon || avatarImage}
                 sx={{
                   width: 40,
                   height: 40,
@@ -337,7 +352,7 @@ export default function Navbar({ sidebarOpen }: NavbarProps) {
               >
                 <MenuItem disableRipple sx={{ cursor: 'default' }}>
                   <MenuItemContent>
-                    <Avatar src={avatarImage} sx={{ width: 20, height: 20 }} />
+                    <Avatar src={walletInfo.icon || avatarImage} sx={{ width: 20, height: 20 }} />
                     <span className="address-text">{formatAddress(address || '')}</span>
                   </MenuItemContent>
                 </MenuItem>
@@ -382,7 +397,7 @@ export default function Navbar({ sidebarOpen }: NavbarProps) {
               取消
             </DialogButton>
             <DialogButton
-              onClick={handleDisconnect}
+              onClick={handleLogout}
               sx={{
                 backgroundColor: '#C7FF8C',
                 color: '#000000',
