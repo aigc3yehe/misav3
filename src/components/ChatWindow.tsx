@@ -284,6 +284,13 @@ export default function ChatWindow({ agentName }: ChatWindowProps) {
     }
   }, [isConnected, isRequesting, processingState]);
 
+  // 判断输入框是否应该禁用
+  const isInputDisabled = !isConnected || 
+    isRequesting || 
+    processingState !== 'idle' ||
+    connectionState === 'not-enough-tokens' ||
+    connectionState === 'queuing';
+
   return (
     <WindowContainer isExpanded={isExpanded}>
       <TitleBar>
@@ -321,7 +328,7 @@ export default function ChatWindow({ agentName }: ChatWindowProps) {
               onChange={setMessage}
               onSend={handleSend}
               onKeyPress={handleKeyPress}
-              disabled={!isConnected || isRequesting || processingState !== 'idle'}
+              disabled={isInputDisabled}
               inputRef={inputRef}
             />
           </InputContainer>
