@@ -251,7 +251,7 @@ export default function Gallery() {
 
   // 处理加载状态的显示
   useEffect(() => {
-    let timer: number;
+    let timer: NodeJS.Timeout;
     if (isLoading) {
       timer = setTimeout(() => {
         setIsLoadingVisible(true);

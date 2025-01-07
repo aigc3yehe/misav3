@@ -1,7 +1,6 @@
 import { Box, Typography, styled } from '@mui/material';
 import { useState, useEffect, KeyboardEvent, useRef } from 'react';
-import { useAccount } from 'wagmi';
-import { useAppKit } from '@reown/appkit/react'
+import { usePrivy } from '@privy-io/react-auth';
 import ChatInput from './ChatInput';
 import msgDown from '../assets/msg_down.svg';
 import msgUp from '../assets/msg_up.svg';
@@ -185,8 +184,7 @@ const convertChatMessage = (chatMessage: any): Message => {
 
 export default function ChatWindow({ agentName }: ChatWindowProps) {
   const dispatch = useDispatch<AppDispatch>();
-  const { isConnected, address } = useAccount();
-  const { open } = useAppKit();
+  const { authenticated, user, login } = usePrivy();
   const connectionState = useSelector((state: RootState) => state.chat.connectionState);
   const queuePosition = useSelector((state: RootState) => state.chat.queuePosition);
   const chatMessages = useSelector((state: RootState) => state.chat.messages);
@@ -198,13 +196,13 @@ export default function ChatWindow({ agentName }: ChatWindowProps) {
 
   // 根据状态获取要显示的消息
   const messages: Message[] = (() => {
-    if (!isConnected) {
+    if (!authenticated) {
       return [{
         ...walletMessage,
         actions: [{
           // @ts-ignore
           ...walletMessage.actions[0],
-          onClick: () => open()
+          onClick: () => login()
         }]
       }];
     }
@@ -216,7 +214,7 @@ export default function ChatWindow({ agentName }: ChatWindowProps) {
           actions: [{
             // @ts-ignore
             ...notEnoughTokensMessage.actions[0],
-            onClick: () => dispatch(checkTokenBalance(address || ''))
+            onClick: () => dispatch(checkTokenBalance(user?.wallet?.address || ''))
           }]
         }];
       case 'queuing':
@@ -246,7 +244,7 @@ export default function ChatWindow({ agentName }: ChatWindowProps) {
       // 清空输入框
       setMessage('');
       // 使用正确的类型
-      const result = await dispatch(sendMessage({ 
+      await dispatch(sendMessage({ 
         messageText: message.trim(),
         payFeeHash: undefined // 如果需要支付相关的参数
       })).unwrap();
@@ -276,16 +274,16 @@ export default function ChatWindow({ agentName }: ChatWindowProps) {
 
   // 当输入框变为可用时自动聚焦
   useEffect(() => {
-    const isInputEnabled = isConnected && !isRequesting && processingState === 'idle';
+    const isInputEnabled = authenticated && !isRequesting && processingState === 'idle';
     if (isInputEnabled) {
       // 使用 MUI 的 inputRef
       const input = inputRef.current as unknown as HTMLInputElement;
       input?.focus();
     }
-  }, [isConnected, isRequesting, processingState]);
+  }, [authenticated, isRequesting, processingState]);
 
   // 判断输入框是否应该禁用
-  const isInputDisabled = !isConnected || 
+  const isInputDisabled = !authenticated || 
     isRequesting || 
     processingState !== 'idle' ||
     connectionState === 'not-enough-tokens' ||

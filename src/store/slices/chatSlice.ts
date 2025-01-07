@@ -440,7 +440,7 @@ export const checkConnectionStatus = createAsyncThunk(
 );
 
 // 心跳相关的工具函数
-let heartbeatInterval: number | null = null;
+let heartbeatInterval: NodeJS.Timeout | null = null;
 
 // 开始心跳
 const startHeartbeat = (dispatch: any) => {

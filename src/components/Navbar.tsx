@@ -1,21 +1,20 @@
 import { AppBar, Button, Toolbar, styled, alpha, Dialog, DialogTitle, DialogActions, Box } from '@mui/material';
-import { useAppKit } from '@reown/appkit/react'
-import { useSelector } from 'react-redux';
-import { RootState } from '../store';
-import { useWallet } from '../hooks/useWallet';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useDispatch } from 'react-redux';
 import { showToast } from '../store/slices/toastSlice';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import Avatar from '@mui/material/Avatar';
-import xIcon from '../assets/x.svg';
 import logoutIcon from '../assets/logout.svg';
-import avatarImage from '../assets/avatar.png';
 import pointingCursor from '../assets/pointer.png';
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import ToggleButton from '@mui/material/ToggleButton';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { usePrivy } from '@privy-io/react-auth';
+import { useWalletManager } from '../hooks/useWalletManager';
+import { updatePrivyAccount } from '../store/slices/walletSlice';
+import { useAccount } from 'wagmi';
+import { AppDispatch } from '../store';
 
 const StyledAppBar = styled(AppBar)(() => ({
   background: 'transparent',
@@ -228,16 +227,15 @@ interface NavbarProps {
   sidebarOpen: boolean;
 }
 
-export default function Navbar({ sidebarOpen }: NavbarProps) {
-  const { open } = useAppKit();
-  const { handleDisconnect, formatAddress } = useWallet();
-  const dispatch = useDispatch();
+function formatAddress(address: string | undefined) {
+  return address ? address.slice(0, 6) + '...' + address.slice(-4) : '';
+}
 
-  const {
-    address,
-    isConnected,
-    walletInfo
-  } = useSelector((state: RootState) => state.wallet);
+export default function Navbar({ sidebarOpen }: NavbarProps) {
+  const { login, logout, authenticated } = usePrivy();
+  const { address, isConnected } = useAccount();
+  const { wallets } = useWalletManager();
+  const dispatch = useDispatch<AppDispatch>();
 
   const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -247,6 +245,10 @@ export default function Navbar({ sidebarOpen }: NavbarProps) {
   const [searchParams] = useSearchParams();
   const isWorkstation = location.pathname === '/app/workstation';
   const mode = searchParams.get('mode') || 'chat';
+
+  // 从 wallets 中找到当前钱包的图标
+  const currentWallet = wallets.find(w => w.address === address);
+  const walletIcon = currentWallet?.icon || '/assets/avatar.png';
 
   const handleClick = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
@@ -271,7 +273,7 @@ export default function Navbar({ sidebarOpen }: NavbarProps) {
 
   const handleLogout = async () => {
     try {
-      await handleDisconnect();
+      await logout();
       setIsLogoutDialogOpen(false);
       dispatch(showToast({
         message: 'Logout successfully',
@@ -281,6 +283,22 @@ export default function Navbar({ sidebarOpen }: NavbarProps) {
       console.error('Logout failed:', error);
     }
   };
+
+  // 当钱包状态改变时更新 Redux store
+  useEffect(() => {
+    if (isConnected && address) {
+      const currentWallet = wallets.find(w => w.address === address);
+      dispatch(updatePrivyAccount({
+        address,
+        isConnected: true,
+        status: 'connected',
+        walletInfo: {
+          name: currentWallet?.type || '',
+          icon: currentWallet?.icon || '/assets/avatar.png'
+        }
+      }));
+    }
+  }, [isConnected, address, wallets, dispatch]);
 
   return (
     <StyledAppBar position="fixed">
@@ -310,9 +328,9 @@ export default function Navbar({ sidebarOpen }: NavbarProps) {
           <GradientBorderButton>
             JOIN THE STUDIO!
           </GradientBorderButton>
-          {!isConnected ? (
+          {!authenticated ? (
             <ConnectButton
-              onClick={() => open()}
+              onClick={() => login()}
               sx={{
                 backgroundColor: '#C7FF8C',
                 color: '#000000',
@@ -326,7 +344,7 @@ export default function Navbar({ sidebarOpen }: NavbarProps) {
           ) : (
             <>
               <Avatar
-                src={walletInfo.icon || avatarImage}
+                src={walletIcon}
                 sx={{
                   width: 40,
                   height: 40,
@@ -350,16 +368,15 @@ export default function Navbar({ sidebarOpen }: NavbarProps) {
                   marginTop: '10px',
                 }}
               >
-                <MenuItem disableRipple sx={{ cursor: 'default' }}>
+                <MenuItem>
                   <MenuItemContent>
-                    <Avatar src={walletInfo.icon || avatarImage} sx={{ width: 20, height: 20 }} />
-                    <span className="address-text">{formatAddress(address || '')}</span>
-                  </MenuItemContent>
-                </MenuItem>
-                <MenuItem onClick={handleClose}>
-                  <MenuItemContent>
-                    <img src={xIcon} alt="Twitter" />
-                    <span className="address-text">Link Twitter</span>
+                    <Avatar 
+                        src={walletIcon} 
+                        sx={{ width: 20, height: 20 }} 
+                    />
+                    <span className="address-text">
+                      {formatAddress(address)} 
+                    </span>
                   </MenuItemContent>
                 </MenuItem>
                 <MenuItem onClick={() => {
@@ -381,7 +398,7 @@ export default function Navbar({ sidebarOpen }: NavbarProps) {
           open={isLogoutDialogOpen}
           onClose={() => setIsLogoutDialogOpen(false)}
         >
-          <DialogTitle>是否退出钱包？</DialogTitle>
+          <DialogTitle>Are you sure to logout?</DialogTitle>
           <DialogActions>
             <DialogButton
               onClick={() => setIsLogoutDialogOpen(false)}
@@ -394,7 +411,7 @@ export default function Navbar({ sidebarOpen }: NavbarProps) {
                 },
               }}
             >
-              取消
+              Cancel
             </DialogButton>
             <DialogButton
               onClick={handleLogout}
@@ -406,7 +423,7 @@ export default function Navbar({ sidebarOpen }: NavbarProps) {
                 },
               }}
             >
-              确认
+              Confirm
             </DialogButton>
           </DialogActions>
         </StyledDialog>

@@ -4,25 +4,15 @@ import { formatUnits } from 'viem';
 // 常量定义
 const MISATO_TOKEN_ADDRESS = '0x98f4779FcCb177A6D856dd1DfD78cd15B7cd2af5';
 const REQUIRED_BALANCE = 50_000; // 需要持有的最小数量
-const PROJECT_ID = '24138badb492a0fbadb1a04687d27fcd';
+// const PROJECT_ID = '24138badb492a0fbadb1a04687d27fcd';
 const WALLET_INFO_CACHE_KEY = 'wallet_info_cache';
 const UUID_STORAGE_KEY = 'misato_user_uuid';
 
 // 接口定义
-interface WalletListing {
-  id: string;
-  name: string;
-  rdns: string;
-  image_url: {
-    sm: string;
-    md: string;
-    lg: string;
-  };
-}
-
 interface WalletInfo {
   name: string;
   icon: string;
+  rdns?: string;
 }
 
 interface WalletState {
@@ -30,10 +20,7 @@ interface WalletState {
   caipAddress: string | null;
   status: string;
   isConnected: boolean;
-  walletInfo: {
-    name: string;
-    icon: string;
-  };
+  walletInfo: WalletInfo;
   tokenBalance: number;
   hasEnoughTokens: boolean;
   maxBalances: Record<string, number>;
@@ -67,7 +54,7 @@ const initialState: WalletState = {
   maxBalances: {},
   isLoading: false,
   error: null,
-  userUuid: initializeUuid(), // 使用初始化函数
+  userUuid: initializeUuid(),
 };
 
 // 从缓存加载钱包信息
@@ -91,57 +78,6 @@ const saveWalletInfoToCache = (walletInfo: WalletInfo) => {
 };
 
 // Async Thunks
-export const getWalletIcon = createAsyncThunk(
-  'wallet/getWalletIcon',
-  async (rdns: string) => {
-    try {
-      if (rdns === undefined) {
-        console.log('rdns is undefined');
-        return null;
-      }
-      // 先从缓存中查找
-      const cached = loadWalletInfoFromCache();
-      if (cached?.rdns === rdns && cached?.icon) {
-        console.log('Cached wallet info:', cached);
-        return cached;
-      }
-
-      const walletName = rdns.split('.').pop() || '';
-      const response = await fetch(
-        `https://explorer-api.walletconnect.com/v3/wallets?projectId=${PROJECT_ID}&search=${walletName}`
-      );
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch wallet info');
-      }
-
-      const data = await response.json();
-      const wallets = Object.values(data.listings) as WalletListing[];
-      console.log('Wallets:', wallets);
-      
-      if (wallets.length === 0) {
-        return null;
-      }
-      
-      const wallet = wallets.find((w) => w.rdns === rdns) || wallets[0];
-      console.log('Wallet:', wallet);
-      const walletInfo = {
-        name: wallet.name,
-        icon: wallet.image_url.md,
-        rdns: wallet.rdns
-      };
-      console.log('WalletInfo:', walletInfo);
-      // 保存到缓存
-      saveWalletInfoToCache(walletInfo);
-      
-      return walletInfo;
-    } catch (error) {
-      console.error('Failed to get wallet icon:', error);
-      return null;
-    }
-  }
-);
-
 export const checkTokenBalance = createAsyncThunk(
   'wallet/checkTokenBalance',
   async (address: string) => {
@@ -173,6 +109,20 @@ export const checkTokenBalance = createAsyncThunk(
   }
 );
 
+// 更新 Privy 账户状态的 thunk
+export const updatePrivyAccount = createAsyncThunk(
+  'wallet/updatePrivyAccount',
+  async (params: {
+    address: string | null;
+    isConnected: boolean;
+    status: string;
+    walletInfo: {
+      name: string;
+      icon: string;
+    }
+  }) => params
+);
+
 const walletSlice = createSlice({
   name: 'wallet',
   initialState: {
@@ -180,22 +130,6 @@ const walletSlice = createSlice({
     walletInfo: loadWalletInfoFromCache() || initialState.walletInfo,
   },
   reducers: {
-    updateAppKitAccount: (state, action: PayloadAction<{
-      address: string | null;
-      isConnected: boolean;
-      caipAddress: string | null;
-      status: string;
-      walletInfo?: {
-        name: string;
-        icon: string;
-        rdns?: string;
-      };
-    }>) => {
-      state.address = action.payload.address;
-      state.isConnected = action.payload.isConnected;
-      state.caipAddress = action.payload.caipAddress;
-      state.status = action.payload.status;
-    },
     setAddress: (state, action: PayloadAction<string | null>) => {
       state.address = action.payload;
     },
@@ -208,11 +142,13 @@ const walletSlice = createSlice({
     setConnected: (state, action: PayloadAction<boolean>) => {
       state.isConnected = action.payload;
     },
-    setWalletInfo: (state, action: PayloadAction<WalletState['walletInfo']>) => {
+    setWalletInfo: (state, action: PayloadAction<WalletInfo>) => {
       state.walletInfo = action.payload;
+      saveWalletInfoToCache(action.payload);
     },
     setUserUuid: (state, action: PayloadAction<string>) => {
       state.userUuid = action.payload;
+      localStorage.setItem(UUID_STORAGE_KEY, action.payload);
     },
     disconnectWallet: (state) => {
       state.address = null;
@@ -250,22 +186,18 @@ const walletSlice = createSlice({
       })
       .addCase(checkTokenBalance.rejected, (state, action) => {
         state.isLoading = false;
-        state.error = action.error.message || 'Failed to check token balance';
+        state.error = action.error.message || 'Check token balance failed';
       })
-      .addCase(getWalletIcon.fulfilled, (state, action) => {
-        if (action.payload) {
-          state.walletInfo = {
-            ...state.walletInfo,
-            ...action.payload
-          };
-          saveWalletInfoToCache(action.payload);
-        }
+      .addCase(updatePrivyAccount.fulfilled, (state, action) => {
+        console.log('updatePrivyAccount.fulfilled', action.payload);
+        state.address = action.payload.address;
+        state.isConnected = action.payload.isConnected;
+        state.walletInfo = action.payload.walletInfo;
       });
   },
 });
 
 export const {
-  updateAppKitAccount,
   setAddress,
   setCaipAddress,
   setStatus,
