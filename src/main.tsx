@@ -1,6 +1,6 @@
 import { createAppKit } from '@reown/appkit/react'
 import { WagmiProvider } from 'wagmi'
-import { arbitrum, mainnet } from '@reown/appkit/networks'
+import { base, baseSepolia } from '@reown/appkit/networks'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { WagmiAdapter } from '@reown/appkit-adapter-wagmi'
 import { createRoot } from 'react-dom/client'
@@ -15,31 +15,68 @@ import { store, AppDispatch } from './store';
 import { useAppKitAccount, useWalletInfo } from '@reown/appkit/react';
 import { useAccount } from 'wagmi';
 import { updateAppKitAccount, checkTokenBalance, getWalletIcon } from './store/slices/walletSlice';
-
+import { http } from 'wagmi'
+import { walletConnect, coinbaseWallet, injected } from 'wagmi/connectors'
 const queryClient = new QueryClient()
 
 const projectId = '0052e9e1883c5d42c4db7099c52964af'
 
 const metadata = {
-  name: 'Demo',
-  description: 'AppKit Example',
-  url: 'https://reown.com/appkit',
-  icons: ['https://assets.reown.com/reown-profile-pic.png']
+  name: 'Niyoko Studio',
+  description: 'Niyoko Studio',
+  url: window.location.origin,
+  icons: ['/misato.jpg']
 }
 
-const networks = [mainnet, arbitrum]
+const networks = [base, baseSepolia]
+// 创建连接器数组
+const connectors = [
+  walletConnect({ 
+    projectId, 
+    metadata, 
+    showQrModal: false
+  }),
+  injected({ 
+    shimDisconnect: true
+  }),
+  coinbaseWallet({
+    appName: metadata.name,
+    appLogoUrl: metadata.icons[0]
+  })
+]
 
-const wagmiAdapter = new WagmiAdapter({
-  networks,
+// 创建Wagmi适配器
+export const wagmiAdapter = new WagmiAdapter({
+  transports: {
+    [base.id]: http()
+  },
+  connectors,
   projectId,
-  ssr: true
-});
+  networks
+})
+
+// 自定义主题变量
+const themeVariables = {
+  '--w3m-font-family': 'Tektur, sans-serif', // 使用应用的主字体
+  '--w3m-accent': '#C7FF8C', // 品牌主色
+  '--w3m-color-mix': '#FFF', // 辅助色
+  '--w3m-color-mix-strength': 50,
+  '--w3m-border-radius-master': '2px', // 方形边角
+  '--w3m-z-index': 999,
+  '--w3m-background-color': '#FFFFFF', // 背景色
+  '--w3m-container-border-radius': '4px',
+  '--w3m-button-border-radius': '4px',
+  '--w3m-text-big-bold-size': '18px',
+  '--w3m-text-big-bold-weight': '400',
+  '--w3m-overlay-background-color': 'rgba(43, 12, 185, 0.8)', // 半透明遮罩
+}
 
 createAppKit({
   adapters: [wagmiAdapter],
-  networks: [mainnet, arbitrum],
+  networks: [base, baseSepolia],
   projectId,
   metadata,
+  //themeVariables,
   features: {
     analytics: true
   }

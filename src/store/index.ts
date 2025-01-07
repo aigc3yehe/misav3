@@ -3,7 +3,7 @@ import collectionReducer from './slices/collectionSlice';
 import agentReducer from './slices/agentSlice';
 import nftReducer from './slices/nftSlice';
 import toastReducer from './slices/toastSlice';
-import chatReducer from './slices/chatSlice';
+import chatReducer, { walletStatusMiddleware } from './slices/chatSlice';
 import walletReducer from './slices/walletSlice';
 
 export const store = configureStore({
@@ -15,6 +15,7 @@ export const store = configureStore({
     chat: chatReducer,
     wallet: walletReducer,
   },
+  middleware: (getDefaultMiddleware) => getDefaultMiddleware().concat(walletStatusMiddleware),
 });
 
 export type RootState = ReturnType<typeof store.getState>;

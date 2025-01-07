@@ -1,10 +1,10 @@
 import { styled } from '@mui/material';
-import { InputBase } from '@mui/material';
+import { InputBase, InputBaseProps } from '@mui/material';
 import inputDisableIcon from '../assets/input_disable.svg';
 import sendIcon from '../assets/send.svg';
 import sendDisableIcon from '../assets/send_disable.svg';
 import disablePointer from '../assets/disable_pointer.png';
-import { useState } from 'react';
+import { useState, KeyboardEvent } from 'react';
 
 const OuterContainer = styled('div', {
   shouldForwardProp: (prop) => !['focused', 'disabled'].includes(prop as string)
@@ -70,13 +70,22 @@ const Icon = styled('img')<{ disabled?: boolean }>(({ disabled }) => ({
 }));
 
 interface ChatInputProps {
-  disabled?: boolean;
   value: string;
   onChange: (value: string) => void;
   onSend: () => void;
+  onKeyPress?: (e: KeyboardEvent<HTMLInputElement>) => void;
+  disabled?: boolean;
+  inputRef?: InputBaseProps['inputRef'];
 }
 
-export default function ChatInput({ disabled, value, onChange, onSend }: ChatInputProps) {
+export default function ChatInput({ 
+  value, 
+  onChange, 
+  onSend, 
+  onKeyPress,
+  disabled,
+  inputRef 
+}: ChatInputProps) {
   const [focused, setFocused] = useState(false);
 
   const handleSend = () => {
@@ -101,6 +110,8 @@ export default function ChatInput({ disabled, value, onChange, onSend }: ChatInp
               onBlur={() => setFocused(false)}
               placeholder="Type your message here..."
               fullWidth
+              onKeyDown={onKeyPress}
+              inputRef={inputRef}
             />
           )}
         </LeftContent>

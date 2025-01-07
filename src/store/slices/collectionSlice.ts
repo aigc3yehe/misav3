@@ -65,6 +65,7 @@ export const fetchCollections = createAsyncThunk(
       }
 
       // 2. 获取合约元数据
+      // @ts-ignore
       const contractAddresses = studioData.data.map(item => item.collection);
       const contractData = await fetchContractMetadata(contractAddresses);
 

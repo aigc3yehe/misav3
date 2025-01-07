@@ -6,6 +6,7 @@ const MISATO_TOKEN_ADDRESS = '0x98f4779FcCb177A6D856dd1DfD78cd15B7cd2af5';
 const REQUIRED_BALANCE = 50_000; // 需要持有的最小数量
 const PROJECT_ID = '24138badb492a0fbadb1a04687d27fcd';
 const WALLET_INFO_CACHE_KEY = 'wallet_info_cache';
+const UUID_STORAGE_KEY = 'misato_user_uuid';
 
 // 接口定义
 interface WalletListing {
@@ -41,6 +42,17 @@ interface WalletState {
   userUuid: string;
 }
 
+// 初始化或获取 UUID
+const initializeUuid = (): string => {
+  const storedUuid = localStorage.getItem(UUID_STORAGE_KEY);
+  if (storedUuid) {
+    return storedUuid;
+  }
+  const newUuid = crypto.randomUUID();
+  localStorage.setItem(UUID_STORAGE_KEY, newUuid);
+  return newUuid;
+};
+
 const initialState: WalletState = {
   address: null,
   caipAddress: null,
@@ -55,7 +67,7 @@ const initialState: WalletState = {
   maxBalances: {},
   isLoading: false,
   error: null,
-  userUuid: '',
+  userUuid: initializeUuid(), // 使用初始化函数
 };
 
 // 从缓存加载钱包信息
@@ -83,6 +95,10 @@ export const getWalletIcon = createAsyncThunk(
   'wallet/getWalletIcon',
   async (rdns: string) => {
     try {
+      if (rdns === undefined) {
+        console.log('rdns is undefined');
+        return null;
+      }
       // 先从缓存中查找
       const cached = loadWalletInfoFromCache();
       if (cached?.rdns === rdns && cached?.icon) {
@@ -223,6 +239,7 @@ const walletSlice = createSlice({
       .addCase(checkTokenBalance.fulfilled, (state, action) => {
         state.isLoading = false;
         state.tokenBalance = action.payload;
+        console.log('tokenBalance:', state.tokenBalance);
         if (state.address) {
           state.maxBalances[state.address] = Math.max(
             state.maxBalances[state.address] || 0,
