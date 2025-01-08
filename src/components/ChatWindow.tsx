@@ -1,4 +1,4 @@
-import { Box, Typography, styled } from '@mui/material';
+import { Box, Typography, styled, Dialog, DialogTitle, DialogContent, DialogActions, Button } from '@mui/material';
 import { useState, useEffect, KeyboardEvent, useRef } from 'react';
 import { usePrivy } from '@privy-io/react-auth';
 import ChatInput from './ChatInput';
@@ -7,9 +7,12 @@ import msgUp from '../assets/msg_up.svg';
 import MessageBubble from './ChatWindow/MessageBubble';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '../store';
-import { sendMessage, checkConnectionStatus } from '../store/slices/chatSlice';
+import { sendMessage, checkConnectionStatus, addMessage, removeMessage } from '../store/slices/chatSlice';
 import { checkTokenBalance } from '../store/slices/walletSlice';
 import { InputBaseProps } from '@mui/material';
+import { useWriteContract, useWaitForTransactionReceipt, useChainId } from 'wagmi';
+import { showToast } from '../store/slices/toastSlice';
+import { parseUnits } from 'viem';
 
 const ORIGINAL_HEIGHT = 1800;  // 原始设计高度
 const WINDOW_HEIGHT = 1180;    // 原始窗口高度
@@ -111,10 +114,13 @@ interface Message {
   content: string;
   type?: 'text' | 'image' | 'error' | 'transaction';
   avatar?: string;
+  time?: string;
+  show_status?: 'send_eth' | 'idle' | 'disconnected' | 'queuing';
   actions?: Array<{
     label: string;
     variant: 'primary' | 'secondary';
     onClick: () => void;
+    disabled?: boolean;
   }>;
 }
 
@@ -128,7 +134,8 @@ const walletMessage: Message = {
     { 
       label: 'CONNECT', 
       variant: 'primary',
-      onClick: () => {} // 将在组件中更新
+      onClick: () => {}, // 将在组件中更新
+      disabled: false
     }
   ]
 };
@@ -143,7 +150,8 @@ const notEnoughTokensMessage: Message = {
     {
       label: 'RECHECK',
       variant: 'primary',
-      onClick: () => {} // 将在组件中更新
+      onClick: () => {}, // 将在组件中更新
+      disabled: false
     }
   ]
 };
@@ -158,29 +166,124 @@ const createQueueMessage = (position: number): Message => ({
     {
       label: 'TRY TO CONNECT',
       variant: 'primary',
-      onClick: () => {} // 将在组件中更新
+      onClick: () => {}, // 将在组件中更新
+      disabled: false 
     }
   ]
 });
 
+// 添加时间格式化辅助函数
+const formatTime = (date: Date): string => {
+  const hours = date.getHours().toString().padStart(2, '0');
+  const minutes = date.getMinutes().toString().padStart(2, '0');
+  return `${hours}:${minutes}`;
+};
+
 // 转换消息格式的函数
-const convertChatMessage = (chatMessage: any): Message => {
-  return {
+const convertChatMessage = (
+  chatMessage: any, 
+  handleSendEth: (id: number) => void,
+  checkPayment: () => void,
+  retryLastMessage: (lastUserMessage: string) => void,
+  messages: any[],
+  // 添加支付状态参数
+  isPending: boolean,
+  isConfirming: boolean,
+  isConfirmed: boolean,
+  isTransactionFailed: boolean,
+  hash: `0x${string}` | undefined,
+  error: Error | null
+): Message => {
+  const baseMessage = {
     id: chatMessage.id || Date.now(),
     isUser: chatMessage.role === 'user',
     content: chatMessage.content,
+    type: chatMessage.type || 'text',
+    time: chatMessage.time || formatTime(new Date()),
     avatar: chatMessage.role === 'user' ? undefined : '/misato.jpg',
-    ...(chatMessage.type === 'transaction' && {
+    show_status: chatMessage.show_status,
+    };
+
+  // 如果是需要支付的消息
+  if (chatMessage.show_status === 'send_eth' && chatMessage.payment_info) {
+    // 获取发送按钮文本
+    const getSendButtonLabel = () => {
+      if (isTransactionFailed) return 'Pay 200k $MISATO';
+      if (isPending) return 'Paying...';
+      if (isConfirming) return 'Confirming...';
+      if (isConfirmed) return 'Confirmed!';
+      return 'Pay 200k $MISATO';
+    };
+
+    return {
+      ...baseMessage,
       actions: [
         {
-          label: 'Send ETH',
+          label: getSendButtonLabel(),
           variant: 'primary',
-          onClick: () => console.log('Send ETH')
+          onClick: () => handleSendEth(chatMessage.id),
+          disabled: isPending || isConfirming
+        },
+        {
+          label: 'Check Payment',
+          variant: 'secondary',
+          onClick: checkPayment,
+          disabled: !hash && !error
         }
       ]
-    })
-  };
+    };
+  }
+
+  // 如果是错误消息且是最后一条消息
+  if (chatMessage.type === 'error' && chatMessage.id === messages[messages.length - 1].id) {
+    // 找到最后一条用户消息
+    const lastUserMessage = messages
+      .slice()
+      .reverse()
+      .find(msg => msg.role === 'user')?.content;
+
+    return {
+      ...baseMessage,
+      actions: [
+        {
+          label: 'Retry',
+          variant: 'primary',
+          onClick: () => lastUserMessage && retryLastMessage(lastUserMessage)
+        }
+      ]
+    };
+  }
+
+  return baseMessage;
 };
+
+// MISATO 代币的 ABI
+const abi = [
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "to",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "transfer",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  }
+] as const
 
 export default function ChatWindow({ agentName }: ChatWindowProps) {
   const dispatch = useDispatch<AppDispatch>();
@@ -193,6 +296,270 @@ export default function ChatWindow({ agentName }: ChatWindowProps) {
   const processingState = useSelector((state: RootState) => state.chat.processingState);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<InputBaseProps['inputRef']>();
+
+  const [latestPaymentHash, setLatestPaymentHash] = useState<string | null>(null);
+  const [isTransactionFailed, setIsTransactionFailed] = useState(false);
+  // 添加对话框状态
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [currentPaymentId, setCurrentPaymentId] = useState<number | null>(null);
+
+  console.log('user', user);
+  console.log('authenticated', authenticated);
+
+  const { 
+    data: hash, // 交易哈希
+    isPending, // 是否正在等待交易
+    error, // 错误
+    writeContract // 写入合约
+  } = useWriteContract()
+
+  const {
+    isLoading: isConfirming, // 是否正在等待交易确认
+    isSuccess: isConfirmed, // 是否交易确认成功
+  } = useWaitForTransactionReceipt({
+    hash
+  })
+
+  const chainId = useChainId();
+
+  // 处理发送 eth
+  const sendEth = (id: number) => {
+    if (!authenticated) {
+      dispatch(showToast({
+        message: 'Please connect your wallet first.',
+        severity: 'error'
+      }));
+      return;
+    }
+
+    // 获取当前消息的支付信息并进行类型检查
+    const message = chatMessages.find(msg => msg.id === id);
+    const paymentInfo = message?.payment_info;
+    if (!paymentInfo || 
+      !paymentInfo.recipient_address ||
+      !paymentInfo.price ||
+      !paymentInfo.network ||
+      !paymentInfo.chainId
+    ) {
+      dispatch(showToast({
+        message: 'Payment info not found.',
+        severity: 'error'
+      }));
+      return;
+    }
+
+    // 保存当前正在处理的交易消息
+    setCurrentPaymentId(id);
+
+    const { recipient_address, price, network, chainId: requiredChainId } = paymentInfo;
+
+    // 检查网络是否正确
+    if (chainId !== requiredChainId) {
+      dispatch(showToast({
+        message: `Please switch to ${network} network`,
+        severity: 'error'
+      }));
+      return;
+    }
+
+    console.log('Sending Transaction...', recipient_address, price, chainId, requiredChainId);
+
+    try {
+      // 发送交易
+      writeContract({
+        address: '0x98f4779FcCb177A6D856dd1DfD78cd15B7cd2af5',
+        abi: abi,
+        functionName: 'transfer',
+        args: [
+          recipient_address as `0x${string}`,
+          parseUnits(price, 18)
+        ]
+      })
+
+      console.log('Transaction sent:', hash, error);
+
+      if (error) {
+        dispatch(showToast({
+          message: `Failed to send ETH. ${error.message}`,
+          severity: 'error'
+        }));
+        return;
+      }
+
+      // 发送提醒交易成功的消息
+      dispatch(showToast({
+        message: 'Transaction sent successfully.',
+        severity: 'success'
+      }));
+    } catch (error) {
+      console.error('Failed to send ETH:', error);
+      setCurrentPaymentId(null);
+      dispatch(showToast({
+        message: `Failed to send ETH.`,
+        severity: 'error'
+      }));
+    }
+  }
+
+  
+
+  // 处理发送 ETH
+  const handleSendEth = (id: number) => {
+    setIsTransactionFailed(false);
+    const currentMessage = chatMessages.find(msg => msg.id === id);
+    const paymentInfo = currentMessage?.payment_info;
+
+    if (!paymentInfo
+      || !paymentInfo.recipient_address 
+      || !paymentInfo.price
+      || !paymentInfo.network
+      || !paymentInfo.chainId
+    ) {
+      dispatch(showToast({
+        message: 'Payment info is incomplete.',
+        severity: 'error'
+      }));
+      return;
+    }
+
+    setCurrentPaymentId(id);
+    setShowConfirmDialog(true);
+  };
+
+  // 确认支付
+  const confirmPayment = () => {
+    if (!currentPaymentId) return;
+    sendEth(currentPaymentId);
+    setShowConfirmDialog(false);
+  };
+
+  // 渲染确认对话框内容
+  const renderDialogContent = () => {
+    const currentMessage = chatMessages.find(msg => msg.id === currentPaymentId);
+    const paymentInfo = currentMessage?.payment_info;
+
+    if (!paymentInfo) return null;
+
+    if (isConfirmed && hash) {
+      // 已有成功交易的确认框
+      return (
+        <>
+          <DialogTitle>Payment Already Sent</DialogTitle>
+          <DialogContent>
+            <Typography>You have already made a payment for this request.</Typography>
+            <Typography sx={{ mt: 1, color: '#666' }}>
+              Previous transaction hash: {hash}
+            </Typography>
+            <Typography sx={{ mt: 1.5, color: '#2C0CB9' }}>
+              Do you still want to make another payment?
+            </Typography>
+            <Box sx={{ mt: 1, fontSize: '12px', color: '#999' }}>
+              <Typography variant="body2">Amount: {paymentInfo.price} $MISATO</Typography>
+              <Typography variant="body2">Recipient: {paymentInfo.recipient_address}</Typography>
+              <Typography variant="body2">Network: {paymentInfo.network}</Typography>
+            </Box>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setShowConfirmDialog(false)}>Cancel</Button>
+            <Button onClick={confirmPayment} variant="contained">Yes, Pay Again</Button>
+          </DialogActions>
+        </>
+      );
+    }
+
+    // 首次支付的确认框
+    return (
+      <>
+        <DialogTitle>Send $MISATO</DialogTitle>
+        <DialogContent>
+          <Typography>Are you sure to pay {paymentInfo.price} $MISATO?</Typography>
+          <Box sx={{ mt: 1, fontSize: '12px', color: '#999' }}>
+            <Typography variant="body2">Recipient: {paymentInfo.recipient_address}</Typography>
+            <Typography variant="body2">Network: {paymentInfo.network}</Typography>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setShowConfirmDialog(false)}>Cancel</Button>
+          <Button onClick={confirmPayment} variant="contained">Confirm</Button>
+        </DialogActions>
+      </>
+    );
+  };
+
+  // 添加重试处理函数
+  const handleRetry = async (lastUserMessage: string) => {
+    // 移除最后一条错误消息
+    const lastId = messages[messages.length - 1].id;
+    if (typeof lastId === 'number') {
+      dispatch(removeMessage(lastId));
+    } else {
+      dispatch(removeMessage(parseInt(lastId)));
+    }
+    // 重新发送最后一条用户消息
+    await dispatch(sendMessage({ 
+      messageText: lastUserMessage,
+      payFeeHash: latestPaymentHash || undefined
+    })).unwrap();
+  };
+
+  // 检查支付状态
+  const checkPayment = () => {
+    // 打印所有相关状态
+    console.log('isConfirmed:', isConfirmed, 'hash:', hash,
+      'isPending:', isPending,
+      'isConfirming:', isConfirming,
+      'error:', error
+    );
+
+    if (!hash) {
+      dispatch(showToast({
+        message: 'Transaction not found.',
+        severity: 'warning'
+      }));
+      return;
+    }
+
+    if (isConfirming) {
+      dispatch(showToast({
+        message: 'Transaction is being confirmed...',
+        severity: 'info'
+      }));
+      return;
+    }
+
+    // 如果交易成功，显示成功消息
+    if (isConfirmed && hash) {
+      dispatch(showToast({
+        message: 'Transaction confirmed.',
+        severity: 'success'
+      }));
+    }
+
+    if (error) {
+      dispatch(showToast({
+        message: `Failed to send ETH`,
+        severity: 'error'
+      }));
+    }
+  }
+
+  // 监听交易状态
+  useEffect(() => {
+    if (isConfirmed && hash) {
+      // 交易确认后添加消息
+      dispatch(showToast({
+        message: 'Payment confirmed.',
+        severity: 'success'
+      }));
+      setLatestPaymentHash(hash);
+      dispatch(addMessage({
+        id: Date.now(),
+        role: 'user',
+        content: "Submitted the transaction. I will click 'check payment' and copy hash to you, after the transaction is confirmed.",
+        type: 'transaction',
+      }));
+    }
+  }, [hash, isConfirmed]);
 
   // 根据状态获取要显示的消息
   const messages: Message[] = (() => {
@@ -227,7 +594,21 @@ export default function ChatWindow({ agentName }: ChatWindowProps) {
           }]
         }];
       default:
-        return chatMessages.map(convertChatMessage);
+        return chatMessages.map(msg => 
+          convertChatMessage(
+            msg, 
+            handleSendEth, 
+            checkPayment,
+            handleRetry, 
+            chatMessages,
+            isPending,
+            isConfirming,
+            isConfirmed,
+            isTransactionFailed,
+            hash,
+            error
+          )
+        );
     }
   })();
 
@@ -246,7 +627,7 @@ export default function ChatWindow({ agentName }: ChatWindowProps) {
       // 使用正确的类型
       await dispatch(sendMessage({ 
         messageText: message.trim(),
-        payFeeHash: undefined // 如果需要支付相关的参数
+        payFeeHash: latestPaymentHash || undefined
       })).unwrap();
       
     } catch (error) {
@@ -284,9 +665,8 @@ export default function ChatWindow({ agentName }: ChatWindowProps) {
 
   // 判断输入框是否应该禁用
   const isInputDisabled = !authenticated || 
-    isRequesting || 
     processingState !== 'idle' ||
-    connectionState === 'not-enough-tokens' ||
+    //connectionState === 'not-enough-tokens' ||
     connectionState === 'queuing';
 
   return (
@@ -328,10 +708,21 @@ export default function ChatWindow({ agentName }: ChatWindowProps) {
               onKeyPress={handleKeyPress}
               disabled={isInputDisabled}
               inputRef={inputRef}
+              processingState={processingState}
             />
           </InputContainer>
         </>
       )}
+
+      {/* 添加确认对话框 */}
+      <Dialog 
+        open={showConfirmDialog} 
+        onClose={() => setShowConfirmDialog(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        {renderDialogContent()}
+      </Dialog>
     </WindowContainer>
   );
 }

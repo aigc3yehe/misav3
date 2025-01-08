@@ -70,6 +70,83 @@ const waitForRequestAvailable = async (getState: () => RootState): Promise<void>
   }
 };
 
+// 添加类型检查辅助函数
+const sendToUnity = (content: string, finish: boolean) => {
+  if (window.unityInstance?.SendMessage) {
+    window.unityInstance.SendMessage('JSCall', 'AddVoice', JSON.stringify({
+      content,
+      finish: finish
+    }));
+  }
+};
+
+const convertNumberToWords = (text: string): string => {
+  const numberWords: { [key: string]: string } = {
+    '0': 'zero', '1': 'one', '2': 'two', '3': 'three', '4': 'four',
+    '5': 'five', '6': 'six', '7': 'seven', '8': 'eight', '9': 'nine',
+    '10': 'ten', '11': 'eleven', '12': 'twelve', '13': 'thirteen',
+    '14': 'fourteen', '15': 'fifteen', '16': 'sixteen',
+    '17': 'seventeen', '18': 'eighteen', '19': 'nineteen',
+    '20': 'twenty', '30': 'thirty', '40': 'forty', '50': 'fifty',
+    '60': 'sixty', '70': 'seventy', '80': 'eighty', '90': 'ninety'
+  }
+
+  const ordinalWords: { [key: string]: string } = {
+    '1': 'first', '2': 'second', '3': 'third', '4': 'fourth',
+    '5': 'fifth', '6': 'sixth', '7': 'seventh', '8': 'eighth',
+    '9': 'ninth', '10': 'tenth'
+  }
+
+  // 首先处理序号格式 (例如: "1.", "2.")
+  text = text.replace(/(\d+)\.\s/g, (match, num) => {
+    return ordinalWords[num] ? `${ordinalWords[num]}, ` : `number ${num}, `
+  })
+
+  // 然后处理其他数字
+  return text.replace(/\b\d*\.?\d+\b/g, (match) => {
+    // 处理小数
+    if (match.includes('.')) {
+      const [intPart, decPart] = match.split('.')
+      const intWords = intPart === '' ? 'zero' : 
+                      intPart === '0' ? 'zero' : 
+                      convertNumber(intPart)
+      
+      const decWords = decPart.split('')
+        .map(digit => numberWords[digit])
+        .join(' ')
+      
+      return `${intWords} point ${decWords}`
+    }
+    
+    // 处理整数
+    return convertNumber(match)
+  })
+
+  // 处理数字的辅助函数
+  function convertNumber(num: string): string {
+    const number = parseInt(num)
+    
+    // 处理 0-99 的数字
+    if (number >= 0 && number < 100) {
+      if (numberWords[num]) {
+        return numberWords[num]
+      }
+      if (number > 20) {
+        const tens = Math.floor(number / 10) * 10
+        const ones = number % 10
+        return ones > 0 
+          ? `${numberWords[tens.toString()]}-${numberWords[ones.toString()]}` 
+          : numberWords[tens.toString()]
+      }
+    }
+    
+    // 对于其他数字，逐个读出
+    return num.split('')
+      .map(digit => numberWords[digit])
+      .join(' ')
+  }
+}
+
 // 发送消息的异步 action
 // 处理流程：
 // 1. 添加用户消息到列表
@@ -85,7 +162,6 @@ export const sendMessage = createAsyncThunk(
     payFeeHash?: string 
   }, { getState, dispatch, rejectWithValue }) => {
     // 更新最后活动时间
-    console.log('sendMessage先执行主体', messageText);
     dispatch(updateLastActivity());
     try {
       await waitForRequestAvailable(getState as () => RootState);
@@ -176,6 +252,15 @@ export const sendMessage = createAsyncThunk(
         }));
 
         // 添加语音播放
+        const sentences = content.split(/[.,!?。！？]/g).filter(Boolean)
+        const lastIndex = sentences.length - 1
+
+        sentences.forEach((sentence: string, index: number) => {
+          const cleanSentence = sentence.trim()
+          if (cleanSentence) {
+            sendToUnity(convertNumberToWords(cleanSentence), index === lastIndex)
+          }
+        })
         return data;
       }
 
@@ -214,6 +299,16 @@ export const sendMessage = createAsyncThunk(
 
       // 将 AI 回复分段发送到 Unity
       // 逐句发送到 Unity 进行语音播放前进行数字转换
+      // 将 AI 回复分段发送到 Unity
+      const sentences = data.content.split(/[.,!?。！？]/g).filter(Boolean)
+      const lastIndex = sentences.length - 1
+
+      sentences.forEach((sentence: string, index: number) => {
+        const cleanSentence = sentence.trim()
+        if (cleanSentence) {
+          sendToUnity(convertNumberToWords(cleanSentence), index === lastIndex)
+        }
+      })
 
       return data;
 
@@ -223,7 +318,7 @@ export const sendMessage = createAsyncThunk(
         id: Date.now(),
         type: 'error',
         role: 'system',
-        content: error instanceof Error ? error.message : 'An error occurred',
+        content: 'Sorry, an error occurred while processing the message. Please try again.',
         time: formatTime(new Date()),
       }));
 
@@ -290,6 +385,16 @@ export const pollImageStatus = createAsyncThunk(
             }));
 
             // 过滤掉图片标记后发送到 Unity
+            const cleanContent = content.replace(/!\[.*?\]\(.*?\)/g, '')
+            const sentences = cleanContent.split(/[.,!?。！？]/g).filter(Boolean)
+            const lastIndex = sentences.length - 1
+
+            sentences.forEach((sentence: string, index: number) => {
+              const cleanSentence = sentence.trim()
+              if (cleanSentence) {
+                sendToUnity(convertNumberToWords(cleanSentence), index === lastIndex)
+              }
+            })
 
             return result;
           }
@@ -308,6 +413,8 @@ export const pollImageStatus = createAsyncThunk(
             }));
 
             // 发送错误消息到 Unity
+            sendToUnity('Image generation failed, please try again.', true)
+
             return result;
           }
 
@@ -334,6 +441,7 @@ export const pollImageStatus = createAsyncThunk(
         time: formatTime(new Date()),
       }));
       // 发送错误消息到 Unity
+      sendToUnity('Error checking image generation status', true)
       throw error;
     }
   }

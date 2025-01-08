@@ -60,6 +60,7 @@ interface MessageBubbleProps {
     label: string;
     variant: 'primary' | 'secondary';
     onClick: () => void;
+    disabled?: boolean;
   }>;
 }
 
@@ -95,6 +96,7 @@ export default function MessageBubble({
               <ActionButton
                 key={`action-${index}`}
                 onClick={action.onClick}
+                disabled={action.disabled}
               >
                 {action.label}
               </ActionButton>

@@ -1,5 +1,6 @@
 import { Box, styled } from '@mui/material';
 import ChatWindow from '../../components/ChatWindow';
+import UnityGame from '../../components/UnityGame';
 
 const ViewContainer = styled(Box)({
   position: 'relative',
@@ -15,8 +16,9 @@ const UnityContainer = styled(Box)({
   left: 0,
   width: '100%',
   height: '100%',
-  backgroundColor: '#1A1A1A', // 临时背景色，之后替换为 Unity 内容
-  zIndex: 1,
+  overflow: 'hidden',
+  zIndex: 3,
+  pointerEvents: 'auto'
 });
 
 const ChatWindowWrapper = styled(Box)({
@@ -24,7 +26,7 @@ const ChatWindowWrapper = styled(Box)({
   bottom: 0,
   left: '50%',
   transform: 'translateX(-50%)',
-  zIndex: 2,
+  zIndex: 4,
   overflow: 'hidden'
 });
 
@@ -41,16 +43,16 @@ const BackgroundImage = styled('img')({
     width: '642px',    // 在超过原始设计高度时使用原始宽度
     height: '1712px',   // 在超过原始设计高度时使用原始高度
   },
-  zIndex: 1,
+  zIndex: 3,
 });
 
 export default function ChatView() {
   return (
     <ViewContainer>
       <UnityContainer>
-        {/* Unity 内容将在这里渲染 */}
+        <UnityGame />
       </UnityContainer>
-      <BackgroundImage src="/mock/Niyoko.png" alt="" />
+      {/* <BackgroundImage src="/mock/Niyoko.png" alt="" /> */}
       <ChatWindowWrapper>
         <ChatWindow agentName="Misato" />
       </ChatWindowWrapper>

@@ -17,6 +17,10 @@ const MarkdownContainer = styled(Box)({
     margin: 0,
   },
   
+  '& h1, & h2, & h3, & h4, & h5, & h6': {
+    margin: 0,
+  },
+  
   '& img': {
     width: 168,
     height: 'auto',
@@ -51,7 +55,10 @@ export default function MDRenderer({ content }: MDRendererProps) {
   };
 
   const renderedContent = useMemo(() => {
-    return marked(content);
+    if (content === '' || content === null || content === undefined) {
+      return '';
+    }
+    return marked(content.trim().replace(/\s+/g, ' '));
   }, [content]);
 
   return (

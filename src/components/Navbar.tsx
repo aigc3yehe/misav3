@@ -15,6 +15,7 @@ import { useWalletManager } from '../hooks/useWalletManager';
 import { updatePrivyAccount } from '../store/slices/walletSlice';
 import { useAccount } from 'wagmi';
 import { AppDispatch } from '../store';
+import { checkTokenBalance } from '../store/slices/walletSlice';
 
 const StyledAppBar = styled(AppBar)(() => ({
   background: 'transparent',
@@ -297,6 +298,9 @@ export default function Navbar({ sidebarOpen }: NavbarProps) {
           icon: currentWallet?.icon || '/assets/avatar.png'
         }
       }));
+
+      // 检查代币余额
+      dispatch(checkTokenBalance(address));
     }
   }, [isConnected, address, wallets, dispatch]);
 

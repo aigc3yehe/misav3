@@ -76,6 +76,7 @@ interface ChatInputProps {
   onKeyPress?: (e: KeyboardEvent<HTMLInputElement>) => void;
   disabled?: boolean;
   inputRef?: InputBaseProps['inputRef'];
+  processingState?: 'idle' | 'thinking' | 'generating' | 'minting';
 }
 
 export default function ChatInput({ 
@@ -84,9 +85,23 @@ export default function ChatInput({
   onSend, 
   onKeyPress,
   disabled,
-  inputRef 
+  inputRef,
+  processingState = 'idle'
 }: ChatInputProps) {
   const [focused, setFocused] = useState(false);
+
+  const getPlaceholder = () => {
+    switch (processingState) {
+      case 'thinking':
+        return 'MISATO is thinking...';
+      case 'generating':
+        return 'MISATO is generating image...';
+      case 'minting':
+        return 'MISATO is minting NFT...';
+      default:
+        return 'Type your message here...';
+    }
+  };
 
   const handleSend = () => {
     if (disabled || !value) return;
@@ -100,7 +115,7 @@ export default function ChatInput({
           {disabled ? (
             <IconWrapper>
               <Icon src={inputDisableIcon} alt="disabled" disabled={disabled} />
-              <DisabledText>Input Not Allowed</DisabledText>
+              <DisabledText>{getPlaceholder()}</DisabledText>
             </IconWrapper>
           ) : (
             <StyledInput
@@ -108,7 +123,7 @@ export default function ChatInput({
               onChange={(e) => onChange(e.target.value)}
               onFocus={() => setFocused(true)}
               onBlur={() => setFocused(false)}
-              placeholder="Type your message here..."
+              placeholder={getPlaceholder()}
               fullWidth
               onKeyDown={onKeyPress}
               inputRef={inputRef}
