@@ -5,6 +5,7 @@ import nftReducer from './slices/nftSlice';
 import toastReducer from './slices/toastSlice';
 import chatReducer, { walletStatusMiddleware } from './slices/chatSlice';
 import walletReducer from './slices/walletSlice';
+import terminalReducer from './slices/terminalSlice';
 
 export const store = configureStore({
   reducer: {
@@ -14,6 +15,7 @@ export const store = configureStore({
     toast: toastReducer,
     chat: chatReducer,
     wallet: walletReducer,
+    terminal: terminalReducer,
   },
   middleware: (getDefaultMiddleware) => getDefaultMiddleware().concat(walletStatusMiddleware),
 });

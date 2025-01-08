@@ -1,7 +1,17 @@
 import { Box, styled } from '@mui/material';
 import terminalBg from '../../assets/terminal_bg.png';
+import { useEffect, useCallback, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { useTypewriter } from '../../hooks/useTypewriter';
-import { useState, useEffect } from 'react';
+import Pusher from 'pusher-js';
+import { 
+  fetchTerminalLogs, 
+  addLog, 
+  setLiveStatus,
+  selectTerminalLogs,
+  selectTerminalStatus
+} from '../../store/slices/terminalSlice';
+import type { AppDispatch } from '../../store';
 
 const ORIGINAL_TERMINAL_HEIGHT = 1800;  // 原始设计高度改为1800
 const BASE_GRID_SIZE = 40;  // 基础网格大小相应调整为原来的2倍
@@ -82,98 +92,113 @@ const TerminalOutput = styled(Box)({
   },
 });
 
-interface TerminalLine {
-  id: string;
-  text: string;
-}
+// Pusher 配置
+const PUSHER_CONFIG = {
+  APP_KEY: 'ae89f44addd84df6b762',
+  CLUSTER: 'ap1',
+  CHANNEL: 'misato',
+  EVENT: 'aigc'
+} as const;
 
 export default function TerminalView() {
-  const [lines, setLines] = useState<TerminalLine[]>([]);
+  const dispatch = useDispatch<AppDispatch>();
+  const logs = useSelector(selectTerminalLogs);
+  const { isLoading, error, isLive } = useSelector(selectTerminalStatus);
+
+  // 添加打字机效果相关状态
   const [currentLineIndex, setCurrentLineIndex] = useState(0);
-
-  const terminalLines = [
-    { id: 'line-1', text: '1 Initializing system...' },
-    { id: 'line-2', text: '2 Loading modules...' },
-    { id: 'line-3', text: '3 Connected to network' },
-    { id: 'line-4', text: '4 Ready for input' },
-    { id: 'line-5', text: '5 Ready for input' },
-    { id: 'line-6', text: '6 Ready for input' },
-    { id: 'line-7', text: '7 Ready for input' },
-    { id: 'line-8', text: '8 Ready for input' },
-    { id: 'line-9', text: '9 Ready for input' },
-    { id: 'line-10', text: '10 Ready for input' },
-    { id: 'line-11', text: '11 Ready for input' },
-    { id: 'line-12', text: '12 Ready for input' },
-    { id: 'line-13', text: '13 Ready for input' },
-    { id: 'line-14', text: '14 Ready for input' },
-    { id: 'line-15', text: '15 Ready for input' },
-    { id: 'line-16', text: '16 Ready for input' },
-    { id: 'line-17', text: '17 Ready for input' },
-    { id: 'line-18', text: '18 Ready for input' },
-    { id: 'line-19', text: '19 Ready for input' },
-    { id: 'line-20', text: '20 Ready for input' },
-    { id: 'line-21', text: '21 Ready for input' },
-    { id: 'line-22', text: '22 Ready for input' },
-    { id: 'line-23', text: '23 Ready for input' },
-    { id: 'line-24', text: '24 Ready for input' },
-    { id: 'line-25', text: '25 Ready for input' },
-    { id: 'line-26', text: '26 Ready for input' },
-    { id: 'line-27', text: '27 Ready for input' },
-    { id: 'line-28', text: '28 Ready for input' },
-    { id: 'line-29', text: '29 Ready for input' },
-    { id: 'line-30', text: '30 Ready for input' },
-    { id: 'line-31', text: '31 Ready for input' },
-    { id: 'line-32', text: '32 Ready for input' },
-    { id: 'line-33', text: '33 Ready for input' },
-    { id: 'line-34', text: '34 Ready for input' },
-    { id: 'line-35', text: '35 Ready for input' },
-    { id: 'line-36', text: '36 Ready for input' },
-    { id: 'line-37', text: '37 Ready for input' },
-    { id: 'line-38', text: '38 Ready for input' },
-    { id: 'line-39', text: '39 Ready for input' },
-    { id: 'line-40', text: '40 Ready for input' },
-    { id: 'line-41', text: '41 Ready for input' },
-    { id: 'line-42', text: '42 Ready for input' },
-    { id: 'line-43', text: '43 Ready for input' },
-    { id: 'line-44', text: '44 Ready for input' },
-    { id: 'line-45', text: '45 Ready for input' },
-    { id: 'line-46', text: '46 Ready for input' },
-    { id: 'line-47', text: '47 Ready for input' },
-    { id: 'line-48', text: '48 Ready for input' },
-    { id: 'line-49', text: '49 Ready for input' },
-  ];
-
-  //@ts-ignore
+  const [terminalLines, setTerminalLines] = useState<string[]>([]);
+  
+  // 使用打字机 hook
   const { displayText, isTyping } = useTypewriter({
-    text: currentLineIndex < terminalLines.length ? terminalLines[currentLineIndex].text : '',
-    speed: 30,
+    text: terminalLines[currentLineIndex] || '',
+    speed: 20,
     onComplete: () => {
-      if (currentLineIndex < terminalLines.length) {
-        setLines(prev => [...prev, {
-          id: `${terminalLines[currentLineIndex].id}-${Date.now()}`,
-          text: terminalLines[currentLineIndex].text
-        }]);
+      if (currentLineIndex < terminalLines.length - 1) {
         setCurrentLineIndex(prev => prev + 1);
       }
     }
   });
 
+  // 当日志更新时更新终端行
+  useEffect(() => {
+    if (logs.length > 0) {
+      setTerminalLines(logs.map(log => log.text));
+      if (currentLineIndex >= logs.length) {
+        setCurrentLineIndex(logs.length - 1);
+      }
+    }
+  }, [logs]);
+
+  // 处理 Pusher 状态变化
+  const handleStateChange = useCallback((states: { current: string }) => {
+    console.debug('[PUSHER] state change', states);
+    dispatch(setLiveStatus(states?.current === 'connected'));
+  }, [dispatch]);
+
+  // 初始化 Pusher 和获取历史日志
+  useEffect(() => {
+    // 获取历史日志
+    dispatch(fetchTerminalLogs({
+      channel: PUSHER_CONFIG.CHANNEL,
+      event: PUSHER_CONFIG.EVENT
+    }));
+
+    // 初始化 Pusher
+    const pusher = new Pusher(PUSHER_CONFIG.APP_KEY, {
+      cluster: PUSHER_CONFIG.CLUSTER
+    });
+
+    // 绑定状态变化
+    pusher.connection.bind('state_change', handleStateChange);
+
+    // 订阅频道和事件
+    const channel = pusher.subscribe(PUSHER_CONFIG.CHANNEL);
+    channel.bind(PUSHER_CONFIG.EVENT, (data: string) => {
+      dispatch(addLog(data));
+    });
+
+    // 清理函数
+    return () => {
+      pusher.connection.unbind('state_change', handleStateChange);
+      channel.unbind(PUSHER_CONFIG.EVENT);
+      pusher.unsubscribe(PUSHER_CONFIG.CHANNEL);
+      pusher.disconnect();
+    };
+  }, [dispatch, handleStateChange]);
+
+  // 自动滚动到底部
   useEffect(() => {
     const element = document.getElementById('terminal-output');
     if (element) {
       element.scrollTop = element.scrollHeight;
     }
-  }, [lines, displayText]);
+  }, [logs]);
 
   return (
     <TerminalContainer>
       <BackgroundImage src={terminalBg} alt="" />
       <TerminalOutput id="terminal-output">
-        {lines.map(line => (
-          <div key={line.id}>{line.text}<br /></div>
-        ))}
-        {currentLineIndex < terminalLines.length && (
-          <div key={`typing-${currentLineIndex}`}>{displayText}</div>
+        {isLoading ? (
+          <div>Loading logs...</div>
+        ) : error ? (
+          <div style={{ color: '#FF4444' }}>{error}</div>
+        ) : (
+          <>
+            {/* 显示已完成的行 */}
+            {terminalLines.slice(0, currentLineIndex).map((line, index) => (
+              <div key={`complete-${index}`}>
+                {line}
+                <br />
+              </div>
+            ))}
+            {/* 显示当前正在打字的行 */}
+            {currentLineIndex < terminalLines.length && (
+              <div key={`typing-${currentLineIndex}`}>
+                {displayText}
+              </div>
+            )}
+          </>
         )}
       </TerminalOutput>
     </TerminalContainer>
