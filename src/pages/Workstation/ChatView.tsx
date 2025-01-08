@@ -30,7 +30,7 @@ const ChatWindowWrapper = styled(Box)({
   overflow: 'hidden'
 });
 
-const BackgroundImage = styled('img')({
+/* const BackgroundImage = styled('img')({
   position: 'absolute',
   bottom: 24,
   left: '50%',
@@ -44,7 +44,7 @@ const BackgroundImage = styled('img')({
     height: '1712px',   // 在超过原始设计高度时使用原始高度
   },
   zIndex: 3,
-});
+}); */
 
 export default function ChatView() {
   return (

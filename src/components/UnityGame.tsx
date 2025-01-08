@@ -131,6 +131,7 @@ export default function UnityGame() {
     }
   };
 
+  // @ts-ignore
   const UnityStartCallback = (instance: any) => {
     setLoading(false);
     if (loadingBarRef.current) loadingBarRef.current.style.opacity = '0';

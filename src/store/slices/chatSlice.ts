@@ -98,6 +98,7 @@ const convertNumberToWords = (text: string): string => {
   }
 
   // 首先处理序号格式 (例如: "1.", "2.")
+  // @ts-ignore
   text = text.replace(/(\d+)\.\s/g, (match, num) => {
     return ordinalWords[num] ? `${ordinalWords[num]}, ` : `number ${num}, `
   })
