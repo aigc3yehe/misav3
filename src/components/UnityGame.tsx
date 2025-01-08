@@ -1,5 +1,18 @@
 import { useEffect, useRef, useState } from 'react';
 import { styled } from '@mui/material';
+import { Box } from '@mui/material';
+import Lottie from 'lottie-react';
+import loadingAnimation from '../assets/loading.json';
+
+// 添加 Loading 容器样式
+const LoadingContainer = styled(Box)({
+    position: 'absolute',
+    top: '25%',
+    left: '50%',
+    transform: 'translate(-50%, -50%)',
+    width: 128,
+    height: 128,
+  });
 
 // 样式定义
 const UnityWrapper = styled('div')({
@@ -7,27 +20,6 @@ const UnityWrapper = styled('div')({
   height: '100%',
   position: 'relative',
   overflow: 'hidden',
-  background: '#FBF7F1',
-  '&::before': {
-    content: '""',
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    width: '100%',
-    height: '100%',
-    /* backgroundImage: 'url("/assets/icons/bg.svg")',
-    backgroundRepeat: 'repeat',
-    backgroundPosition: 'top center',
-    backgroundSize: 'contain', */
-    backgroundColor: '#FBF7F1',
-    opacity: 1,
-    zIndex: 1,
-    transition: 'opacity 0.3s ease',
-    pointerEvents: 'none',
-  },
-  '&.loading-complete::before': {
-    opacity: 0,
-  }
 });
 
 const UnityContainer = styled('div')({
@@ -43,40 +35,6 @@ const UnityCanvas = styled('canvas')({
   opacity: 0,
   imageRendering: '-webkit-optimize-contrast',
   WebkitFontSmoothing: 'antialiased',
-});
-
-const LoadingBar = styled('div')({
-  position: 'absolute',
-  left: '50%',
-  top: 'calc(50% - max(27vh, 231px))',
-  transform: 'translate(-50%, -50%)',
-  width: '240px',
-  height: '4px',
-  backgroundColor: 'rgba(255, 255, 255, 0.4)',
-  border: '1px solid var(--brand-primary)',
-  borderRadius: '2px',
-  zIndex: 10,
-});
-
-const ProgressBar = styled('div')({
-  position: 'absolute',
-  left: 0,
-  top: 0,
-  height: '100%',
-  backgroundColor: 'var(--brand-primary)',
-  borderRadius: '1px',
-  transition: 'width 400ms ease-out',
-});
-
-const LoadingText = styled('p')({
-  position: 'absolute',
-  width: '100%',
-  top: '10px',
-  textAlign: 'center',
-  fontFamily: "'04b03', monospace",
-  fontSize: '14px',
-  color: 'var(--brand-primary)',
-  textShadow: '0 0 2px rgba(251, 89, 245, 0.3)',
 });
 
 const UnityWarning = styled('div')({
@@ -103,7 +61,6 @@ export default function UnityGame() {
   const loadingBarRef = useRef<HTMLDivElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(true);
-  const [loadingProgress, setLoadingProgress] = useState(0);
 
   const unityShowBanner = (msg: string, type: 'error' | 'warning') => {
     const warningBanner = document.querySelector("#unity-warning");
@@ -190,7 +147,8 @@ export default function UnityGame() {
       window.createUnityInstance(canvasRef.current, config, (progress: number) => {
         progress += 0.7;
         progress = Math.min(1, Math.max(0, progress));
-        setLoadingProgress(progress * 100);
+        //setLoadingProgress(progress * 100);
+        console.log('progress', progress);
       }).then((unityInstance: any) => {
         window.unityInstance = unityInstance;
         UnityStartCallback(unityInstance);
@@ -214,12 +172,13 @@ export default function UnityGame() {
     <UnityWrapper ref={wrapperRef}>
       <UnityContainer id="unity-container">
         {loading && (
-          <LoadingBar ref={loadingBarRef}>
-            <ProgressBar style={{ width: `${loadingProgress}%` }} />
-            <LoadingText>
-              Loading: {loadingProgress.toFixed(2)}%
-            </LoadingText>
-          </LoadingBar>
+          <LoadingContainer>
+            <Lottie 
+              animationData={loadingAnimation}
+              loop={true}
+              autoplay={true}
+            />
+          </LoadingContainer>
         )}
         <UnityCanvas id="unity-canvas" ref={canvasRef} />
         <UnityWarning id="unity-warning" />

@@ -1,4 +1,4 @@
-import { createBrowserRouter } from 'react-router-dom';
+import { createBrowserRouter, Navigate } from 'react-router-dom';
 import MainLayout from '../layouts/MainLayout';
 import Workstation from '../pages/Workstation';
 import Models from '../pages/Models';
@@ -15,6 +15,10 @@ export const router = createBrowserRouter([
     path: '/',
     element: <MainLayout />,
     children: [
+      {
+        path: '/',
+        element: <Navigate to="/workstation" replace />,
+      },
       {
         path: '/workstation',
         element: <Workstation />,
