@@ -1,25 +1,17 @@
-import { Box, Typography, styled } from '@mui/material';
+import { Box, styled } from '@mui/material';
+import UnityVoiceCall from '../components/UnityVoiceCall';
 
 const PageContainer = styled(Box)({
-  padding: '40px',
+  width: '100%',
   height: '100%',
-});
-
-const Title = styled(Typography)({
-  fontSize: '22px',
-  fontWeight: 800,
-  lineHeight: '100%',
-  color: '#FFFFFF',
-  marginBottom: '20px',
+  position: 'relative',
+  overflow: 'hidden',
 });
 
 export default function VoiceCall() {
   return (
     <PageContainer>
-      <Title>Voice Call</Title>
-      <Typography color="white">
-        Voice Call feature coming soon...
-      </Typography>
+      <UnityVoiceCall />
     </PageContainer>
   );
 } 

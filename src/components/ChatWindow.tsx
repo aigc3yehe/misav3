@@ -291,6 +291,7 @@ export default function ChatWindow({ agentName }: ChatWindowProps) {
   const connectionState = useSelector((state: RootState) => state.chat.connectionState);
   const queuePosition = useSelector((state: RootState) => state.chat.queuePosition);
   const chatMessages = useSelector((state: RootState) => state.chat.messages);
+  const collectionName = useSelector((state: RootState) => state.chat.collectionName);
   const [message, setMessage] = useState('');
   const isRequesting = useSelector((state: RootState) => state.chat.isRequesting);
   const processingState = useSelector((state: RootState) => state.chat.processingState);
@@ -674,10 +675,12 @@ export default function ChatWindow({ agentName }: ChatWindowProps) {
       <TitleBar>
         <TitleSection>
           <AgentName>{agentName}</AgentName>
-          <CollectionTag>
-            <CollectionText>Collection</CollectionText>
-            <FrensText>Misato Frens</FrensText>
-          </CollectionTag>
+          {collectionName && (
+            <CollectionTag>
+              <CollectionText>Collection</CollectionText>
+              <FrensText>{collectionName}</FrensText>
+            </CollectionTag>
+          )}
         </TitleSection>
         <ToggleButton 
           src={isExpanded ? msgDown : msgUp} 

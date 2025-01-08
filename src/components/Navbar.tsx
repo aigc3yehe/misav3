@@ -244,7 +244,7 @@ export default function Navbar({ sidebarOpen }: NavbarProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const isWorkstation = location.pathname === '/app/workstation';
+  const isWorkstation = location.pathname === '/workstation';
   const mode = searchParams.get('mode') || 'chat';
 
   // 从 wallets 中找到当前钱包的图标

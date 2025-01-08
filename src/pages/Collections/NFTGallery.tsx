@@ -1,4 +1,4 @@
-import { Box, IconButton, Typography, styled, CircularProgress, Checkbox } from '@mui/material';
+import { Box, IconButton, Typography, styled, Checkbox } from '@mui/material';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { Collection } from '../../store/slices/collectionSlice';
@@ -9,10 +9,13 @@ import NFTCard from '../../components/NFTCard';
 import backIcon from '../../assets/back.svg';
 import Grid from '../../components/Grid';
 import copyNFTAddressIcon from '../../assets/copy_nft_address.svg';
+import copySuccessIcon from '../../assets/copy_success.svg';
 import nftMeIcon from '../../assets/nft_me.svg';
 import pointingCursor from '../../assets/pointer.png';
 import { useAccount } from 'wagmi';
 import { showToast } from '../../store/slices/toastSlice';
+import Lottie from 'lottie-react';
+import loadingAnimation from '../../assets/loading.json';
 
 const CARD_WIDTH = 212;
 const CARD_HEIGHT = 212;
@@ -115,7 +118,7 @@ const NftIconButton = styled(Box)({
 const OwnedCheckbox = styled(Checkbox)({
   color: '#FFFFFF',
   '&.Mui-checked': {
-    color: '#D6C0FF',
+    color: '#C7FF8C',
   },
 });
 
@@ -138,11 +141,14 @@ const Description = styled(Typography)({
   color: '#D6C0FF',
 });
 
-const LoadingWrapper = styled(Box)({
-  display: 'flex',
-  justifyContent: 'center',
-  alignItems: 'center',
-  height: '80px',
+// 添加 Loading 容器样式
+const LoadingContainer = styled(Box)({
+  position: 'absolute',
+  top: '50%',
+  left: '50%',
+  transform: 'translate(-50%, -50%)',
+  width: 128,
+  height: 128,
 });
 
 export default function NFTGallery() {
@@ -155,6 +161,7 @@ export default function NFTGallery() {
   const [containerPadding, setContainerPadding] = useState(MIN_PADDING);
   const [containerWidth, setContainerWidth] = useState(0);
   const [isOwned, setIsOwned] = useState(false);
+  const [isCopied, setIsCopied] = useState(false);
   const { address, isConnected } = useAccount();
 
   // 计算布局
@@ -189,17 +196,25 @@ export default function NFTGallery() {
     return () => {
       dispatch(clearNFTs());
     };
-  }, [collection]);
+  }, [collection, isOwned]);
 
   const handleBack = () => {
     navigate(-1);
   };
 
   const handleRefresh = async () => {
+    console.log('handleRefresh', isRefreshing);
     if (isRefreshing) return;
     setIsRefreshing(true);
     try {
-      await dispatch(fetchNFTs(collection.contract));
+      if (isOwned && isConnected && address) {
+        await dispatch(fetchOwnedNFTs({ 
+          ownerAddress: address, 
+          contractAddress: collection.contract 
+        }));
+      } else {
+        await dispatch(fetchNFTs(collection.contract));
+      }
     } finally {
       setTimeout(() => {
         setIsRefreshing(false);
@@ -207,7 +222,7 @@ export default function NFTGallery() {
     }
   };
 
-  const handleOwnedChange = async () => {
+  const handleOwnedChange = () => {
     if (!isConnected || !address) {
       dispatch(showToast({
         message: 'Please connect your wallet first',
@@ -216,14 +231,7 @@ export default function NFTGallery() {
       return;
     }
 
-    const newValue = !isOwned;
-    setIsOwned(newValue);
-    
-    if (newValue) {
-      dispatch(fetchOwnedNFTs({ ownerAddress: address, contractAddress: collection.contract }));
-    } else {
-      dispatch(fetchNFTs(collection.contract));
-    }
+    setIsOwned(!isOwned);
   };
 
   const handleNFTMeClick = () => {
@@ -233,6 +241,7 @@ export default function NFTGallery() {
   const handleCopyAddress = async () => {
     try {
       await navigator.clipboard.writeText(collection.contract);
+      setIsCopied(true);
       dispatch(showToast({
         message: 'Copy success',
         severity: 'success'
@@ -264,16 +273,15 @@ export default function NFTGallery() {
           <LeftSection>
             <CollectionName>{collection.name}</CollectionName>
             <NftIconButton onClick={handleCopyAddress}>
-              <img src={copyNFTAddressIcon} alt="Copy NFT Address" />
+              <img src={isCopied ? copySuccessIcon : copyNFTAddressIcon} alt="Copy NFT Address" />
             </NftIconButton>
             <NftIconButton onClick={handleNFTMeClick}>
               <img src={nftMeIcon} alt="NFT Me" />
             </NftIconButton>
           </LeftSection>
-          <OwnedLabel>
+          <OwnedLabel onClick={handleOwnedChange}>
             <OwnedCheckbox
               checked={isOwned}
-              onChange={handleOwnedChange}
               size="small"
             />
             <Typography>Owned</Typography>
@@ -303,9 +311,13 @@ export default function NFTGallery() {
       )}
 
       {isRefreshing ? (
-        <LoadingWrapper>
-          <CircularProgress size={24} sx={{ color: '#C7FF8C' }} />
-        </LoadingWrapper>
+        <LoadingContainer>
+          <Lottie 
+              animationData={loadingAnimation}
+              loop={true}
+              autoplay={true}
+            />
+        </LoadingContainer>
       ) : (
         <Box sx={{ marginTop: '40px' }} />
       )}

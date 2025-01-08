@@ -4,53 +4,53 @@ import Workstation from '../pages/Workstation';
 import Models from '../pages/Models';
 import ModelDetail from '../pages/ModelDetail';
 import Gallery from '../pages/Gallery';
-import LandingPage from '../pages/LandingPage';
 import Collections from '../pages/Collections';
 import NFTGallery from '../pages/Collections/NFTGallery';
 import VoiceCall from '../pages/VoiceCall';
 import VisualizeX from '../pages/VisualizeX';
+import NotFound from '../pages/NotFound';
 
 export const router = createBrowserRouter([
   {
     path: '/',
-    element: <LandingPage />,
-  },
-  {
-    path: '/app',
     element: <MainLayout />,
     children: [
       {
-        path: '/app/workstation',
+        path: '/workstation',
         element: <Workstation />,
       },
       {
-        path: '/app/models',
+        path: '/models',
         element: <Models />,
       },
       {
-        path: '/app/models/:id',
+        path: '/models/:id',
         element: <ModelDetail />,
       },
       {
-        path: '/app/collections',
+        path: '/collections',
         element: <Collections />,
       },
       {
-        path: '/app/collections/:id/nfts',
+        path: '/collections/:id/nfts',
         element: <NFTGallery />,
       },
       {
-        path: '/app/gallery',
+        path: '/gallery',
         element: <Gallery />,
       },
       {
-        path: '/app/voice_call',
+        path: '/voice_call',
         element: <VoiceCall />,
       },
       {
-        path: '/app/visualize_x',
+        path: '/visualize_x',
         element: <VisualizeX />,
       },
     ],
+  },
+  {
+    path: '*',
+    element: <NotFound />,
   },
 ]); 

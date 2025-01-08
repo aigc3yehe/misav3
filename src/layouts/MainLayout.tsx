@@ -18,13 +18,13 @@ const LayoutRoot = styled('div')(({ theme }) => ({
   backgroundColor: theme.palette.background.default
 }));
 
-const LayoutWrapper = styled('div')<{ sidebarOpen: boolean, isWorkstation: boolean }>(({ sidebarOpen, isWorkstation }) => ({
+const LayoutWrapper = styled('div')<{ sidebarOpen: boolean, isFullscreen: boolean }>(({ sidebarOpen, isFullscreen }) => ({
   position: 'fixed',
   top: 0,
   left: 0,
   right: 0,
   bottom: 0,
-  paddingTop: isWorkstation ? 0 : 84,
+  paddingTop: isFullscreen ? 0 : 84,
   paddingLeft: sidebarOpen ? 250 : 0,
   transition: 'padding-left 0.3s ease-in-out',
   overflow: 'auto',
@@ -34,7 +34,7 @@ export default function MainLayout() {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const currentAgent = useSelector((state: RootState) => state.agent.currentAgent);
-  const isWorkstation = location.pathname === '/app/workstation';
+  const isFullscreen = location.pathname === '/workstation' || location.pathname === '/voice_call';
   const dispatch = useDispatch();
   const toast = useSelector((state: RootState) => state.toast);
 
@@ -68,7 +68,7 @@ export default function MainLayout() {
         open={sidebarOpen}
         onClose={handleToggleSidebar}
       />
-      <LayoutWrapper sidebarOpen={sidebarOpen} isWorkstation={isWorkstation}>
+      <LayoutWrapper sidebarOpen={sidebarOpen} isFullscreen={isFullscreen}>
         <Box sx={{ 
           width: '100%',
           height: '100%',

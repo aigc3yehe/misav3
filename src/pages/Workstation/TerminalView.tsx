@@ -103,13 +103,14 @@ const PUSHER_CONFIG = {
 export default function TerminalView() {
   const dispatch = useDispatch<AppDispatch>();
   const logs = useSelector(selectTerminalLogs);
-  const { isLoading, error, isLive } = useSelector(selectTerminalStatus);
+  const { isLoading, error } = useSelector(selectTerminalStatus);
 
   // 添加打字机效果相关状态
   const [currentLineIndex, setCurrentLineIndex] = useState(0);
   const [terminalLines, setTerminalLines] = useState<string[]>([]);
   
   // 使用打字机 hook
+  // @ts-ignore
   const { displayText, isTyping } = useTypewriter({
     text: terminalLines[currentLineIndex] || '',
     speed: 20,

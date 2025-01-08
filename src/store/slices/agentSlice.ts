@@ -12,7 +12,12 @@ interface AgentState {
 }
 
 const initialState: AgentState = {
-  currentAgent: null,
+  currentAgent: {
+    id: 'misato',
+    name: '$MISATO',
+    avatar: '/misato.jpg',
+    address: '0xabcdef1234567890abcdef1234567890abcdef12',
+  },
 };
 
 const agentSlice = createSlice({

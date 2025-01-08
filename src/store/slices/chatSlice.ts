@@ -31,6 +31,7 @@ interface ChatState {
   wasActive: boolean;                     // 是否曾经活跃
   lastActivityTime: number;               // 最后活动时间
   error?: string | null;                  // 错误信息
+  collectionName?: string | null;         // 收藏集名称
 }
 
 // 初始欢迎消息
@@ -210,7 +211,8 @@ export const sendMessage = createAsyncThunk(
           user_uuid: userUuid || 'anonymous',
           wallet_address: walletAddress || '',
           request_id: state.chat.currentRequestId,
-          pay_fee_hash: payFeeHash
+          pay_fee_hash: payFeeHash,
+          collection: state.chat.collectionName
         })
       });
 
@@ -296,6 +298,11 @@ export const sendMessage = createAsyncThunk(
         dispatch(setProcessingState('generating'))
         // 如果是图片生成请求，开始轮询状态
         dispatch(pollImageStatus(data.request_id))
+      }
+
+      // 如果是收藏集请求，添加收藏集名称
+      if (data.collection) {
+        dispatch(setCollectionName(data.collection))
       }
 
       // 将 AI 回复分段发送到 Unity
@@ -583,6 +590,10 @@ const chatSlice = createSlice({
     },
     clearMessages: (state) => {
       state.messages = [];
+      state.collectionName = null;
+    },
+    setCollectionName: (state, action: PayloadAction<string | null>) => {
+      state.collectionName = action.payload;
     },
     removeMessage: (state, action: PayloadAction<number>) => {
       state.messages = state.messages.filter(m => m.id !== action.payload);
@@ -616,6 +627,7 @@ const chatSlice = createSlice({
     },
     resetMessages: (state) => {
       state.messages = [...initialMessages];
+      state.collectionName = null;
     },
   },
   extraReducers: (builder) => {
@@ -734,6 +746,7 @@ export const {
   removeMessage,
   removeLastMessage,
   setProcessingState,
+  setCollectionName,
   setCurrentRequestId,
   setIsRequesting,
   setConnectionState,

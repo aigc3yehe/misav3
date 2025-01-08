@@ -367,7 +367,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
   const getNavigationItems = () => {
     const baseItems = [
       { 
-        path: '/app/workstation', 
+        path: '/workstation', 
         label: 'Workstation', 
         icon: {
           normal: livingroomNormal,
@@ -380,7 +380,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
       // misato 特定的导航项
       baseItems.push(
         { 
-          path: '/app/collections', 
+          path: '/collections', 
           label: 'Collections', 
           icon: {
             normal: modelsNormal,
@@ -388,7 +388,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
           }
         },
         {
-          path: '/app/voice_call',
+          path: '/voice_call',
           label: 'Voice Call',
           icon: {
             normal: callNormal,
@@ -396,7 +396,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
           }
         },
         {
-          path: '/app/visualize_x',
+          path: '/visualize_x',
           label: 'Visualize X',
           icon: {
             normal: visualizeXNormal,
@@ -408,7 +408,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
       // 其他 agent 的导航项
       baseItems.push(
         { 
-          path: '/app/models', 
+          path: '/models', 
           label: 'Models', 
           icon: {
             normal: modelsNormal,
@@ -416,7 +416,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
           }
         },
         { 
-          path: '/app/gallery', 
+          path: '/gallery', 
           label: 'Gallery', 
           icon: {
             normal: galleryNormal,
@@ -434,7 +434,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
     if (currentAgent?.id === 'misato') {
       return [
         {
-          path: '/app/my-nfts',
+          path: '/my-nfts',
           label: 'My NFTs',
           icon: {
             normal: galleryNormal,
@@ -446,7 +446,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
     
     return [
       {
-        path: '/app/my-models',
+        path: '/my-models',
         label: 'My Models',
         icon: {
           normal: modelsNormal,
@@ -454,7 +454,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
         }
       },
       {
-        path: '/app/my-nfts',
+        path: '/my-nfts',
         label: 'My NFTs',
         icon: {
           normal: galleryNormal,
@@ -546,7 +546,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
   const handleAgentChange = (agent: typeof availableAgents[0]) => {
     dispatch(setCurrentAgent(agent));
     handleAgentMenuClose();
-    navigate('/app/workstation');
+    navigate('/workstation');
   };
 
   return (

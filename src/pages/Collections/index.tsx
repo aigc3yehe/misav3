@@ -7,6 +7,8 @@ import SubtractBg from '../../assets/Subtract.svg';
 import MiniNFTIcon from '../../assets/mini_nft.svg';
 import pointingCursor from '../../assets/pointer.png';
 import { useNavigate } from 'react-router-dom';
+import Lottie from 'lottie-react';
+import loadingAnimation from '../../assets/loading.json';
 
 const CARD_WIDTH = 268;
 const CARD_GAP = 12;
@@ -102,9 +104,26 @@ const NFTIcon = styled('img')({
   height: '20px',
 });
 
+const LoadingWrapper = styled('div')({
+  width: '100%',
+  height: '100%',
+  position: 'relative',
+  overflow: 'hidden',
+});
+
+// 添加 Loading 容器样式
+const LoadingContainer = styled(Box)({
+  position: 'absolute',
+  top: '50%',
+  left: '50%',
+  transform: 'translate(-50%, -50%)',
+  width: 128,
+  height: 128,
+});
+
 export default function Collections() {
   const dispatch = useDispatch<AppDispatch>();
-  const { collections } = useSelector((state: RootState) => state.collection);
+  const { collections, isLoading } = useSelector((state: RootState) => state.collection);
   const [containerPadding, setContainerPadding] = useState(MIN_PADDING);
   const navigate = useNavigate();
 
@@ -155,10 +174,26 @@ export default function Collections() {
   }, [dispatch]);
 
   const handleCollectionClick = (collection: Collection) => {
-    navigate(`/app/collections/${collection.id}/nfts`, { 
+    navigate(`/collections/${collection.id}/nfts`, { 
       state: { collection } 
     });
   };
+
+  if (isLoading) {
+    return (
+      <PageContainer id="collectionsContainer" padding={containerPadding}>
+        <LoadingWrapper>
+          <LoadingContainer>
+            <Lottie 
+              animationData={loadingAnimation}
+              loop={true}
+              autoplay={true}
+            />
+          </LoadingContainer>
+        </LoadingWrapper>
+      </PageContainer>
+    );
+  }
 
   return (
     <PageContainer id="collectionsContainer" padding={containerPadding}>
