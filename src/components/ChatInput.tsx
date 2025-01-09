@@ -8,16 +8,22 @@ import { useState, KeyboardEvent } from 'react';
 
 const OuterContainer = styled('div', {
   shouldForwardProp: (prop) => !['focused', 'disabled'].includes(prop as string)
-})<{ focused?: boolean; disabled?: boolean }>(({ focused, disabled }) => ({
+})<{ focused?: boolean; disabled?: boolean }>(({ theme, focused, disabled }) => ({
   padding: 6,
   borderRadius: 36,
   background: focused ? 'rgba(34, 17, 110, 0.5)' : 'transparent',
   transition: 'background-color 0.2s ease',
   cursor: disabled ? `url(${disablePointer}), not-allowed` : 'default',
   position: 'relative',
+
+  [theme.breakpoints.down('sm')]: {
+    width: '100%',
+    padding: 2,
+    borderRadius: 27,
+  },
 }));
 
-const InputContainer = styled('div')<{ disabled?: boolean }>(({ disabled }) => ({
+const InputContainer = styled('div')<{ disabled?: boolean }>(({ theme, disabled }) => ({
   width: 655,
   height: 50,
   padding: '0 30px',
@@ -27,9 +33,16 @@ const InputContainer = styled('div')<{ disabled?: boolean }>(({ disabled }) => (
   gap: '5px',
   backgroundColor: '#FFFFFF',
   cursor: disabled ? 'not-allowed' : 'default',
+
+  [theme.breakpoints.down('sm')]: {
+    width: '100%',
+    height: '40px',
+    padding: '0 20px',
+    borderRadius: 25,
+  },
 }));
 
-const StyledInput = styled(InputBase)(({ disabled }) => ({
+const StyledInput = styled(InputBase)(({ theme, disabled }) => ({
   flex: 1,
   '& .MuiInputBase-input': {
     fontSize: 14,
@@ -39,6 +52,9 @@ const StyledInput = styled(InputBase)(({ disabled }) => ({
       color: '#636071',
       opacity: 1,
     },
+  },
+  [theme.breakpoints.down('sm')]: {
+    fontSize: 12,
   },
 }));
 

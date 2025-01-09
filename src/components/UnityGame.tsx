@@ -3,6 +3,7 @@ import { styled } from '@mui/material';
 import { Box } from '@mui/material';
 import Lottie from 'lottie-react';
 import loadingAnimation from '../assets/loading.json';
+import { useTheme, useMediaQuery } from '@mui/material';
 
 // 添加 Loading 容器样式
 const LoadingContainer = styled(Box)({
@@ -62,6 +63,8 @@ export default function UnityGame() {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(true);
   const hasLoadedRef = useRef(false);
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   const unityShowBanner = (msg: string, type: 'error' | 'warning') => {
     const warningBanner = document.querySelector("#unity-warning");
@@ -98,7 +101,10 @@ export default function UnityGame() {
       wrapperRef.current.classList.add('loading-complete');
     }
 
-    const mobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    let mobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    if (isMobile) {
+      mobile = true;
+    }
     window.unityInstance.SendMessage('PlatformSystem', 'NotificationPlatform', mobile ? "0" : "1");
   };
 

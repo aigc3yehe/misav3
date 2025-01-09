@@ -20,7 +20,7 @@ const WINDOW_HEIGHT = 1180;    // 原始窗口高度
 
 const WindowContainer = styled(Box, {
   shouldForwardProp: (prop) => prop !== 'isExpanded'
-})<{ isExpanded: boolean }>(({ isExpanded }) => ({
+})<{ isExpanded: boolean }>(({ theme, isExpanded }) => ({
   width: 722,
   height: isExpanded ? `calc(${WINDOW_HEIGHT}px * min(1, ${window.innerHeight}/${ORIGINAL_HEIGHT}))` : 70,
   padding: 20,
@@ -31,6 +31,13 @@ const WindowContainer = styled(Box, {
   backgroundColor: 'rgba(0, 0, 0, 0.5)',
   transition: 'all 0.3s ease',
   overflow: 'hidden',
+
+  [theme.breakpoints.down('sm')]: {
+    width: '100%',
+    padding: '10px 12px',
+    // 添加底部安全距离（适配不同机型的底部区域）
+    paddingBottom: 'calc(10px + env(safe-area-inset-bottom))',
+  },
 }));
 
 const TitleBar = styled(Box)({
@@ -85,7 +92,7 @@ const ToggleButton = styled('img')({
   cursor: 'pointer',
 });
 
-const MessageList = styled(Box)({
+const MessageList = styled(Box)(({ theme }) => ({
   width: '100%',
   flex: 1,
   padding: '30px 24px',
@@ -96,7 +103,11 @@ const MessageList = styled(Box)({
   display: 'flex',
   flexDirection: 'column',
   gap: 20,
-});
+  [theme.breakpoints.down('sm')]: {
+    padding: '20px 14px',
+    gap: 14,
+  },
+}));
 
 const InputContainer = styled(Box)({
     width: '100%',

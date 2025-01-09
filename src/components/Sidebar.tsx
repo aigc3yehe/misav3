@@ -415,14 +415,14 @@ export default function Sidebar({ open, onClose, isMobile }: SidebarProps) {
             selected: callSelected
           }
         },
-        {
+        /* {
           path: '/visualize_x',
           label: 'Visualize X',
           icon: {
             normal: visualizeXNormal,
             selected: visualizeXSelected
           }
-        }
+        } */
       );
     } else {
       // 其他 agent 的导航项

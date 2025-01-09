@@ -1,11 +1,15 @@
-import { Box, Button, styled } from '@mui/material';
+import { Box, Button, styled, useTheme, useMediaQuery } from '@mui/material';
 import MDRenderer from '../shared/MDRenderer';
 
-const BubbleContainer = styled(Box)({
+const BubbleContainer = styled(Box)(({ theme }) => ({
   width: '100%',
   display: 'flex',
   gap: 9,
-});
+
+  [theme.breakpoints.down('sm')]: {
+    gap: 4,
+  },
+}));
 
 const AgentAvatar = styled(Box)({
   width: 34,
@@ -22,7 +26,7 @@ const AgentAvatar = styled(Box)({
 
 const MessageContent = styled(Box, {
   shouldForwardProp: (prop) => prop !== 'isUser'
-})<{ isUser?: boolean }>(({ isUser }) => ({
+})<{ isUser?: boolean }>(({ theme, isUser }) => ({
   padding: '15px 20px',
   backgroundColor: isUser ? '#FAE6B6' : '#E1D4FE',
   borderRadius: isUser ? '17px 17px 4px 17px' : '4px 17px 17px 17px',
@@ -30,6 +34,12 @@ const MessageContent = styled(Box, {
   flexDirection: 'column',
   gap: 7,
   maxWidth: '80%',
+
+  [theme.breakpoints.down('sm')]: {
+    padding: '10px 12px',
+    gap: 4,
+    maxWidth: '100%',
+  },
 }));
 
 const ActionButtons = styled(Box)({
@@ -70,9 +80,12 @@ export default function MessageBubble({
   avatar, 
   actions 
 }: MessageBubbleProps) {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
   return (
     <BubbleContainer sx={{ justifyContent: isUser ? 'flex-end' : 'flex-start' }}>
-      {!isUser && (
+      {!isUser && !isMobile && (
         <AgentAvatar>
           <img src={avatar || '/misato.jpg'} alt="Agent" />
         </AgentAvatar>

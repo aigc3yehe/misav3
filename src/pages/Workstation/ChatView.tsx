@@ -21,20 +21,27 @@ const UnityContainer = styled(Box)({
   pointerEvents: 'auto'
 });
 
-const ChatWindowWrapper = styled(Box)({
+const ChatWindowWrapper = styled(Box)(({ theme }) => ({
   position: 'absolute',
   bottom: 0,
   left: '50%',
   transform: 'translateX(-50%)',
   zIndex: 4,
-  overflow: 'hidden'
-});
+  overflow: 'hidden',
+
+  [theme.breakpoints.down('sm')]: {
+    left: 0,
+    right: 0,
+    transform: 'none',
+    width: '100%',
+  },
+}));
 
 export default function ChatView() {
   return (
     <ViewContainer>
       <UnityContainer>
-        {/* <UnityGame /> */}
+        <UnityGame />
       </UnityContainer>
       <ChatWindowWrapper>
         <ChatWindow agentName="MISATO" />
