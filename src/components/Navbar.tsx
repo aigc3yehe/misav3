@@ -233,7 +233,7 @@ function formatAddress(address: string | undefined) {
 }
 
 export default function Navbar({ sidebarOpen }: NavbarProps) {
-  const { login, logout, authenticated } = usePrivy();
+  const { login, logout, authenticated, user, linkWallet } = usePrivy();
   const { address, isConnected } = useAccount();
   const { wallets } = useWalletManager();
   const dispatch = useDispatch<AppDispatch>();
@@ -249,7 +249,6 @@ export default function Navbar({ sidebarOpen }: NavbarProps) {
 
   // 从 wallets 中找到当前钱包的图标
   const currentWallet = wallets.find(w => w.address === address);
-  const walletIcon = currentWallet?.icon || '/assets/avatar.png';
 
   const handleClick = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
@@ -282,6 +281,26 @@ export default function Navbar({ sidebarOpen }: NavbarProps) {
       }));
     } catch (error) {
       console.error('Logout failed:', error);
+      dispatch(showToast({
+        message: 'Logout failed',
+        severity: 'error'
+      }));
+    }
+  };
+
+  const handleSwitchWallet = async () => {
+    try {
+      if (authenticated && user) {
+        linkWallet();
+      } else {
+        login();
+      }
+    } catch (error) {
+      console.error('Switch wallet failed:', error);
+      dispatch(showToast({
+        message: 'Failed to switch wallet',
+        severity: 'error'
+      }));
     }
   };
 
@@ -303,6 +322,10 @@ export default function Navbar({ sidebarOpen }: NavbarProps) {
       dispatch(checkTokenBalance(address));
     }
   }, [isConnected, address, wallets, dispatch]);
+
+  // 修改渲染逻辑
+  const shouldShowConnect = !authenticated || !isConnected;
+  const walletIcon = currentWallet?.icon || '/assets/avatar.png';
 
   return (
     <StyledAppBar position="fixed">
@@ -332,9 +355,9 @@ export default function Navbar({ sidebarOpen }: NavbarProps) {
           <GradientBorderButton>
             JOIN THE STUDIO!
           </GradientBorderButton>
-          {!authenticated ? (
+          {shouldShowConnect ? (
             <ConnectButton
-              onClick={() => login()}
+              onClick={handleSwitchWallet}
               sx={{
                 backgroundColor: '#C7FF8C',
                 color: '#000000',
@@ -343,7 +366,7 @@ export default function Navbar({ sidebarOpen }: NavbarProps) {
                 },
               }}
             >
-              CONNECT
+              {authenticated ? 'RECONNECT' : 'CONNECT'}
             </ConnectButton>
           ) : (
             <>

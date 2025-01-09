@@ -1,6 +1,7 @@
 import { Box, Typography, styled, Dialog, DialogTitle, DialogContent, DialogActions, Button } from '@mui/material';
 import { useState, useEffect, KeyboardEvent, useRef } from 'react';
 import { usePrivy } from '@privy-io/react-auth';
+import { useAccount } from 'wagmi';
 import ChatInput from './ChatInput';
 import msgDown from '../assets/msg_down.svg';
 import msgUp from '../assets/msg_up.svg';
@@ -287,7 +288,8 @@ const abi = [
 
 export default function ChatWindow({ agentName }: ChatWindowProps) {
   const dispatch = useDispatch<AppDispatch>();
-  const { authenticated, user, login } = usePrivy();
+  const { user, login, linkWallet, authenticated } = usePrivy();
+  const { isConnected } = useAccount();
   const connectionState = useSelector((state: RootState) => state.chat.connectionState);
   const queuePosition = useSelector((state: RootState) => state.chat.queuePosition);
   const chatMessages = useSelector((state: RootState) => state.chat.messages);
@@ -304,8 +306,7 @@ export default function ChatWindow({ agentName }: ChatWindowProps) {
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [currentPaymentId, setCurrentPaymentId] = useState<number | null>(null);
 
-  console.log('user', user);
-  console.log('authenticated', authenticated);
+  const shouldShowConnect = !authenticated || !isConnected;
 
   const { 
     data: hash, // 交易哈希
@@ -325,7 +326,7 @@ export default function ChatWindow({ agentName }: ChatWindowProps) {
 
   // 处理发送 eth
   const sendEth = (id: number) => {
-    if (!authenticated) {
+    if (shouldShowConnect) {
       dispatch(showToast({
         message: 'Please connect your wallet first.',
         severity: 'error'
@@ -564,13 +565,14 @@ export default function ChatWindow({ agentName }: ChatWindowProps) {
 
   // 根据状态获取要显示的消息
   const messages: Message[] = (() => {
-    if (!authenticated) {
+    if (shouldShowConnect) {
       return [{
         ...walletMessage,
         actions: [{
           // @ts-ignore
           ...walletMessage.actions[0],
-          onClick: () => login()
+          label: authenticated ? 'RECONNECT' : 'CONNECT',
+          onClick: authenticated ? () => linkWallet() : () => login()
         }]
       }];
     }
@@ -656,16 +658,16 @@ export default function ChatWindow({ agentName }: ChatWindowProps) {
 
   // 当输入框变为可用时自动聚焦
   useEffect(() => {
-    const isInputEnabled = authenticated && !isRequesting && processingState === 'idle';
+    const isInputEnabled = !shouldShowConnect && !isRequesting && processingState === 'idle';
     if (isInputEnabled) {
       // 使用 MUI 的 inputRef
       const input = inputRef.current as unknown as HTMLInputElement;
       input?.focus();
     }
-  }, [authenticated, isRequesting, processingState]);
+  }, [shouldShowConnect, isRequesting, processingState]);
 
   // 判断输入框是否应该禁用
-  const isInputDisabled = !authenticated || 
+  const isInputDisabled = shouldShowConnect || 
     processingState !== 'idle' ||
     //connectionState === 'not-enough-tokens' ||
     connectionState === 'queuing';

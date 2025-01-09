@@ -6,6 +6,7 @@ import { fetchAllOwnedNFTs, clearNFTs } from '../../store/slices/nftSlice';
 import NFTCard from '../../components/NFTCard';
 import Grid from '../../components/Grid';
 import { useAccount } from 'wagmi';
+import { usePrivy } from '@privy-io/react-auth';
 import { showToast } from '../../store/slices/toastSlice';
 import EmptyState from '../../components/EmptyState';
 import LoadingState from '../../components/LoadingState';
@@ -63,6 +64,9 @@ export default function MyNFTs() {
   const [containerPadding, setContainerPadding] = useState(MIN_PADDING);
   const [containerWidth, setContainerWidth] = useState(0);
   const { address, isConnected } = useAccount();
+  const { authenticated } = usePrivy();
+
+  const shouldShowConnect = !authenticated || !isConnected;
 
   // 计算布局
   useEffect(() => {
@@ -89,7 +93,7 @@ export default function MyNFTs() {
   }, []);
 
   useEffect(() => {
-    if (!isConnected || !address) {
+    if (shouldShowConnect || !address) {
       dispatch(showToast({
         message: 'Please connect your wallet first',
         severity: 'error'
@@ -103,7 +107,7 @@ export default function MyNFTs() {
     return () => {
       dispatch(clearNFTs());
     };
-  }, [address, isConnected]);
+  }, [address, shouldShowConnect]);
 
   const loadNFTs = async () => {
     if (!address) return;
