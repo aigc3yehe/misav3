@@ -1,4 +1,4 @@
-import { Box, styled, Alert, Snackbar } from '@mui/material';
+import { Box, styled, Alert, Snackbar, useTheme, useMediaQuery } from '@mui/material';
 import Sidebar from '../components/Sidebar';
 import Navbar from '../components/Navbar';
 import { useState } from 'react';
@@ -18,7 +18,7 @@ const LayoutRoot = styled('div')(({ theme }) => ({
   backgroundColor: theme.palette.background.default
 }));
 
-const LayoutWrapper = styled('div')<{ sidebarOpen: boolean, isFullscreen: boolean }>(({ sidebarOpen, isFullscreen }) => ({
+const LayoutWrapper = styled('div')<{ sidebarOpen: boolean, isFullscreen: boolean }>(({ theme, sidebarOpen, isFullscreen }) => ({
   position: 'fixed',
   top: 0,
   left: 0,
@@ -28,11 +28,18 @@ const LayoutWrapper = styled('div')<{ sidebarOpen: boolean, isFullscreen: boolea
   paddingLeft: sidebarOpen ? 250 : 0,
   transition: 'padding-left 0.3s ease-in-out',
   overflow: 'auto',
+  
+  [theme.breakpoints.down('sm')]: {
+    paddingTop: isFullscreen ? 0 : 64,
+    paddingLeft: 0,
+  }
 }));
 
 export default function MainLayout() {
   const location = useLocation();
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
   const currentAgent = useSelector((state: RootState) => state.agent.currentAgent);
   const isFullscreen = location.pathname === '/workstation' || location.pathname === '/voice_call';
   const dispatch = useDispatch();
@@ -52,23 +59,30 @@ export default function MainLayout() {
 
   return (
     <LayoutRoot>
-      <SharedAvatar 
-        expanded={sidebarOpen} 
-        src={currentAgent.avatar} 
-      />
-      <SharedMenuButton 
-        isExpanded={sidebarOpen}
-        onClick={handleToggleSidebar}
-      />
+      {!isMobile && (
+        <SharedAvatar 
+          expanded={sidebarOpen} 
+          src={currentAgent.avatar} 
+        />
+      )}
+      {!isMobile && (
+        <SharedMenuButton 
+          isExpanded={sidebarOpen}
+          onClick={handleToggleSidebar}
+        />
+      )}
       <Navbar 
         onSidebarOpen={handleToggleSidebar}
         sidebarOpen={sidebarOpen}
+        isMobile={isMobile}
+        avatar={currentAgent.avatar}
       />
       <Sidebar
         open={sidebarOpen}
         onClose={handleToggleSidebar}
+        isMobile={isMobile}
       />
-      <LayoutWrapper sidebarOpen={sidebarOpen} isFullscreen={isFullscreen}>
+      <LayoutWrapper sidebarOpen={!isMobile && sidebarOpen} isFullscreen={isFullscreen}>
         <Box sx={{ 
           width: '100%',
           height: '100%',

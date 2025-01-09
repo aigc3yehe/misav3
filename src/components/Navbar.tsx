@@ -1,4 +1,4 @@
-import { AppBar, Button, Toolbar, styled, alpha, Dialog, DialogTitle, DialogActions, Box } from '@mui/material';
+import { AppBar, Button, Toolbar, styled, alpha, Dialog, DialogTitle, DialogActions, Box, IconButton } from '@mui/material';
 import { useState, useEffect } from 'react';
 import { useDispatch } from 'react-redux';
 import { showToast } from '../store/slices/toastSlice';
@@ -16,6 +16,13 @@ import { updatePrivyAccount } from '../store/slices/walletSlice';
 import { useAccount } from 'wagmi';
 import { AppDispatch } from '../store';
 import { checkTokenBalance } from '../store/slices/walletSlice';
+import mobileJoinIcon from '../assets/mobile_join_us.svg';
+import mobileLivingroomNormal from '../assets/mobile_livingroom_normal.svg';
+import mobileLivingroomSelected from '../assets/mobile_livingroom_selected.svg';
+import mobileTerminalNormal from '../assets/mobile_terminal_normal.svg';
+import mobileTerminalSelected from '../assets/mobile_terminal_selected.svg';
+import { useTheme } from '@mui/material';
+import menuNormal from '../assets/menu_normal.svg';
 
 const StyledAppBar = styled(AppBar)(() => ({
   background: 'transparent',
@@ -27,12 +34,16 @@ const StyledToolbar = styled(Toolbar)(({ theme }) => ({
   gap: '20px',
   minHeight: 'auto',
   padding: '22px 40px',
-  [theme.breakpoints.up('sm')]: {
-    padding: '22px 40px',
+  
+  [theme.breakpoints.down('sm')]: {
+    padding: '20px 20px 0px 20px',
+    gap: 'auto',
+    height: '52px',
+    minHeight: '52px',
   },
 }));
 
-const GradientBorderButton = styled(Button)({
+const GradientBorderButton = styled(Button)(({ theme }) => ({
   position: 'relative',
   width: '190px',
   height: '40px',
@@ -72,9 +83,16 @@ const GradientBorderButton = styled(Button)({
       opacity: 0.8,
     },
   },
-});
 
-const ConnectButton = styled(Button)({
+  [theme.breakpoints.down('sm')]: {
+    width: '140px',
+    height: '36px',
+    fontSize: '14px',
+    lineHeight: '20px',
+  },
+}));
+
+const ConnectButton = styled(Button)(({ theme }) => ({
   width: '117px',
   height: '40px',
   borderRadius: '4px',
@@ -84,7 +102,15 @@ const ConnectButton = styled(Button)({
   lineHeight: '24px',
   textTransform: 'uppercase',
   padding: '0',
-});
+
+  [theme.breakpoints.down('sm')]: {
+    width: 'auto',
+    height: '24px',
+    padding: '6px 12px',
+    fontSize: '14px',
+    lineHeight: '18px',
+  },
+}));
 
 const StyledMenu = styled(Menu)(() => ({
   '& .MuiPaper-root': {
@@ -154,20 +180,30 @@ const DialogButton = styled(Button)({
 });
 
 // 左侧容器
-const LeftSection = styled(Box)({
+const LeftSection = styled(Box)(({ theme }) => ({
   display: 'flex',
   alignItems: 'center',
   gap: '12px',
-});
+  
+  [theme.breakpoints.down('sm')]: {
+    gap: '5px',
+  },
+}));
 
 // 右侧容器
-const RightSection = styled(Box)({
+const RightSection = styled(Box)(({ theme }) => ({
   display: 'flex',
   gap: '1rem',
-});
+  
+  [theme.breakpoints.down('sm')]: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.5rem',
+  },
+}));
 
 // 添加新的样式组件
-const StyledToggleButtonGroup = styled(ToggleButtonGroup)(({ mode }: { mode: string }) => ({
+const StyledToggleButtonGroup = styled(ToggleButtonGroup)(({ theme, mode }: { mode: string }) => ({
   position: 'absolute',
   left: '290px',
   width: '214px',
@@ -180,9 +216,23 @@ const StyledToggleButtonGroup = styled(ToggleButtonGroup)(({ mode }: { mode: str
       marginLeft: '0',
     },
   },
+  
+  [theme.breakpoints.down('sm')]: {
+    position: 'relative',
+    left: '0',
+    marginLeft: '36px',
+    width: '93px',
+    height: '24px',
+    '& .button-text': {
+      display: 'none',
+    },
+    '& .button-icon': {
+      display: 'block',
+    },
+  },
 }));
 
-const StyledToggleButton = styled(ToggleButton)({
+const StyledToggleButton = styled(ToggleButton)(({ theme }) => ({
   width: '87px',
   height: '40px',
   padding: '8px 16px',
@@ -191,8 +241,11 @@ const StyledToggleButton = styled(ToggleButton)({
   fontWeight: 700,
   lineHeight: '24px',
   color: '#FFFFFF',
-  transition: 'all 0.3s ease',
   
+  '& .button-icon': {
+    display: 'none',
+  },
+
   '&:hover': {
     backgroundColor: 'rgba(201, 172, 255, 0.08)',
   },
@@ -221,18 +274,86 @@ const StyledToggleButton = styled(ToggleButton)({
       backgroundColor: 'rgba(161, 255, 60, 0.08)',
     },
   },
-});
+
+  [theme.breakpoints.down('sm')]: {
+    width: '46.5px',
+    height: '24px',
+    padding: '1px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+
+    '&:first-of-type, &:last-of-type': {
+      width: '46.5px',
+    },
+
+    '& .button-icon': {
+      display: 'block',
+      width: '22px',
+      height: '22px',
+    },
+  },
+}));
+
+const JoinButton = styled(Box)(({ theme }) => ({
+  // 桌面端样式 (>900px)
+  [theme.breakpoints.up('sm')]: {
+    '& .desktop-button': {
+      display: 'block',
+    },
+    '& .mobile-button': {
+      display: 'none',
+    },
+  },
+  
+  // 中等移动端样式 (460px-900px)
+  '@media (min-width: 460px) and (max-width: 900px)': {
+    '& .desktop-button': {
+      display: 'none',
+    },
+    '& .mobile-button': {
+      display: 'flex',
+      width: '32px', // 更大的图标尺寸
+      height: '32px',
+      cursor: 'pointer',
+      '& img': {
+        width: '100%',
+        height: '100%',
+      },
+    },
+  },
+  
+  // 小屏移动端样式 (<460px)
+  '@media (max-width: 459px)': {
+    '& .desktop-button': {
+      display: 'none',
+    },
+    '& .mobile-button': {
+      display: 'flex',
+      width: '24px', // 基于390px设计稿的尺寸
+      height: '24px',
+      cursor: 'pointer',
+      '& img': {
+        width: '100%',
+        height: '100%',
+      },
+    },
+  },
+}));
 
 interface NavbarProps {
   onSidebarOpen: () => void;
   sidebarOpen: boolean;
+  isMobile: boolean;
+  avatar: string;
 }
 
 function formatAddress(address: string | undefined) {
   return address ? address.slice(0, 6) + '...' + address.slice(-4) : '';
 }
 
-export default function Navbar({ sidebarOpen }: NavbarProps) {
+export default function Navbar({ onSidebarOpen, sidebarOpen, isMobile, avatar }: NavbarProps) {
+  const theme = useTheme();
   const { login, logout, authenticated, user, linkWallet } = usePrivy();
   const { address, isConnected } = useAccount();
   const { wallets } = useWalletManager();
@@ -331,8 +452,37 @@ export default function Navbar({ sidebarOpen }: NavbarProps) {
     <StyledAppBar position="fixed">
       <StyledToolbar>
         <LeftSection>
-          {!sidebarOpen && (
-            <Box sx={{ width: 40, height: 40 }} />
+          {isMobile && (
+            <>
+              <Avatar
+                src={avatar}
+                sx={{
+                  width: 32,
+                  height: 32,
+                  border: '1px solid #ffffff',
+                }}
+              />
+              <IconButton
+                onClick={onSidebarOpen}
+                sx={{
+                  padding: 0,
+                  width: 27,
+                  height: 24,
+                  '&:hover': {
+                    backgroundColor: alpha('#fff', 0.08),
+                  },
+                }}
+              >
+                <img 
+                  src={menuNormal}
+                  alt="menu"
+                  style={{
+                    width: '18px',
+                    height: '16px',
+                  }}
+                />
+              </IconButton>
+            </>
           )}
           {isWorkstation && (
             <StyledToggleButtonGroup
@@ -342,19 +492,45 @@ export default function Navbar({ sidebarOpen }: NavbarProps) {
               mode={mode}
             >
               <StyledToggleButton value="chat">
-                CHAT
+                <span className="button-text">CHAT</span>
+                <img 
+                  className="button-icon"
+                  src={mode === 'chat' ? mobileLivingroomSelected : mobileLivingroomNormal}
+                  alt="Chat"
+                />
               </StyledToggleButton>
               <StyledToggleButton value="terminal">
-                TERMINAL
+                <span className="button-text">TERMINAL</span>
+                <img 
+                  className="button-icon"
+                  src={mode === 'terminal' ? mobileTerminalSelected : mobileTerminalNormal}
+                  alt="Terminal"
+                />
               </StyledToggleButton>
             </StyledToggleButtonGroup>
           )}
         </LeftSection>
 
         <RightSection>
-          <GradientBorderButton>
-            JOIN THE STUDIO!
-          </GradientBorderButton>
+          <JoinButton>
+            <GradientBorderButton className="desktop-button">
+              JOIN THE STUDIO!
+            </GradientBorderButton>
+            <Box 
+              className="mobile-button"
+              component="button"
+              sx={{
+                background: 'none',
+                border: 'none',
+                padding: 0,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <img src={mobileJoinIcon} alt="Join the studio" />
+            </Box>
+          </JoinButton>
           {shouldShowConnect ? (
             <ConnectButton
               onClick={handleSwitchWallet}
@@ -373,8 +549,8 @@ export default function Navbar({ sidebarOpen }: NavbarProps) {
               <Avatar
                 src={walletIcon}
                 sx={{
-                  width: 40,
-                  height: 40,
+                  width: { xs: 32, sm: 40 },
+                  height: { xs: 32, sm: 40 },
                   cursor: `url(${pointingCursor}), pointer`,
                 }}
                 onClick={handleClick}

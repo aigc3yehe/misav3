@@ -34,10 +34,10 @@ export default function ChatView() {
   return (
     <ViewContainer>
       <UnityContainer>
-        <UnityGame />
+        {/* <UnityGame /> */}
       </UnityContainer>
       <ChatWindowWrapper>
-        <ChatWindow agentName="Misato" />
+        <ChatWindow agentName="MISATO" />
       </ChatWindowWrapper>
     </ViewContainer>
   );

@@ -10,6 +10,7 @@ import {
   Menu,
   MenuItem,
   Link,
+  Avatar,
 } from '@mui/material';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
@@ -38,6 +39,8 @@ import walletIcon from '../assets/wallet.svg';
 import okIcon from '../assets/ok.svg';
 import pointingCursor from '../assets/pointer.png';
 import { showToast } from '../store/slices/toastSlice';
+import menuExpanded from '../assets/menu_expanded.svg';
+import { alpha } from '@mui/material/styles';
 
 const SIDEBAR_WIDTH = 250;
 
@@ -80,7 +83,7 @@ interface ChatHistoryProps {
 
 const StyledDrawer = styled(Drawer, {
   shouldForwardProp: (prop) => prop !== 'isOpen',
-})<StyledDrawerProps>(({ isOpen }) => ({
+})<StyledDrawerProps>(({ theme, isOpen }) => ({
   width: SIDEBAR_WIDTH,
   flexShrink: 0,
   '& .MuiDrawer-paper': {
@@ -92,17 +95,31 @@ const StyledDrawer = styled(Drawer, {
     animation: isOpen 
       ? `${expandAnimation} 0.3s ease-out forwards`
       : `${collapseAnimation} 0.3s ease-in forwards`,
+    zIndex: theme.zIndex.drawer + 2,
+    '--Paper-overlay': 'none !important',
   },
-  '& .MuiBackdrop-root': {
-    display: 'none',
+  // 移动端显示背景遮罩
+  [theme.breakpoints.down('sm')]: {
+    '& .MuiBackdrop-root': {
+      display: 'block',
+      zIndex: theme.zIndex.drawer + 1,
+    },
+    '& .MuiDrawer-paper': {
+      '--Paper-overlay': 'none !important',
+      '--Paper-shadow': 'none !important',
+    },
   },
 }));
 
-const ProfileSection = styled(Box)({
+const ProfileSection = styled(Box)(({ theme }) => ({
   padding: '24px 20px',
   display: 'flex',
   flexDirection: 'column',
-});
+  
+  [theme.breakpoints.down('sm')]: {
+    padding: '16px',
+  },
+}));
 
 const ProfileHeader = styled(Box)({
   display: 'flex',
@@ -209,7 +226,7 @@ const SocialBar = styled(Box)({
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'space-between',
-  backgroundColor: '#2B1261',
+  backgroundColor: 'transparent',
 });
 
 const SocialIconsWrapper = styled(Box)({
@@ -338,9 +355,10 @@ const AgentName = styled(Typography)({
 interface SidebarProps {
   open: boolean;
   onClose: () => void;
+  isMobile: boolean;
 }
 
-export default function Sidebar({ open, onClose }: SidebarProps) {
+export default function Sidebar({ open, onClose, isMobile }: SidebarProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
@@ -487,6 +505,13 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
     handleMenuClose();
   };
 
+  const handleNavigation = (path: string) => {
+    navigate(path);
+    if (isMobile) {
+      onClose(); // 在移动端导航后关闭侧边栏
+    }
+  };
+
   const renderNavItems = (items: typeof navigationItems) => {
     return items.map((item) => {
       const isSelected = location.pathname === item.path;
@@ -494,7 +519,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
         <StyledListItemButton
           key={item.path}
           selected={isSelected}
-          onClick={() => navigate(item.path)}
+          onClick={() => handleNavigation(item.path)}
         >
           <NavIcon 
             src={isSelected ? item.icon.selected : item.icon.normal} 
@@ -540,7 +565,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
 
   return (
     <StyledDrawer
-      variant="persistent"
+      variant={isMobile ? "temporary" : "persistent"}
       anchor="left"
       open={open}
       onClose={onClose}
@@ -550,7 +575,18 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
         <ProfileSection>
           <ProfileHeader>
             <ProfileInfo>
-              <Box sx={{ width: 40, height: 40 }} />
+              {isMobile ? (
+                <Avatar
+                  src={currentAgent?.avatar}
+                  sx={{
+                    width: 40,
+                    height: 40,
+                    border: '1px solid #ffffff',
+                  }}
+                />
+              ) : (
+                <Box sx={{ width: 40, height: 40 }} />
+              )}
               <Box sx={{ gap: '0px' }}>
                 <NameSection onClick={handleAgentMenuOpen}>
                   <Typography 
@@ -576,6 +612,29 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
                 </IconsSection>
               </Box>
             </ProfileInfo>
+            {isMobile && (
+              <IconButton
+                onClick={onClose}
+                sx={{
+                  padding: 0,
+                  width: 27,
+                  height: 24,
+                  marginTop: '-16px',
+                  '&:hover': {
+                    backgroundColor: alpha('#fff', 0.08),
+                  },
+                }}
+              >
+                <img 
+                  src={menuExpanded}
+                  alt="close menu"
+                  style={{
+                    width: '16px',
+                    height: '20px',
+                  }}
+                />
+              </IconButton>
+            )}
           </ProfileHeader>
         </ProfileSection>
 
