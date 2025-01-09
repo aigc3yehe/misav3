@@ -7,9 +7,8 @@ import SubtractBg from '../../assets/Subtract.svg';
 import MiniNFTIcon from '../../assets/mini_nft.svg';
 import pointingCursor from '../../assets/pointer.png';
 import { useNavigate } from 'react-router-dom';
-import Lottie from 'lottie-react';
-import loadingAnimation from '../../assets/loading.json';
-
+import LoadingState from '../../components/LoadingState';
+import EmptyState from '../../components/EmptyState';
 const CARD_WIDTH = 268;
 const CARD_GAP = 12;
 const MIN_PADDING = 40;
@@ -111,16 +110,6 @@ const LoadingWrapper = styled('div')({
   overflow: 'hidden',
 });
 
-// 添加 Loading 容器样式
-const LoadingContainer = styled(Box)({
-  position: 'absolute',
-  top: '50%',
-  left: '50%',
-  transform: 'translate(-50%, -50%)',
-  width: 128,
-  height: 128,
-});
-
 export default function Collections() {
   const dispatch = useDispatch<AppDispatch>();
   const { collections, isLoading } = useSelector((state: RootState) => state.collection);
@@ -183,13 +172,7 @@ export default function Collections() {
     return (
       <PageContainer id="collectionsContainer" padding={containerPadding}>
         <LoadingWrapper>
-          <LoadingContainer>
-            <Lottie 
-              animationData={loadingAnimation}
-              loop={true}
-              autoplay={true}
-            />
-          </LoadingContainer>
+          <LoadingState />
         </LoadingWrapper>
       </PageContainer>
     );
@@ -198,9 +181,13 @@ export default function Collections() {
   return (
     <PageContainer id="collectionsContainer" padding={containerPadding}>
       <Title>COLLECTIONS</Title>
-      <CollectionGrid>
-        {collections.map((collection) => (
-          <CollectionCard 
+      {collections.length === 0 && !isLoading && (
+        <EmptyState text="No collections found" />
+      )}
+      {collections.length > 0 && (
+        <CollectionGrid>
+          {collections.map((collection) => (
+            <CollectionCard 
             key={collection.id}
             onClick={() => handleCollectionClick(collection)}
           >
@@ -218,8 +205,9 @@ export default function Collections() {
               <NFTIcon src={MiniNFTIcon} alt="nft" />
             </NFTsContainer>
           </CollectionCard>
-        ))}
-      </CollectionGrid>
+          ))}
+        </CollectionGrid>
+      )}
     </PageContainer>
   );
 } 

@@ -9,6 +9,7 @@ import NFTGallery from '../pages/Collections/NFTGallery';
 import VoiceCall from '../pages/VoiceCall';
 import VisualizeX from '../pages/VisualizeX';
 import NotFound from '../pages/NotFound';
+import MyNFTs from '../pages/MyNFTs';
 
 export const router = createBrowserRouter([
   {
@@ -50,6 +51,10 @@ export const router = createBrowserRouter([
       {
         path: '/visualize_x',
         element: <VisualizeX />,
+      },
+      {
+        path: '/my-nfts',
+        element: <MyNFTs />,
       },
     ],
   },

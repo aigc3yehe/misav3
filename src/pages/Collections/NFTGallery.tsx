@@ -14,17 +14,18 @@ import nftMeIcon from '../../assets/nft_me.svg';
 import pointingCursor from '../../assets/pointer.png';
 import { useAccount } from 'wagmi';
 import { showToast } from '../../store/slices/toastSlice';
-import Lottie from 'lottie-react';
-import loadingAnimation from '../../assets/loading.json';
+import EmptyState from '../../components/EmptyState';
+import LoadingState from '../../components/LoadingState';
 
 const CARD_WIDTH = 212;
 const CARD_HEIGHT = 212;
 const CARD_GAP = 12;
 const MIN_PADDING = 40;
 
-const PageContainer = styled(Box)<{ padding: number }>(({ padding }) => ({
+const PageContainer = styled(Box)<{ padding: number, hasData: boolean }>(({ padding, hasData }) => ({
   padding: `0 ${padding}px`,
-  height: '100%',
+  height: hasData ? '100%' : 'auto',
+  minHeight: '100%',
   display: 'flex',
   flexDirection: 'column',
   position: 'relative',
@@ -141,16 +142,6 @@ const Description = styled(Typography)({
   color: '#D6C0FF',
 });
 
-// 添加 Loading 容器样式
-const LoadingContainer = styled(Box)({
-  position: 'absolute',
-  top: '50%',
-  left: '50%',
-  transform: 'translate(-50%, -50%)',
-  width: 128,
-  height: 128,
-});
-
 export default function NFTGallery() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -231,11 +222,12 @@ export default function NFTGallery() {
       return;
     }
 
+    dispatch(clearNFTs());
     setIsOwned(!isOwned);
   };
 
   const handleNFTMeClick = () => {
-    window.open(`https://magiceden.io/collections/${collection.chain}/${collection.symbol}`, '_blank');
+    window.open(`https://magiceden.io/collections/${collection.chain}/${collection.contract}`, '_blank');
   };
 
   const handleCopyAddress = async () => {
@@ -260,10 +252,14 @@ export default function NFTGallery() {
   }
 
   return (
-    <PageContainer id="nftContainer" padding={containerPadding}>
+    <PageContainer 
+      id="nftContainer" 
+      padding={containerPadding}
+      hasData={nfts.length > 0}
+    >
       <Header>
         <BackButton onClick={handleBack}>
-            <BackIcon src={backIcon} alt="Back" />
+          <BackIcon src={backIcon} alt="Back" />
         </BackButton>
         <Title>BACK</Title>
       </Header>
@@ -292,34 +288,33 @@ export default function NFTGallery() {
         </Description>
       </TitleRow>
       
-      {containerWidth > 0 && (
-        <Grid
-          items={nfts}
-          renderItem={(nft) => (
-            <NFTCard
-              key={nft.id}
-              nft={nft}
-              onClick={() => window.open(`https://magiceden.io/item-details/base/${nft.contract}/${nft.id}`, '_blank')}
-            />
-          )}
-          itemWidth={CARD_WIDTH}
-          itemHeight={CARD_HEIGHT}
-          gap={CARD_GAP}
-          containerWidth={containerWidth}
-          containerId="nftContainer"
-        />
+      {containerWidth > 0 && nfts.length > 0 && (
+        <>
+          <Grid
+              items={nfts}
+              renderItem={(nft) => (
+              <NFTCard
+                key={nft.id}
+                nft={nft}
+                onClick={() => window.open(`https://magiceden.io/item-details/base/${nft.contract}/${nft.id}`, '_blank')}
+              />
+            )}
+            itemWidth={CARD_WIDTH}
+            itemHeight={CARD_HEIGHT}
+            gap={CARD_GAP}
+            containerWidth={containerWidth}
+            containerId="nftContainer"
+          />
+          <Box sx={{ marginTop: '40px' }} />
+        </>
       )}
 
-      {isRefreshing ? (
-        <LoadingContainer>
-          <Lottie 
-              animationData={loadingAnimation}
-              loop={true}
-              autoplay={true}
-            />
-        </LoadingContainer>
-      ) : (
-        <Box sx={{ marginTop: '40px' }} />
+      {nfts.length === 0 && !isRefreshing && (
+        <EmptyState text="No NFTs found" />
+      )}
+
+      {isRefreshing && (
+        <LoadingState />
       )}
     </PageContainer>
   );
