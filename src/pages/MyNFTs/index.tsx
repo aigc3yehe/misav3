@@ -15,7 +15,14 @@ const CARD_HEIGHT = 212;
 const CARD_GAP = 12;
 const MIN_PADDING = 40;
 
-const PageContainer = styled(Box)<{ padding: number, hasData: boolean }>(({ padding, hasData }) => ({
+interface PageContainerProps {
+  padding: number;
+  hasData: boolean;
+}
+
+const PageContainer = styled(Box, {
+  shouldForwardProp: (prop) => prop !== 'padding' && prop !== 'hasData'
+})<PageContainerProps>(({ padding, hasData }) => ({
   padding: `0 ${padding}px`,
   height: hasData ? '100%' : 'auto',
   minHeight: '100%',

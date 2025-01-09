@@ -61,6 +61,7 @@ export default function UnityGame() {
   const loadingBarRef = useRef<HTMLDivElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(true);
+  const hasLoadedRef = useRef(false);
 
   const unityShowBanner = (msg: string, type: 'error' | 'warning') => {
     const warningBanner = document.querySelector("#unity-warning");
@@ -106,8 +107,20 @@ export default function UnityGame() {
       '{"content": "Hi, welcome back to MISATO Studio!","finish": true}'
     );
   };
+  console.log('来自UnityGame.tsx的');
+  console.log('UnityGame 组件渲染');
 
   useEffect(() => {
+    console.log('检查是否需要加载 Unity:', !hasLoadedRef.current);
+    
+    if (hasLoadedRef.current) {
+      console.log('Unity 已经加载过，跳过加载');
+      return;
+    }
+    
+    hasLoadedRef.current = true;
+    console.log('开始加载 Unity');
+
     // 设置全局回调
     window.UnityStartCallback = UnityStartCallback;
     
@@ -143,28 +156,35 @@ export default function UnityGame() {
     // 加载 Unity
     const script = document.createElement("script");
     script.src = `${buildUrl}/5c09bbd46ad23ae29a5b18429885c23b.loader.js`;
-    script.onload = () => {
-      window.createUnityInstance(canvasRef.current, config, (progress: number) => {
-        progress += 0.7;
-        progress = Math.min(1, Math.max(0, progress));
-        //setLoadingProgress(progress * 100);
-        console.log('progress', progress);
-      }).then((unityInstance: any) => {
+    script.onload = async () => {
+      console.log('加载脚本');
+      try {
+        const unityInstance = await window.createUnityInstance(canvasRef.current, config, (progress: number) => {
+          progress += 0.7;
+          progress = Math.min(1, Math.max(0, progress));
+          //setLoadingProgress(progress * 100);
+          if (progress >= 1) {
+            console.log('progress', progress);
+          }
+        })
+        console.log('实例加载成功', unityInstance)
         window.unityInstance = unityInstance;
         UnityStartCallback(unityInstance);
         setTimeout(Call, 2000);
-      }).catch((message: string) => {
-        console.error('Unity 加载失败:', message);
-        unityShowBanner(message, 'error');
-      });
+      } catch (error) {
+        console.error('Unity 加载失败:', error);
+        unityShowBanner('Unity 加载失败', 'error');
+      }
     };
     document.body.appendChild(script);
 
     // 清理
     return () => {
+      console.log('清理', window.unityInstance);
       // @ts-ignore
       window.UnityStartCallback = undefined;
       window.removeEventListener('resize', handleResize);
+      hasLoadedRef.current = false;
     };
   }, []);
 
