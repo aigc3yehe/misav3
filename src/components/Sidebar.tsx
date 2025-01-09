@@ -11,24 +11,21 @@ import {
   MenuItem,
   Link,
 } from '@mui/material';
-import infoIcon from '../assets/info.svg';
-import DeleteIcon from '@mui/icons-material/Delete';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { keyframes } from '@mui/system';
 import livingroomNormal from '../assets/livingroom_normal.svg';
 import livingroomSelected from '../assets/livingroom_selected.svg';
 import modelsNormal from '../assets/models_normal.svg';
+import editIcon from '../assets/edit.svg';
 import modelsSelected from '../assets/models_selected.svg';
 import galleryNormal from '../assets/gallery_normal.svg';
 import gallerySelected from '../assets/gallery_selected.svg';
-import moreIcon from '../assets/more.svg';
 import arrowDropDown from '../assets/arrow_drop_down.svg';
-import copyIcon from '../assets/mi_copy.svg';
 import xIcon from '../assets/x.svg';
 import docsIcon from '../assets/docs.svg';
 import discardIcon from '../assets/discard.svg';
-import logoImage from '../assets/mirae_studio.png';
+import logoIcon from '../assets/logo.svg';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../store';
 import { setCurrentAgent } from '../store/slices/agentSlice';
@@ -36,6 +33,11 @@ import callNormal from '../assets/call_normal.svg';
 import callSelected from '../assets/call_selected.svg';
 import visualizeXNormal from '../assets/visualize_x_normal.svg';
 import visualizeXSelected from '../assets/visualize_x_selected.svg';
+import dockIcon from '../assets/dock.svg';
+import walletIcon from '../assets/wallet.svg';
+import okIcon from '../assets/ok.svg';
+import pointingCursor from '../assets/pointer.png';
+import { showToast } from '../store/slices/toastSlice';
 
 const SIDEBAR_WIDTH = 250;
 
@@ -69,6 +71,11 @@ const collapseAnimation = keyframes`
 
 interface StyledDrawerProps {
   isOpen: boolean;
+}
+
+interface ChatHistoryProps {
+  id: string;
+  label: string;
 }
 
 const StyledDrawer = styled(Drawer, {
@@ -106,7 +113,7 @@ const ProfileHeader = styled(Box)({
 const ProfileInfo = styled(Box)({
   display: 'flex',
   alignItems: 'center',
-  gap: '12px',
+  gap: '6px',
 });
 
 const NameSection = styled(Box)({
@@ -114,19 +121,20 @@ const NameSection = styled(Box)({
   alignItems: 'center',
   gap: '0px',
   marginTop: '-5px',
+  cursor: `url(${pointingCursor}), pointer`,
 });
 
-const AddressSection = styled(Box)({
+const IconsSection = styled(Box)({
   display: 'flex',
   alignItems: 'center',
-  gap: '0px',
-  marginTop: '-12px',
+  marginTop: '-6px',
+  marginLeft: '-2px',
 });
 
-const AddressText = styled(Typography)({
-  color: '#D6C0FF',
-  fontSize: '12px',
-  lineHeight: '100%',
+const ActionIcon = styled('img')({
+  width: '24px',
+  height: '24px',
+  cursor: `url(${pointingCursor}), pointer`,
 });
 
 const StyledListItemButton = styled(ListItemButton)<{ selected?: boolean }>(() => ({
@@ -229,15 +237,12 @@ const SocialIconLink = styled(Link)({
   }
 });
 
-const InfoIconButton = styled(IconButton)({
-  padding: 5,
-  '& img': {
-    width: '20px',
-    height: '20px',
-  },
+const NavIcon = styled('img')({
+  width: '24px',
+  height: '24px',
 });
 
-const NavIcon = styled('img')({
+const EditIcon = styled('img')({
   width: '24px',
   height: '24px',
 });
@@ -251,19 +256,14 @@ const ArrowIcon = styled(IconImage)({
   height: '10px',
 });
 
-const CopyIcon = styled(IconImage)({
-  width: '12px',
-  height: '12px',
-});
-
 const SocialIcon = styled(IconImage)({
   width: '20px',
   height: '20px',
 });
 
 const LogoImage = styled('img')({
-  width: '90px',
-  height: '35px',
+  width: '87px',
+  height: '32px',
   marginBottom: '10px',
 });
 
@@ -296,14 +296,14 @@ const ScrollableSection = styled(Box)({
 // 添加 AgentMenu 样式组件
 const StyledAgentMenu = styled(Menu)(() => ({
   '& .MuiPaper-root': {
-    backgroundColor: '#2B1261',
-    minWidth: 200,
+    backgroundColor: 'rgba(21, 15, 32, 0.95)',
     borderRadius: 4,
   },
 }));
 
 const AgentMenuItem = styled(MenuItem)({
-  padding: '12px 16px',
+  padding: '5px 20px',
+  whiteSpace: 'nowrap',
   '&:hover': {
     backgroundColor: '#4E318D',
   },
@@ -312,13 +312,14 @@ const AgentMenuItem = styled(MenuItem)({
 const AgentItemContent = styled(Box)({
   display: 'flex',
   alignItems: 'center',
-  gap: '12px',
+  gap: '5px',
 });
 
 const AgentAvatar = styled(Box)({
-  width: 34,
-  height: 34,
+  width: 24,
+  height: 24,
   borderRadius: '50%',
+  border: '1px solid #FFFFFF',
   overflow: 'hidden',
   '& img': {
     width: '100%',
@@ -327,16 +328,10 @@ const AgentAvatar = styled(Box)({
   },
 });
 
-const AgentInfo = styled(Box)({
-  display: 'flex',
-  flexDirection: 'column',
-  gap: '4px',
-});
-
 const AgentName = styled(Typography)({
   color: '#FFFFFF',
   fontSize: '14px',
-  fontWeight: 700,
+  fontWeight: 400,
   lineHeight: '100%',
 });
 
@@ -353,14 +348,21 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
   const currentAgent = useSelector((state: RootState) => state.agent.currentAgent);
   const dispatch = useDispatch();
   const [agentMenuAnchor, setAgentMenuAnchor] = useState<null | HTMLElement>(null);
+  // @ts-ignore
+  const [chatHistory, setChatHistory] = useState<ChatHistoryProps[]>([]);
 
-  const formatAddress = (address: string) => {
+  const showShared = currentAgent?.id === 'niyoko';
+
+  /* const formatAddress = (address: string) => {
     return `${address.slice(0, 6)}...${address.slice(-4)}`;
-  };
+  }; */
 
-  const handleCopyAddress = (address: string) => {
-    navigator.clipboard.writeText(address);
-    // 可以添加复制成功的提示
+  const handleCopyAddress = () => {
+    navigator.clipboard.writeText(currentAgent?.address || '');
+    dispatch(showToast({
+      message: 'Agent Address Copied',
+      severity: 'success',
+    }));
   };
 
   // 根据当前agent决定显示哪些导航项
@@ -468,7 +470,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
   const navigationItems = getNavigationItems();
   const mySpaceItems = getMySpaceItems();
 
-  const handleMoreClick = (event: React.MouseEvent<HTMLElement>, chatId: string) => {
+  const handleEditClick = (event: React.MouseEvent<HTMLElement>, chatId: string) => {
     event.stopPropagation();
     setSelectedChat(chatId);
     setMenuAnchor(event.currentTarget);
@@ -484,19 +486,6 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
     console.log('Delete chat:', selectedChat);
     handleMenuClose();
   };
-
-  const recentChats = [
-    { id: '1', label: 'Chat 2024.12.23' },
-    { id: '2', label: 'Chat 2024.12.22' },
-    { id: '3', label: 'Chat 2024.12.21' },
-    { id: '4', label: 'Chat 2024.12.20' },
-    { id: '5', label: 'Chat 2024.12.19' },
-    { id: '6', label: 'Chat 2024.12.18' },
-    { id: '7', label: 'Chat 2024.12.17' },
-    { id: '8', label: 'Chat 2024.12.16' },
-    { id: '9', label: 'Chat 2024.12.15' },
-    { id: '10', label: 'Chat 2024.12.14' },
-  ];
 
   const renderNavItems = (items: typeof navigationItems) => {
     return items.map((item) => {
@@ -526,9 +515,9 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
       address: '0xabcdef1234567890abcdef1234567890abcdef12',
     },
     {
-      id: 'agent2',
-      name: 'Agent 2',
-      avatar: '/agent2.jpg',
+      id: 'niyoko',
+      name: 'NiyoKo',
+      avatar: '/misato.jpg',
       address: '0x1234567890abcdef1234567890abcdef12345678',
     },
     // 可以添加更多 agent
@@ -561,9 +550,9 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
         <ProfileSection>
           <ProfileHeader>
             <ProfileInfo>
-              <Box sx={{ width: 34, height: 34 }} />
-              <Box>
-                <NameSection>
+              <Box sx={{ width: 40, height: 40 }} />
+              <Box sx={{ gap: '0px' }}>
+                <NameSection onClick={handleAgentMenuOpen}>
                   <Typography 
                     variant="subtitle1" 
                     sx={{ 
@@ -576,29 +565,17 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
                   </Typography>
                   <IconButton 
                     size="small" 
-                    onClick={handleAgentMenuOpen}
                     sx={{ padding: 1, width: 28, height: 28 }}
                   >
                     <ArrowIcon src={arrowDropDown} alt="expand" />
                   </IconButton>
                 </NameSection>
-                <AddressSection>
-                  <AddressText>
-                    {formatAddress(currentAgent?.address || '')}
-                  </AddressText>
-                  <IconButton 
-                    size="small" 
-                    onClick={() => handleCopyAddress(currentAgent?.address || '')}
-                    sx={{ padding: 1, width: 28, height: 28 }}
-                  >
-                    <CopyIcon src={copyIcon} alt="copy" />
-                  </IconButton>
-                </AddressSection>
+                <IconsSection>
+                  <ActionIcon src={walletIcon} alt="wallet" onClick={handleCopyAddress}/>
+                  <ActionIcon src={dockIcon} alt="dock" onClick={handleCopyAddress}/>
+                </IconsSection>
               </Box>
             </ProfileInfo>
-            <InfoIconButton style={{ padding: 5, marginTop: -16, marginRight: 21 }}>
-              <img src={infoIcon} alt="info" />
-            </InfoIconButton>
           </ProfileHeader>
         </ProfileSection>
 
@@ -620,18 +597,15 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
             <AgentMenuItem 
               key={agent.id}
               onClick={() => handleAgentChange(agent)}
-              selected={agent.id === currentAgent?.id}
             >
               <AgentItemContent>
                 <AgentAvatar>
                   <img src={agent.avatar} alt={agent.name} />
                 </AgentAvatar>
-                <AgentInfo>
-                  <AgentName>{agent.name}</AgentName>
-                  <AddressText>
-                    {formatAddress(agent.address)}
-                  </AddressText>
-                </AgentInfo>
+                <AgentName>{agent.name}</AgentName>
+                {agent.id === currentAgent?.id && (
+                  <img src={okIcon} alt="selected" width={24} height={24} />
+                )}
               </AgentItemContent>
             </AgentMenuItem>
           ))}
@@ -651,9 +625,12 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
 
           <Divider sx={{ borderColor: 'rgba(255, 255, 255, 0.1)', margin: '0 20px' }} />
 
-          <GroupTitle>Recent Chat</GroupTitle>
-          <StyledList>
-            {recentChats.map((chat) => (
+          {/* 最近聊天记录 */}
+          {chatHistory.length > 0 && (
+            <>
+              <GroupTitle>Recent Chat</GroupTitle>
+              <StyledList>
+            {chatHistory.map((chat) => (
               <StyledListItemButton key={chat.id}>
                 <ChatListItem>
                   <NavIcon src={livingroomNormal} alt="chat" />
@@ -661,19 +638,21 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
                   <IconButton
                     className="chat-more-button"
                     size="small"
-                    sx={{ marginRight: '-5px' }}
-                    onClick={(e) => handleMoreClick(e, chat.id)}
+                    onClick={(e) => handleEditClick(e, chat.id)}
                   >
-                    <NavIcon src={moreIcon} alt="more" />
+                    <NavIcon src={editIcon} alt="edit" />
                   </IconButton>
                 </ChatListItem>
               </StyledListItemButton>
-            ))}
-          </StyledList>
+                ))}
+              </StyledList>
+            </>
+          )}
         </ScrollableSection>
 
         <SocialBar>
-          <LogoImage src={logoImage} alt="Mirae Studio" />
+          <LogoImage src={logoIcon} alt="Mavae Studio" />
+          {showShared && (
           <SocialIconsWrapper>
             <SocialIconLink
               href="https://twitter.com/yourhandle"
@@ -697,7 +676,8 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
             >
               <SocialIcon src={docsIcon} alt="Docs" />
             </SocialIconLink>
-          </SocialIconsWrapper>
+            </SocialIconsWrapper>
+          )}
         </SocialBar>
       </ContentWrapper>
 
@@ -716,7 +696,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
         }}
       >
         <MenuItem onClick={handleDeleteChat}>
-          <DeleteIcon sx={{ mr: 1 }} />
+          <EditIcon src={editIcon} alt="edit" />
           Delete Chat
         </MenuItem>
       </Menu>

@@ -36,7 +36,6 @@ export default function ChatView() {
       <UnityContainer>
         <UnityGame />
       </UnityContainer>
-      {/* <BackgroundImage src="/mock/Niyoko.png" alt="" /> */}
       <ChatWindowWrapper>
         <ChatWindow agentName="Misato" />
       </ChatWindowWrapper>
