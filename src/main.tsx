@@ -10,7 +10,7 @@ import { RouterProvider } from 'react-router-dom';
 import { router } from './routes';
 import { Provider } from 'react-redux';
 import { store } from './store';
-import { base, baseSepolia } from 'viem/chains';
+import { baseSepolia } from 'viem/chains';
 import { http } from 'wagmi';
 import { PrivyClientConfig } from '@privy-io/react-auth';
 
