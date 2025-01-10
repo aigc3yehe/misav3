@@ -388,6 +388,7 @@ export default function ChatWindow({ agentName }: ChatWindowProps) {
         message: `Please switch to ${network} network`,
         severity: 'warning'
       }));
+      return;
     }
 
     console.log('Sending Transaction...', recipient_address, price, chainId, requiredChainId);
