@@ -149,9 +149,9 @@ export default function UnityGame() {
     // Unity 配置
     const buildUrl = "/Build";
     const config = {
-      dataUrl: `${buildUrl}/9de9924fca3fc7495af7f9a101b5bb10.data.br`,
+      dataUrl: `${buildUrl}/2c8d0f03994d60c1cdcc57978059d8a3.data.br`,
       frameworkUrl: `${buildUrl}/79c44ca5710802631019722ec90e3f79.framework.js.br`,
-      codeUrl: `${buildUrl}/4a8035227a562073c1103fbff248961f.wasm.br`,
+      codeUrl: `${buildUrl}/ceafbebd956be6bc87ffa11cbccc8a1f.wasm.br`,
       streamingAssetsUrl: "StreamingAssets",
       companyName: "yehe",
       productName: "Misato",
@@ -161,7 +161,7 @@ export default function UnityGame() {
 
     // 加载 Unity
     const script = document.createElement("script");
-    script.src = `${buildUrl}/5c09bbd46ad23ae29a5b18429885c23b.loader.js`;
+    script.src = `${buildUrl}/fa809976e7244565d81c35bb1e22f856.loader.js`;
     script.onload = async () => {
       console.log('加载脚本');
       try {

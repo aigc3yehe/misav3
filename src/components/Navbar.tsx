@@ -1,4 +1,4 @@
-import { AppBar, Button, Toolbar, styled, alpha, Dialog, DialogTitle, DialogActions, Box, IconButton } from '@mui/material';
+import { AppBar, Button, Toolbar, styled, alpha, Box, IconButton } from '@mui/material';
 import { useState, useEffect } from 'react';
 import { useDispatch } from 'react-redux';
 import { showToast } from '../store/slices/toastSlice';
@@ -22,6 +22,7 @@ import mobileLivingroomSelected from '../assets/mobile_livingroom_selected.svg';
 import mobileTerminalNormal from '../assets/mobile_terminal_normal.svg';
 import mobileTerminalSelected from '../assets/mobile_terminal_selected.svg';
 import menuNormal from '../assets/menu_normal.svg';
+import CommonDialog, { ActionButton } from './CommonDialog';
 
 const StyledAppBar = styled(AppBar)(() => ({
   background: 'transparent',
@@ -146,36 +147,6 @@ const MenuItemContent = styled(Box)({
     lineHeight: '140%',
     color: '#ffffff',
   },
-});
-
-// 自定义确认弹窗样式
-const StyledDialog = styled(Dialog)(() => ({
-  '& .MuiDialog-paper': {
-    backgroundColor: '#2B1261',
-    borderRadius: '4px',
-    padding: '20px',
-    minWidth: '300px',
-  },
-  '& .MuiDialogTitle-root': {
-    fontFamily: 'Tektur, sans-serif',
-    textAlign: 'center',
-    color: '#ffffff',
-  },
-  '& .MuiDialogActions-root': {
-    justifyContent: 'center',
-    padding: '20px 0 0',
-    gap: '16px',
-  },
-}));
-
-const DialogButton = styled(Button)({
-  width: '117px',
-  height: '40px',
-  borderRadius: '4px',
-  fontFamily: 'Tektur, sans-serif',
-  fontWeight: 700,
-  fontSize: '16px',
-  lineHeight: '24px',
 });
 
 // 左侧容器
@@ -449,188 +420,185 @@ export default function Navbar({ onSidebarOpen, sidebarOpen, isMobile, avatar }:
   const walletIcon = currentWallet?.icon || '/assets/avatar.png';
 
   return (
-    <StyledAppBar position="fixed">
-      <StyledToolbar>
-        <LeftSection>
-          {isMobile && (
-            <>
-              <Avatar
-                src={avatar}
+    <>
+      <StyledAppBar position="fixed">
+        <StyledToolbar>
+          <LeftSection>
+            {isMobile && (
+              <>
+                <Avatar
+                  src={avatar}
+                  sx={{
+                    width: 32,
+                    height: 32,
+                    border: '1px solid #ffffff',
+                  }}
+                />
+                <IconButton
+                  onClick={onSidebarOpen}
+                  sx={{
+                    padding: 0,
+                    width: 27,
+                    height: 24,
+                    '&:hover': {
+                      backgroundColor: alpha('#fff', 0.08),
+                    },
+                  }}
+                >
+                  <img 
+                    src={menuNormal}
+                    alt="menu"
+                    style={{
+                      width: '18px',
+                      height: '16px',
+                    }}
+                  />
+                </IconButton>
+              </>
+            )}
+            {isWorkstation && (
+              <StyledToggleButtonGroup
+                value={mode}
+                exclusive
+                onChange={handleModeChange}
+                mode={mode}
+              >
+                <StyledToggleButton value="chat">
+                  <span className="button-text">CHAT</span>
+                  <img 
+                    className="button-icon"
+                    src={mode === 'chat' ? mobileLivingroomSelected : mobileLivingroomNormal}
+                    alt="Chat"
+                  />
+                </StyledToggleButton>
+                <StyledToggleButton value="terminal">
+                  <span className="button-text">TERMINAL</span>
+                  <img 
+                    className="button-icon"
+                    src={mode === 'terminal' ? mobileTerminalSelected : mobileTerminalNormal}
+                    alt="Terminal"
+                  />
+                </StyledToggleButton>
+              </StyledToggleButtonGroup>
+            )}
+          </LeftSection>
+
+          <RightSection>
+            <JoinButton>
+              <GradientBorderButton className="desktop-button">
+                JOIN THE STUDIO!
+              </GradientBorderButton>
+              <Box 
+                className="mobile-button"
+                component="button"
                 sx={{
-                  width: 32,
-                  height: 32,
-                  border: '1px solid #ffffff',
-                }}
-              />
-              <IconButton
-                onClick={onSidebarOpen}
-                sx={{
+                  background: 'none',
+                  border: 'none',
                   padding: 0,
-                  width: 27,
-                  height: 24,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <img src={mobileJoinIcon} alt="Join the studio" />
+              </Box>
+            </JoinButton>
+            {shouldShowConnect ? (
+              <ConnectButton
+                onClick={handleSwitchWallet}
+                sx={{
+                  backgroundColor: '#C7FF8C',
+                  color: '#000000',
                   '&:hover': {
-                    backgroundColor: alpha('#fff', 0.08),
+                    backgroundColor: alpha('#C7FF8C', 0.8),
                   },
                 }}
               >
-                <img 
-                  src={menuNormal}
-                  alt="menu"
-                  style={{
-                    width: '18px',
-                    height: '16px',
+                {authenticated ? 'RECONNECT' : 'CONNECT'}
+              </ConnectButton>
+            ) : (
+              <>
+                <Avatar
+                  src={walletIcon}
+                  sx={{
+                    width: { xs: 32, sm: 40 },
+                    height: { xs: 32, sm: 40 },
+                    cursor: `url(${pointingCursor}), pointer`,
                   }}
+                  onClick={handleClick}
                 />
-              </IconButton>
-            </>
-          )}
-          {isWorkstation && (
-            <StyledToggleButtonGroup
-              value={mode}
-              exclusive
-              onChange={handleModeChange}
-              mode={mode}
-            >
-              <StyledToggleButton value="chat">
-                <span className="button-text">CHAT</span>
-                <img 
-                  className="button-icon"
-                  src={mode === 'chat' ? mobileLivingroomSelected : mobileLivingroomNormal}
-                  alt="Chat"
-                />
-              </StyledToggleButton>
-              <StyledToggleButton value="terminal">
-                <span className="button-text">TERMINAL</span>
-                <img 
-                  className="button-icon"
-                  src={mode === 'terminal' ? mobileTerminalSelected : mobileTerminalNormal}
-                  alt="Terminal"
-                />
-              </StyledToggleButton>
-            </StyledToggleButtonGroup>
-          )}
-        </LeftSection>
+                <StyledMenu
+                  anchorEl={anchorEl}
+                  open={openMenu}
+                  onClose={handleClose}
+                  anchorOrigin={{
+                    vertical: 'bottom',
+                    horizontal: 'right',
+                  }}
+                  transformOrigin={{
+                    vertical: 'top',
+                    horizontal: 'right',
+                  }}
+                  style={{
+                    marginTop: '10px',
+                  }}
+                >
+                  <MenuItem>
+                    <MenuItemContent>
+                      <Avatar 
+                          src={walletIcon} 
+                          sx={{ width: 20, height: 20 }} 
+                      />
+                      <span className="address-text">
+                        {formatAddress(address)} 
+                      </span>
+                    </MenuItemContent>
+                  </MenuItem>
+                  <MenuItem onClick={() => {
+                    handleClose();
+                    setIsLogoutDialogOpen(true);
+                  }}>
+                    <MenuItemContent>
+                      <img src={logoutIcon} alt="Logout" className="logout-icon" />
+                      <span className="address-text">Logout</span>
+                    </MenuItemContent>
+                  </MenuItem>
+                </StyledMenu>
+              </>
+            )}
+          </RightSection>
+        </StyledToolbar>
+      </StyledAppBar>
 
-        <RightSection>
-          <JoinButton>
-            <GradientBorderButton className="desktop-button">
-              JOIN THE STUDIO!
-            </GradientBorderButton>
-            <Box 
-              className="mobile-button"
-              component="button"
-              sx={{
-                background: 'none',
-                border: 'none',
-                padding: 0,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <img src={mobileJoinIcon} alt="Join the studio" />
-            </Box>
-          </JoinButton>
-          {shouldShowConnect ? (
-            <ConnectButton
-              onClick={handleSwitchWallet}
-              sx={{
-                backgroundColor: '#C7FF8C',
-                color: '#000000',
-                '&:hover': {
-                  backgroundColor: alpha('#C7FF8C', 0.8),
-                },
-              }}
-            >
-              {authenticated ? 'RECONNECT' : 'CONNECT'}
-            </ConnectButton>
-          ) : (
-            <>
-              <Avatar
-                src={walletIcon}
-                sx={{
-                  width: { xs: 32, sm: 40 },
-                  height: { xs: 32, sm: 40 },
-                  cursor: `url(${pointingCursor}), pointer`,
-                }}
-                onClick={handleClick}
-              />
-              <StyledMenu
-                anchorEl={anchorEl}
-                open={openMenu}
-                onClose={handleClose}
-                anchorOrigin={{
-                  vertical: 'bottom',
-                  horizontal: 'right',
-                }}
-                transformOrigin={{
-                  vertical: 'top',
-                  horizontal: 'right',
-                }}
-                style={{
-                  marginTop: '10px',
-                }}
-              >
-                <MenuItem>
-                  <MenuItemContent>
-                    <Avatar 
-                        src={walletIcon} 
-                        sx={{ width: 20, height: 20 }} 
-                    />
-                    <span className="address-text">
-                      {formatAddress(address)} 
-                    </span>
-                  </MenuItemContent>
-                </MenuItem>
-                <MenuItem onClick={() => {
-                  handleClose();
-                  setIsLogoutDialogOpen(true);
-                }}>
-                  <MenuItemContent>
-                    <img src={logoutIcon} alt="Logout" className="logout-icon" />
-                    <span className="address-text">Logout</span>
-                  </MenuItemContent>
-                </MenuItem>
-              </StyledMenu>
-            </>
-          )}
-        </RightSection>
-
-        {/* 退出确认弹窗 */}
-        <StyledDialog
-          open={isLogoutDialogOpen}
-          onClose={() => setIsLogoutDialogOpen(false)}
-        >
-          <DialogTitle>Are you sure to logout?</DialogTitle>
-          <DialogActions>
-            <DialogButton
+      {/* 退出确认弹窗 */}
+      <CommonDialog
+        open={isLogoutDialogOpen}
+        onClose={() => setIsLogoutDialogOpen(false)}
+        title="LOGOUT"
+        children={
+          <div>
+            Are you sure to logout?
+          </div>
+        }
+        actions={
+          <>
+            <ActionButton 
+              variant="secondary" 
               onClick={() => setIsLogoutDialogOpen(false)}
-              sx={{
-                backgroundColor: 'transparent',
-                border: '1px solid #C7FF8C',
-                color: '#C7FF8C',
-                '&:hover': {
-                  backgroundColor: alpha('#C7FF8C', 0.1),
-                },
-              }}
             >
               Cancel
-            </DialogButton>
-            <DialogButton
+            </ActionButton>
+            <ActionButton 
+              variant="primary" 
               onClick={handleLogout}
-              sx={{
-                backgroundColor: '#C7FF8C',
-                color: '#000000',
-                '&:hover': {
-                  backgroundColor: alpha('#C7FF8C', 0.8),
-                },
-              }}
             >
               Confirm
-            </DialogButton>
-          </DialogActions>
-        </StyledDialog>
-      </StyledToolbar>
-    </StyledAppBar>
+            </ActionButton>
+          </>
+        }
+      >
+        {/* 如果需要添加额外的内容，可以在这里添加 */}
+      </CommonDialog>
+    </>
   );
 } 

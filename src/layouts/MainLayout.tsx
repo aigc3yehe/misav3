@@ -97,14 +97,32 @@ export default function MainLayout() {
       </LayoutWrapper>
       <Snackbar
         open={toast.open}
-        autoHideDuration={2000}
+        autoHideDuration={12000}
         onClose={handleCloseToast}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
       >
         <Alert 
           onClose={handleCloseToast} 
           severity={toast.severity}
-          sx={{ width: '100%' }}
+          sx={{ 
+            width: '100%',
+            backgroundColor: 'rgba(47, 29, 86, 0.95)',
+            padding: '10px 20px',
+            '& .MuiAlert-message': {
+              color: '#fff',
+              fontSize: 14,
+              fontWeight: 400,
+              lineHeight: '140%'
+            },
+            '& .MuiAlert-icon': {
+              color: '#fff'
+            },
+            '& .MuiAlert-action': {
+              padding: 0,
+              marginRight: 0,
+              alignItems: 'center'
+            }
+          }}
         >
           {toast.message}
         </Alert>
