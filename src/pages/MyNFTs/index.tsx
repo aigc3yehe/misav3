@@ -12,7 +12,6 @@ import EmptyState from '../../components/EmptyState';
 import LoadingState from '../../components/LoadingState';
 
 const CARD_WIDTH = 212;
-const CARD_HEIGHT = 212;
 const CARD_GAP = 12;
 const MIN_PADDING = 40;
 

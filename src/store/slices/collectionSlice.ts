@@ -1,4 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import { CHAIN_CONFIG } from '../../config';
+import { RootState } from '../../store';
 
 export interface Collection {
   id: string;
@@ -40,7 +42,7 @@ const fetchStudioCollections = async (network: number) => {
 // 获取合约元数据
 const fetchContractMetadata = async (contractAddresses: string[]) => {
   const response = await fetch(
-    'https://base-mainnet.g.alchemy.com/nft/v3/goUyG3r-JBxlrxzsqIoyv0b_W-LwScsN/getContractMetadataBatch',
+    `https://${CHAIN_CONFIG.base_url}.g.alchemy.com/nft/v3/goUyG3r-JBxlrxzsqIoyv0b_W-LwScsN/getContractMetadataBatch`,
     {
       method: 'POST',
       headers: {
@@ -59,7 +61,7 @@ export const fetchCollections = createAsyncThunk(
   async () => {
     try {
       // 1. 获取基本列表信息
-      const studioData = await fetchStudioCollections(8453);
+      const studioData = await fetchStudioCollections(CHAIN_CONFIG.chainId);
       if (!studioData.data || !studioData.data.length) {
         throw new Error('No collections found');
       }
@@ -77,7 +79,7 @@ export const fetchCollections = createAsyncThunk(
 
         return {
           id: item.collection,
-          chain: "base",
+          chain: CHAIN_CONFIG.chain,
           name: item.metadata.name || contractInfo?.name,
           symbol: contractInfo?.symbol || '',
           description: item.metadata.description,
@@ -115,4 +117,8 @@ const collectionSlice = createSlice({
   },
 });
 
-export default collectionSlice.reducer; 
+export default collectionSlice.reducer;
+
+// 导出选择器
+export const selectCollectionByName = (state: RootState, name: string | null) => 
+  state.collection.collections.find(c => c.name === name); 

@@ -59,6 +59,10 @@ const ActionButton = styled(Button)<{ variant?: 'primary' | 'secondary' }>(({ va
   textTransform: 'none',
   '&:hover': {
     backgroundColor: variant === 'primary' ? '#B7EF7C' : '#B99CEF',
+  },
+  '&.Mui-disabled': {
+    backgroundColor: variant === 'primary' ? '#C7FF8C' : '#C9ACFF',
+    color: '#636071'
   }
 }));
 

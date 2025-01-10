@@ -1,4 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import { CHAIN_CONFIG } from '../../config';
 
 export interface NFT {
   id: string;
@@ -70,7 +71,7 @@ const initialState: NFTState = {
 };
 
 const API_CONFIG = {
-  baseUrl: 'https://base-mainnet.g.alchemy.com/nft/v3',
+  baseUrl: `https://${CHAIN_CONFIG.base_url}.g.alchemy.com/nft/v3`,
   apiKey: 'goUyG3r-JBxlrxzsqIoyv0b_W-LwScsN'
 };
 
@@ -170,7 +171,7 @@ export const fetchAllOwnedNFTs = createAsyncThunk(
   async (ownerAddress: string) => {
     try {
       // 1. 首先获取所有 collections
-      const network = 8453;
+      const network = CHAIN_CONFIG.chainId;
       const response = await fetch(`/studio-api/studio/collections?network=${network}`);
       if (!response.ok) throw new Error('Failed to fetch studio collections');
       const studioData = await response.json();

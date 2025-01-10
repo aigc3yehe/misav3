@@ -1,14 +1,15 @@
 import { Box, styled, Alert, Snackbar, useTheme, useMediaQuery } from '@mui/material';
 import Sidebar from '../components/Sidebar';
 import Navbar from '../components/Navbar';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
 import SharedAvatar from '../components/SharedAvatar';
 import SharedMenuButton from '../components/SharedMenuButton';
 import { useSelector, useDispatch } from 'react-redux';
-import { RootState } from '../store';
+import { RootState, AppDispatch } from '../store';
 import { useLocation, Navigate } from 'react-router-dom';
 import { hideToast } from '../store/slices/toastSlice';
+import { fetchCollections } from '../store/slices/collectionSlice';
 
 const LayoutRoot = styled('div')(({ theme }) => ({
   display: 'flex',
@@ -42,8 +43,12 @@ export default function MainLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
   const currentAgent = useSelector((state: RootState) => state.agent.currentAgent);
   const isFullscreen = location.pathname === '/workstation' || location.pathname === '/voice_call';
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   const toast = useSelector((state: RootState) => state.toast);
+
+  useEffect(() => {
+    dispatch(fetchCollections());
+  }, [dispatch]);
 
   if (!currentAgent) {
     return <Navigate to="/" replace />;

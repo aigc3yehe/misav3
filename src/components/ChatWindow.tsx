@@ -14,6 +14,7 @@ import { InputBaseProps } from '@mui/material';
 import { useWriteContract, useWaitForTransactionReceipt, useChainId } from 'wagmi';
 import { showToast } from '../store/slices/toastSlice';
 import { parseUnits } from 'viem';
+import { selectCollectionByName } from '../store/slices/collectionSlice';
 
 const ORIGINAL_HEIGHT = 1800;  // 原始设计高度
 const WINDOW_HEIGHT = 1180;    // 原始窗口高度
@@ -239,7 +240,7 @@ const convertChatMessage = (
         {
           label: 'Check Payment',
           variant: 'secondary',
-          onClick: checkPayment,
+          onClick: () => checkPayment(),
           disabled: !hash && !error
         }
       ]
@@ -335,6 +336,11 @@ export default function ChatWindow({ agentName }: ChatWindowProps) {
 
   const chainId = useChainId();
 
+  // 获取当前选中的收藏集
+  const currentCollection = useSelector((state: RootState) => 
+    selectCollectionByName(state, state.chat.collectionName || '')
+  );
+
   // 处理发送 eth
   const sendEth = (id: number) => {
     if (shouldShowConnect) {
@@ -361,6 +367,16 @@ export default function ChatWindow({ agentName }: ChatWindowProps) {
       return;
     }
 
+    // 检查是否有有效的收藏集信息
+    const fee = currentCollection?.fee;
+    if (!fee) {
+      dispatch(showToast({
+        message: 'Collection info not found.',
+        severity: 'error'
+      }));
+      return;
+    }
+
     // 保存当前正在处理的交易消息
     setCurrentPaymentId(id);
 
@@ -376,16 +392,15 @@ export default function ChatWindow({ agentName }: ChatWindowProps) {
     }
 
     console.log('Sending Transaction...', recipient_address, price, chainId, requiredChainId);
-
     try {
-      // 发送交易
+      // 使用当前收藏集的合约地址
       writeContract({
-        address: '0x98f4779FcCb177A6D856dd1DfD78cd15B7cd2af5',
+        address: fee.feeToken as `0x${string}`,
         abi: abi,
         functionName: 'transfer',
         args: [
           recipient_address as `0x${string}`,
-          parseUnits(price, 18)
+          parseUnits(price ? price : fee.feeAmount.toString(), fee.feeDecimals)
         ]
       })
 
