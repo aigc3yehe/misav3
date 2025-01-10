@@ -149,7 +149,7 @@ export default function UnityGame() {
     // Unity 配置
     const buildUrl = "/Build";
     const config = {
-      dataUrl: `${buildUrl}/2c8d0f03994d60c1cdcc57978059d8a3.data.br`,
+      dataUrl: `${buildUrl}/f1bb28aff9d57849f9ab02fd84cbb8f2.data.br`,
       frameworkUrl: `${buildUrl}/79c44ca5710802631019722ec90e3f79.framework.js.br`,
       codeUrl: `${buildUrl}/ceafbebd956be6bc87ffa11cbccc8a1f.wasm.br`,
       streamingAssetsUrl: "StreamingAssets",

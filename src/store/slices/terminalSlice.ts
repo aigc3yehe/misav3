@@ -45,9 +45,10 @@ const terminalSlice = createSlice({
   initialState,
   reducers: {
     addLog: (state, action) => {
+      console.log('addLog', action.payload);
       state.logs.push({
         id: `live-${Date.now()}`,
-        text: action.payload,
+        text: action.payload.message,
         timestamp: Date.now()
       });
     },
