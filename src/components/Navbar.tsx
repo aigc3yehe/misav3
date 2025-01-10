@@ -21,7 +21,6 @@ import mobileLivingroomNormal from '../assets/mobile_livingroom_normal.svg';
 import mobileLivingroomSelected from '../assets/mobile_livingroom_selected.svg';
 import mobileTerminalNormal from '../assets/mobile_terminal_normal.svg';
 import mobileTerminalSelected from '../assets/mobile_terminal_selected.svg';
-import { useTheme } from '@mui/material';
 import menuNormal from '../assets/menu_normal.svg';
 
 const StyledAppBar = styled(AppBar)(() => ({
@@ -203,6 +202,7 @@ const RightSection = styled(Box)(({ theme }) => ({
 }));
 
 // 添加新的样式组件
+// @ts-ignore
 const StyledToggleButtonGroup = styled(ToggleButtonGroup)(({ theme, mode }: { mode: string }) => ({
   position: 'absolute',
   left: '290px',
@@ -352,8 +352,8 @@ function formatAddress(address: string | undefined) {
   return address ? address.slice(0, 6) + '...' + address.slice(-4) : '';
 }
 
+// @ts-ignore
 export default function Navbar({ onSidebarOpen, sidebarOpen, isMobile, avatar }: NavbarProps) {
-  const theme = useTheme();
   const { login, logout, authenticated, user, linkWallet } = usePrivy();
   const { address, isConnected } = useAccount();
   const { wallets } = useWalletManager();
