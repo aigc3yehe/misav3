@@ -386,9 +386,8 @@ export default function ChatWindow({ agentName }: ChatWindowProps) {
     if (chainId !== requiredChainId) {
       dispatch(showToast({
         message: `Please switch to ${network} network`,
-        severity: 'error'
+        severity: 'warning'
       }));
-      return;
     }
 
     console.log('Sending Transaction...', recipient_address, price, chainId, requiredChainId);

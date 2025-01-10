@@ -10,15 +10,16 @@ import { RouterProvider } from 'react-router-dom';
 import { router } from './routes';
 import { Provider } from 'react-redux';
 import { store } from './store';
-import { baseSepolia } from 'viem/chains';
+import { base, baseSepolia } from 'viem/chains';
 import { http } from 'wagmi';
 import { PrivyClientConfig } from '@privy-io/react-auth';
 
 // 创建 wagmi 配置
 const wagmiConfig = createConfig({
-  chains: [baseSepolia],
+  chains: [base, baseSepolia],
   transports: {
     [baseSepolia.id]: http(),
+    [base.id]: http(),
   },
 });
 
