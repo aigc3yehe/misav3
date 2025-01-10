@@ -5,11 +5,13 @@ import pointingCursor from '../assets/pointer.png';
 interface NFTCardProps {
   nft: NFT;
   onClick: () => void;
+  width?: number;
+  height?: number;
 }
 
-const Card = styled(Box)({
-  width: '212px',
-  height: '212px',
+const Card = styled(Box)<{ width?: number; height?: number }>(({ width = 212, height = 212 }) => ({
+  width: `${width}px`,
+  height: `${height}px`,
   borderRadius: '10px',
   overflow: 'hidden',
   position: 'relative',
@@ -23,7 +25,7 @@ const Card = styled(Box)({
       opacity: 1,
     },
   },
-});
+}));
 
 const Image = styled('img')({
   width: '100%',
@@ -32,7 +34,7 @@ const Image = styled('img')({
   transition: 'transform 0.3s ease',
 });
 
-const Overlay = styled(Box)({
+const Overlay = styled(Box)(({ theme }) => ({
   position: 'absolute',
   top: 0,
   left: 0,
@@ -45,9 +47,15 @@ const Overlay = styled(Box)({
   flexDirection: 'column',
   justifyContent: 'flex-end',
   padding: '13px',
-});
 
-const Name = styled('div')({
+  [theme.breakpoints.down('sm')]: {
+    opacity: 1,
+    background: 'linear-gradient(180deg, rgba(0, 0, 0, 0) 50%, rgba(0, 0, 0, 0.7) 100%)',
+    padding: '12px',
+  },
+}));
+
+const Name = styled('div')(({ theme }) => ({
   color: '#FFFFFF',
   fontSize: '16px',
   fontWeight: 500,
@@ -57,11 +65,15 @@ const Name = styled('div')({
   display: '-webkit-box',
   WebkitLineClamp: 2,
   WebkitBoxOrient: 'vertical',
-});
 
-export default function NFTCard({ nft, onClick }: NFTCardProps) {
+  [theme.breakpoints.down('sm')]: {
+    fontSize: '14px',
+  },
+}));
+
+export default function NFTCard({ nft, onClick, width, height }: NFTCardProps) {
   return (
-    <Card onClick={onClick}>
+    <Card onClick={onClick} width={width} height={height}>
       <Image 
         className="main-image" 
         src={nft.image} 

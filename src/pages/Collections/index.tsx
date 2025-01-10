@@ -14,37 +14,65 @@ const CARD_GAP = 12;
 const MIN_PADDING = 40;
 const SCROLLBAR_WIDTH = 17;
 
-const PageContainer = styled(Box)<{ padding: number }>(({ padding }) => ({
-  padding: `24px ${padding}px`,
+const PageContainer = styled(Box)(({ theme }) => ({
+  padding: '24px 40px',
   height: '100%',
   overflow: 'auto',
+
+  [theme.breakpoints.down('sm')]: {
+    padding: '24px 20px',
+  },
 }));
 
-const Title = styled(Typography)({
+const Title = styled(Typography)(({ theme }) => ({
   fontSize: '22px',
   fontWeight: 800,
   lineHeight: '100%',
   color: '#FFFFFF',
   marginBottom: '24px',
-});
 
-const CollectionGrid = styled(Box)({
+  [theme.breakpoints.down('sm')]: {
+    fontSize: '22px',
+    fontWeight: 800,
+    lineHeight: '100%',
+    marginBottom: '30px',
+  },
+}));
+
+const CollectionGrid = styled(Box)(({ theme }) => ({
   display: 'flex',
   gap: `${CARD_GAP}px`,
   flexWrap: 'wrap',
-});
 
-const CollectionCard = styled(Box)({
-  position: 'relative',
-  width: '268px',
-  height: '314px',
-  borderRadius: '10px',
-  overflow: 'hidden',
-  cursor: `url(${pointingCursor}), pointer`,
-  transition: 'transform 0.3s ease',
-  '&:hover': {
-    transform: 'scale(1.05)',
-  }
+  [theme.breakpoints.down('sm')]: {
+    gap: '8px',
+    justifyContent: 'space-between',
+  },
+}));
+
+const CollectionCard = styled(Box)(({ theme }) => {
+  // 计算移动端卡片宽度：(屏幕宽度 - 左右padding - 中间间距) / 2
+  const mobileCardWidth = `calc((100vw - 40px - 8px) / 2)`;
+  // 保持原有宽高比 (314/268 ≈ 1.171642)
+  const mobileCardHeight = `calc(${mobileCardWidth} * 1.171642)`;
+
+  return {
+    position: 'relative',
+    width: '268px',
+    height: '314px',
+    borderRadius: '10px',
+    overflow: 'hidden',
+    cursor: `url(${pointingCursor}), pointer`,
+    transition: 'transform 0.3s ease',
+    '&:hover': {
+      transform: 'scale(1.05)',
+    },
+
+    [theme.breakpoints.down('sm')]: {
+      width: mobileCardWidth,
+      height: mobileCardHeight,
+    },
+  };
 });
 
 const BackgroundImage = styled('img')({
@@ -66,7 +94,7 @@ const OverlayImage = styled('img')({
   pointerEvents: 'none',
 });
 
-const CollectionName = styled(Typography)({
+const CollectionName = styled(Typography)(({ theme }) => ({
   position: 'absolute',
   left: '19px',
   bottom: '20px',
@@ -79,29 +107,48 @@ const CollectionName = styled(Typography)({
   overflow: 'hidden',
   textOverflow: 'ellipsis',
   whiteSpace: 'nowrap',
-});
 
-const NFTsContainer = styled(Box)({
+  [theme.breakpoints.down('sm')]: {
+    left: '12px',
+    bottom: '12px',
+    fontSize: '0.88rem',
+  },
+}));
+
+const NFTsContainer = styled(Box)(({ theme }) => ({
   position: 'absolute',
   right: '19px',
   top: '14px',
   display: 'flex',
   alignItems: 'center',
   gap: '4px',
-});
 
-const NFTsCount = styled(Typography)({
+  [theme.breakpoints.down('sm')]: {
+    right: '0.8rem',
+    top: '0.65rem',
+  },
+}));
+
+const NFTsCount = styled(Typography)(({ theme }) => ({
   color: '#FFFFFF',
   fontFamily: 'Inter',
   fontSize: '16px',
   fontWeight: 500,
   lineHeight: '100%',
-});
 
-const NFTIcon = styled('img')({
+  [theme.breakpoints.down('sm')]: {
+    fontSize: '0.8rem',
+  },
+}));
+
+const NFTIcon = styled('img')(({ theme }) => ({
   width: '20px',
   height: '20px',
-});
+  [theme.breakpoints.down('sm')]: {
+    width: '0.88rem',
+    height: '0.88rem',
+  },
+}));
 
 const LoadingWrapper = styled('div')({
   width: '100%',

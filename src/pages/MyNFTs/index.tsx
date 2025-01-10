@@ -1,5 +1,5 @@
-import { Box, Typography, styled } from '@mui/material';
-import { useEffect, useState } from 'react';
+import { Box, Typography, styled, useTheme, useMediaQuery } from '@mui/material';
+import { useEffect, useState, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '../../store';
 import { fetchAllOwnedNFTs, clearNFTs } from '../../store/slices/nftSlice';
@@ -23,7 +23,7 @@ interface PageContainerProps {
 
 const PageContainer = styled(Box, {
   shouldForwardProp: (prop) => prop !== 'padding' && prop !== 'hasData'
-})<PageContainerProps>(({ padding, hasData }) => ({
+})<PageContainerProps>(({ theme, padding, hasData }) => ({
   padding: `0 ${padding}px`,
   height: hasData ? '100%' : 'auto',
   minHeight: '100%',
@@ -48,15 +48,23 @@ const PageContainer = styled(Box, {
   },
   scrollbarWidth: 'thin',
   scrollbarColor: '#4E318D transparent',
+
+  [theme.breakpoints.down('sm')]: {
+    padding: '0 20px',
+  },
 }));
 
-const Title = styled(Typography)({
+const Title = styled(Typography)(({ theme }) => ({
   fontSize: '22px',
   fontWeight: 800,
   lineHeight: '100%',
   color: '#FFFFFF',
   margin: '30px 0',
-});
+
+  [theme.breakpoints.down('sm')]: {
+    margin: '24px 0',
+  },
+}));
 
 export default function MyNFTs() {
   const dispatch = useDispatch<AppDispatch>();
@@ -65,11 +73,19 @@ export default function MyNFTs() {
   const [containerWidth, setContainerWidth] = useState(0);
   const { address, isConnected } = useAccount();
   const { authenticated } = usePrivy();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   const shouldShowConnect = !authenticated || !isConnected;
 
   // 计算布局
   useEffect(() => {
+    if (isMobile) {
+      const containerWidth = window.innerWidth - 40;
+      setContainerWidth(containerWidth);
+      return;
+    }
+
     const container = document.getElementById('myNftsContainer');
     if (!container) return;
 
@@ -90,7 +106,16 @@ export default function MyNFTs() {
 
     calculateLayout();
     return () => resizeObserver.disconnect();
-  }, []);
+  }, [isMobile]);
+
+  // 计算卡片尺寸
+  const cardSize = useMemo(() => {
+    if (isMobile) {
+      // 移动端: (屏幕宽度 - 左右padding - 中间间距) / 2
+      return Math.floor((window.innerWidth - 40 - 8) / 2);
+    }
+    return CARD_WIDTH; // PC 端保持原有尺寸
+  }, [isMobile]);
 
   useEffect(() => {
     if (shouldShowConnect || !address) {
@@ -122,7 +147,7 @@ export default function MyNFTs() {
   return (
     <PageContainer 
       id="myNftsContainer" 
-      padding={containerPadding}
+      padding={isMobile ? 20 : containerPadding}
       hasData={nfts.length > 0}
     >
       <Title>MY NFTS</Title>
@@ -136,11 +161,13 @@ export default function MyNFTs() {
                 key={nft.id}
                 nft={nft}
                 onClick={() => window.open(`https://magiceden.io/item-details/base/${nft.contract}/${nft.id}`, '_blank')}
+                width={cardSize}
+                height={cardSize}
               />
             )}
-            itemWidth={CARD_WIDTH}
-            itemHeight={CARD_HEIGHT}
-            gap={CARD_GAP}
+            itemWidth={cardSize}
+            itemHeight={cardSize}
+            gap={isMobile ? 8 : CARD_GAP}
             containerWidth={containerWidth}
             containerId="myNftsContainer"
           />

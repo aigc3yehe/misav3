@@ -1,5 +1,7 @@
 import { Box, styled } from '@mui/material';
 import terminalBg from '../../assets/terminal_bg.png';
+import mobileTerminalBg from '../../assets/mobile_terminal_bg.png';
+import mobileMisato from '../../assets/mobile_misato.png';
 import { useEffect, useCallback, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useTypewriter } from '../../hooks/useTypewriter';
@@ -48,35 +50,62 @@ const TerminalContainer = styled(Box)(() => {
   };
 });
 
-const BackgroundImage = styled('img')({
+const BackgroundImage = styled('img')(({ theme }) => ({
   position: 'absolute',
   bottom: 0,
   left: '50%',
   transform: 'translateX(-50%)',
-  height: '100%',  // 设置为容器的100%高度
-  width: 'auto',   // 宽度自动计算
+  height: '100%',
+  width: 'auto',
   objectFit: 'contain',
   pointerEvents: 'none',
   '@media (min-height: 1800px)': {
-    width: '2380px',    // 在超过原始设计高度时使用原始宽度
-    height: '1800px',   // 在超过原始设计高度时使用原始高度
-  }
-});
+    width: '2380px',
+    height: '1800px',
+  },
+
+  [theme.breakpoints.down('sm')]: {
+    content: `url(${mobileTerminalBg})`,
+    width: 'calc(290 / 390 * 100vw)', // 290px at 390px viewport width
+    height: 'auto',
+    bottom: 0,
+  },
+}));
+
+const MobileMisatoImage = styled('img')(({ theme }) => ({
+  display: 'none',
+  
+  [theme.breakpoints.down('sm')]: {
+    display: 'block',
+    position: 'absolute',
+    top: 92,
+    left: 0,
+    width: '100%',
+    height: 'auto',
+    objectFit: 'contain',
+    pointerEvents: 'none',
+    zIndex: 1,
+  },
+}));
 
 const ORIGINAL_OUTPUT_HEIGHT = 1056;        // 原始输出框高度
 const ORIGINAL_OUTPUT_RATIO = 1110/528;    // 原始输出框宽高比
 
-const TerminalOutput = styled(Box)({
+const TerminalOutput = styled(Box)(({ theme }) => ({
   position: 'relative',
   width: `min(calc(100% - 80px), calc(${ORIGINAL_OUTPUT_RATIO} * ${ORIGINAL_OUTPUT_HEIGHT}px * min(1, ${window.innerHeight}/${ORIGINAL_TERMINAL_HEIGHT})))`,
   height: `calc(${ORIGINAL_OUTPUT_HEIGHT}px * min(1, ${window.innerHeight}/${ORIGINAL_TERMINAL_HEIGHT}))`,
   fontFamily: '"Azeret Mono", monospace',
   fontSize: '14px',
   fontWeight: 400,
-  lineHeight: '20px',
+  lineHeight: '24px',
   color: '#A1FF3C',
   overflowY: 'auto',
+  overflowX: 'hidden',
   zIndex: 1,
+  whiteSpace: 'pre-wrap',
+  wordWrap: 'break-word',
+  wordBreak: 'break-all',
   '&::-webkit-scrollbar': {
     width: '4px',
   },
@@ -90,7 +119,16 @@ const TerminalOutput = styled(Box)({
   '&::-webkit-scrollbar-thumb:hover': {
     background: 'rgba(161, 255, 60, 0.5)',
   },
-});
+
+  [theme.breakpoints.down('sm')]: {
+    width: 'calc(100% - 40px)',
+    margin: '0 20px 20px 20px',
+    aspectRatio: '350/518',
+    height: 'auto',
+    fontSize: '12px',
+    lineHeight: '24px',
+  },
+}));
 
 // Pusher 配置
 const PUSHER_CONFIG = {
@@ -179,6 +217,7 @@ export default function TerminalView() {
   return (
     <TerminalContainer>
       <BackgroundImage src={terminalBg} alt="" />
+      <MobileMisatoImage src={mobileMisato} alt="" />
       <TerminalOutput id="terminal-output">
         {isLoading ? (
           <div>Loading logs...</div>

@@ -1,6 +1,6 @@
 import { Box, IconButton, Typography, styled, Checkbox } from '@mui/material';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { Collection } from '../../store/slices/collectionSlice';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '../../store';
@@ -16,13 +16,14 @@ import { useAccount } from 'wagmi';
 import { showToast } from '../../store/slices/toastSlice';
 import EmptyState from '../../components/EmptyState';
 import LoadingState from '../../components/LoadingState';
+import { useTheme, useMediaQuery } from '@mui/material';
+
 
 const CARD_WIDTH = 212;
-const CARD_HEIGHT = 212;
 const CARD_GAP = 12;
 const MIN_PADDING = 40;
 
-const PageContainer = styled(Box)<{ padding: number, hasData: boolean }>(({ padding, hasData }) => ({
+const PageContainer = styled(Box)<{ padding: number, hasData: boolean }>(({ theme, padding, hasData }) => ({
   padding: `0 ${padding}px`,
   height: hasData ? '100%' : 'auto',
   minHeight: '100%',
@@ -47,13 +48,21 @@ const PageContainer = styled(Box)<{ padding: number, hasData: boolean }>(({ padd
   },
   scrollbarWidth: 'thin',
   scrollbarColor: '#4E318D transparent',
+
+  [theme.breakpoints.down('sm')]: {
+    padding: '0 20px', // 移动端固定间距
+  },
 }));
 
-const Header = styled(Box)({
+const Header = styled(Box)(({ theme }) => ({
   display: 'flex',
   alignItems: 'center',
   gap: '12px',
-});
+  [theme.breakpoints.down('sm')]: {
+    gap: '0px',
+    marginTop: '20px',
+  },
+}));
 
 const BackButton = styled(IconButton)({
   padding: 0,
@@ -73,19 +82,26 @@ const BackIcon = styled('img')({
   height: '24px',
 });
 
-const Title = styled(Typography)({
+const Title = styled(Typography)(({ theme }) => ({
   fontSize: '22px',
   fontWeight: 800,
   lineHeight: '100%',
   color: '#FFFFFF',
-});
+  [theme.breakpoints.down('sm')]: {
+    fontSize: '1rem',
+  },
+}));
 
-const TitleRow = styled(Box)({
+const TitleRow = styled(Box)(({ theme }) => ({
   display: 'flex',
   flexDirection: 'column',
   gap: '10px',
   margin: '30px 0',
-});
+  [theme.breakpoints.down('sm')]: {
+    margin: '20px 0',
+    gap: 'auto',
+  },
+}));
 
 const TopRow = styled(Box)({
   display: 'flex',
@@ -93,20 +109,26 @@ const TopRow = styled(Box)({
   justifyContent: 'space-between',
 });
 
-const LeftSection = styled(Box)({
+const LeftSection = styled(Box)(({ theme }) => ({
   display: 'flex',
   alignItems: 'center',
   gap: '15px',
-});
+  [theme.breakpoints.down('sm')]: {
+    gap: '8px',
+  },
+}));
 
-const CollectionName = styled(Typography)({
+const CollectionName = styled(Typography)(({ theme }) => ({
   fontSize: '40px',
   fontWeight: 800,
   lineHeight: '100%',
   color: '#FFFFFF',
-});
+  [theme.breakpoints.down('sm')]: {
+    fontSize: '24px',
+  },
+}));
 
-const NftIconButton = styled(Box)({
+const NftIconButton = styled(Box)(({ theme }) => ({
   width: '30px',
   height: '30px',
   cursor: `url(${pointingCursor}), pointer`,
@@ -114,7 +136,11 @@ const NftIconButton = styled(Box)({
     width: '100%',
     height: '100%',
   },
-});
+  [theme.breakpoints.down('sm')]: {
+    width: '24px',
+    height: '24px',
+  },
+}));
 
 const OwnedCheckbox = styled(Checkbox)({
   color: '#FFFFFF',
@@ -135,12 +161,15 @@ const OwnedLabel = styled(Box)({
   },
 });
 
-const Description = styled(Typography)({
+const Description = styled(Typography)(({ theme }) => ({
   fontSize: '14px',
   fontWeight: 400,
   lineHeight: '100%',
   color: '#D6C0FF',
-});
+  [theme.breakpoints.down('sm')]: {
+    fontSize: '12px',
+  },
+}));
 
 export default function NFTGallery() {
   const location = useLocation();
@@ -154,9 +183,17 @@ export default function NFTGallery() {
   const [isOwned, setIsOwned] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
   const { address, isConnected } = useAccount();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   // 计算布局
   useEffect(() => {
+    if (isMobile) {
+      const containerWidth = window.innerWidth - 40;
+      setContainerWidth(containerWidth);
+      return;
+    }
+
     const container = document.getElementById('nftContainer');
     if (!container) return;
 
@@ -177,7 +214,16 @@ export default function NFTGallery() {
 
     calculateLayout();
     return () => resizeObserver.disconnect();
-  }, []);
+  }, [isMobile]);
+
+  // 计算卡片尺寸
+  const cardSize = useMemo(() => {
+    if (isMobile) {
+      // 移动端: (屏幕宽度 - 左右padding - 中间间距) / 2
+      return Math.floor((window.innerWidth - 40 - 8) / 2);
+    }
+    return CARD_WIDTH; // PC 端保持原有尺寸
+  }, [isMobile]);
 
   useEffect(() => {
     if (collection) {
@@ -254,7 +300,7 @@ export default function NFTGallery() {
   return (
     <PageContainer 
       id="nftContainer" 
-      padding={containerPadding}
+      padding={isMobile ? 20 : containerPadding}
       hasData={nfts.length > 0}
     >
       <Header>
@@ -297,11 +343,13 @@ export default function NFTGallery() {
                 key={nft.id}
                 nft={nft}
                 onClick={() => window.open(`https://magiceden.io/item-details/base/${nft.contract}/${nft.id}`, '_blank')}
+                width={cardSize}
+                height={cardSize}
               />
             )}
-            itemWidth={CARD_WIDTH}
-            itemHeight={CARD_HEIGHT}
-            gap={CARD_GAP}
+            itemWidth={cardSize}
+            itemHeight={cardSize}
+            gap={isMobile ? 8 : CARD_GAP}
             containerWidth={containerWidth}
             containerId="nftContainer"
           />
