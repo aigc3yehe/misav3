@@ -16,10 +16,10 @@ import { PrivyClientConfig } from '@privy-io/react-auth';
 
 // 创建 wagmi 配置
 const wagmiConfig = createConfig({
-  chains: [base, baseSepolia],
+  chains: [baseSepolia],
   transports: {
     [baseSepolia.id]: http(),
-    [base.id]: http(),
+    //[base.id]: http(),
   },
 });
 
@@ -40,6 +40,8 @@ const privyConfig: PrivyClientConfig  = {
     requireUserPasswordOnCreate: true,
     showWalletUIs: true,
   },
+  defaultChain: baseSepolia,
+  supportedChains: [baseSepolia],
 };
 
 function AppProvider({ children }: { children: React.ReactNode }) {
