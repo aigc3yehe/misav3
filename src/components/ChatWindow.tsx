@@ -396,7 +396,7 @@ export default function ChatWindow({ agentName }: ChatWindowProps) {
 
     // 检查是否有有效的收藏集信息
     const fee = currentCollection?.fee;
-    if (!fee || !fee.feeToken || !fee.feeAmount || !fee.feeDecimals
+    if (!fee || !fee.feeAmount || !fee.feeDecimals
       || !fee.feeSymbol || !fee.treasury
     ) {
       dispatch(showToast({
