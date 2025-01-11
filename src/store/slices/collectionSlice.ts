@@ -4,7 +4,7 @@ import { RootState } from '../../store';
 
 export interface Collection {
   id: string;
-  chain: string;
+  chain: number;
   name: string;
   symbol: string;
   description: string;
@@ -17,6 +17,7 @@ export interface Collection {
     feeToken: string;
     feeDecimals: number;
     feeAmount: number;
+    feeSymbol: string;
   };
 }
 
@@ -79,7 +80,7 @@ export const fetchCollections = createAsyncThunk(
 
         return {
           id: item.collection,
-          chain: CHAIN_CONFIG.chain,
+          chain: item.network,
           name: item.metadata.name || contractInfo?.name,
           symbol: contractInfo?.symbol || '',
           description: item.metadata.description,

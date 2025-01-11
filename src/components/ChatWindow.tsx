@@ -1,4 +1,4 @@
-import { Box, Typography, styled, Dialog, DialogTitle, DialogContent, DialogActions, Button } from '@mui/material';
+import { Box, Typography, styled } from '@mui/material';
 import { useState, useEffect, KeyboardEvent, useRef } from 'react';
 import { usePrivy } from '@privy-io/react-auth';
 import { useAccount } from 'wagmi';
@@ -11,10 +11,12 @@ import { AppDispatch, RootState } from '../store';
 import { sendMessage, checkConnectionStatus, addMessage, removeMessage } from '../store/slices/chatSlice';
 import { checkTokenBalance } from '../store/slices/walletSlice';
 import { InputBaseProps } from '@mui/material';
-import { useWriteContract, useWaitForTransactionReceipt, useChainId } from 'wagmi';
+import { useSendTransaction, useWriteContract, useWaitForTransactionReceipt, useChainId } from 'wagmi';
 import { showToast } from '../store/slices/toastSlice';
-import { parseUnits } from 'viem';
+import { parseUnits, parseEther } from 'viem';
 import { selectCollectionByName } from '../store/slices/collectionSlice';
+import CommonDialog, { ActionButton } from './CommonDialog';
+import { Collection } from '../store/slices/collectionSlice';
 
 const ORIGINAL_HEIGHT = 1800;  // 原始设计高度
 const WINDOW_HEIGHT = 1180;    // 原始窗口高度
@@ -192,6 +194,19 @@ const formatTime = (date: Date): string => {
   return `${hours}:${minutes}`;
 };
 
+const formatPrice = (priceStr: string): string => {
+  // 将价格转换为K,M,B,并保留2位小数
+  const price = parseFloat(priceStr);
+  if (price >= 1000000000) {
+    return (price / 1000000000).toFixed(2) + 'B';
+  } else if (price >= 1000000) {
+    return (price / 1000000).toFixed(2) + 'M';
+  } else if (price >= 1000) {
+    return (price / 1000).toFixed(2) + 'K';
+  }
+  return price.toString();
+};
+
 // 转换消息格式的函数
 const convertChatMessage = (
   chatMessage: any, 
@@ -205,7 +220,8 @@ const convertChatMessage = (
   isConfirmed: boolean,
   isTransactionFailed: boolean,
   hash: `0x${string}` | undefined,
-  error: Error | null
+  error: Error | null,
+  currentCollection: Collection | null
 ): Message => {
   const baseMessage = {
     id: chatMessage.id || Date.now(),
@@ -219,13 +235,16 @@ const convertChatMessage = (
 
   // 如果是需要支付的消息
   if (chatMessage.show_status === 'send_eth' && chatMessage.payment_info) {
+    console.log('currentCollection', currentCollection);
+    const feeSymbol = currentCollection?.fee?.feeSymbol || 'MISATO';
+    const price = chatMessage.payment_info.price || currentCollection?.fee?.feeAmount.toString() || '0';
     // 获取发送按钮文本
     const getSendButtonLabel = () => {
-      if (isTransactionFailed) return 'Pay 200k $MISATO';
+      if (isTransactionFailed) return `Pay ${formatPrice(price)} $${feeSymbol}`;
       if (isPending) return 'Paying...';
       if (isConfirming) return 'Confirming...';
       if (isConfirmed) return 'Confirmed!';
-      return 'Pay 200k $MISATO';
+      return `Pay ${formatPrice(price)} $${feeSymbol}`;
     };
 
     return {
@@ -328,10 +347,24 @@ export default function ChatWindow({ agentName }: ChatWindowProps) {
   } = useWriteContract()
 
   const {
+    data: sendHash, // 交易哈希
+    isPending: isSendPending, // 是否正在等待交易
+    error: sendError, // 错误
+    sendTransaction // 发送交易
+  } = useSendTransaction()
+
+  const {
     isLoading: isConfirming, // 是否正在等待交易确认
     isSuccess: isConfirmed, // 是否交易确认成功
   } = useWaitForTransactionReceipt({
     hash
+  })
+
+  const {
+    isLoading: isSendConfirming, // 是否正在等待交易
+    isSuccess: isSendConfirmed, // 是否交易确认成功
+  } = useWaitForTransactionReceipt({
+    hash: sendHash
   })
 
   const chainId = useChainId();
@@ -353,13 +386,7 @@ export default function ChatWindow({ agentName }: ChatWindowProps) {
 
     // 获取当前消息的支付信息并进行类型检查
     const message = chatMessages.find(msg => msg.id === id);
-    const paymentInfo = message?.payment_info;
-    if (!paymentInfo || 
-      !paymentInfo.recipient_address ||
-      !paymentInfo.price ||
-      !paymentInfo.network ||
-      !paymentInfo.chainId
-    ) {
+    if (message?.show_status !== 'send_eth') {
       dispatch(showToast({
         message: 'Payment info not found.',
         severity: 'error'
@@ -369,7 +396,9 @@ export default function ChatWindow({ agentName }: ChatWindowProps) {
 
     // 检查是否有有效的收藏集信息
     const fee = currentCollection?.fee;
-    if (!fee) {
+    if (!fee || !fee.feeToken || !fee.feeAmount || !fee.feeDecimals
+      || !fee.feeSymbol || !fee.treasury
+    ) {
       dispatch(showToast({
         message: 'Collection info not found.',
         severity: 'error'
@@ -380,7 +409,11 @@ export default function ChatWindow({ agentName }: ChatWindowProps) {
     // 保存当前正在处理的交易消息
     setCurrentPaymentId(id);
 
-    const { recipient_address, price, network, chainId: requiredChainId } = paymentInfo;
+    const requiredChainId = currentCollection?.chain;
+    const recipient_address = fee.treasury;
+    const payment_address = fee.feeToken;
+    const price = fee.feeAmount.toString();
+    const network = currentCollection?.chain;
 
     // 检查网络是否正确
     if (chainId !== requiredChainId) {
@@ -391,7 +424,46 @@ export default function ChatWindow({ agentName }: ChatWindowProps) {
       return;
     }
 
-    console.log('Sending Transaction...', recipient_address, price, chainId, requiredChainId);
+    console.log('Sending Transaction...', recipient_address, price, chainId, requiredChainId, payment_address);
+
+    // 判断payment_address地址是否是 0x0000000000000000000000000000000000000000, 如果是，采用 sendTransaction 发送交易
+    if (payment_address === '0x0000000000000000000000000000000000000000' ||
+        payment_address === undefined ||
+        payment_address === null
+    ) {
+      try {
+        sendTransaction({
+          to: recipient_address as `0x${string}`,
+          value: parseEther(price)
+        })
+
+        console.log('Transaction sent:', sendHash, sendError);
+
+        if (sendError) {
+          dispatch(showToast({
+            message: `Failed to send ETH. ${sendError.message}`,
+            severity: 'error'
+          }));
+          return;
+        }
+
+        // 发送提醒交易的消息
+        dispatch(showToast({
+          message: 'Transaction sent!',
+          severity: 'info'
+        }));
+      } catch (error) {
+        console.error('Failed to send ETH:', error);
+        setCurrentPaymentId(null);
+        dispatch(showToast({
+          message: `Failed to send ETH.`,
+          severity: 'error'
+        }));
+      }
+      return;
+    }
+
+    
     try {
       // 使用当前收藏集的合约地址
       writeContract({
@@ -414,10 +486,10 @@ export default function ChatWindow({ agentName }: ChatWindowProps) {
         return;
       }
 
-      // 发送提醒交易成功的消息
+      // 发送提醒交易的消息
       dispatch(showToast({
-        message: 'Transaction sent successfully.',
-        severity: 'success'
+        message: 'Transaction sent!',
+        severity: 'info'
       }));
     } catch (error) {
       console.error('Failed to send ETH:', error);
@@ -463,54 +535,114 @@ export default function ChatWindow({ agentName }: ChatWindowProps) {
 
   // 渲染确认对话框内容
   const renderDialogContent = () => {
-    const currentMessage = chatMessages.find(msg => msg.id === currentPaymentId);
-    const paymentInfo = currentMessage?.payment_info;
+    const fee = currentCollection?.fee;
 
-    if (!paymentInfo) return null;
+    if (!fee || !fee.feeSymbol || !fee.feeAmount) return null;
 
-    if (isConfirmed && hash) {
+    const feeSymbol = fee?.feeSymbol || 'MISATO';
+    const price = fee?.feeAmount.toString() || '0';
+    const formattedPrice = formatPrice(price);
+    const recipient_address = fee?.treasury;
+    const network = currentCollection?.chain;
+    const payment_address = fee?.feeToken;
+
+    let hasConfirmed = false;
+    if (payment_address === '0x0000000000000000000000000000000000000000' ||
+        payment_address === undefined ||
+        payment_address === null
+      ) {
+      hasConfirmed = isSendConfirmed && (sendHash !== undefined && sendHash !== null);
+    } else {
+      hasConfirmed = isConfirmed && (hash !== undefined && hash !== null);
+    }
+
+    if (hasConfirmed) {
       // 已有成功交易的确认框
       return (
-        <>
-          <DialogTitle>Payment Already Sent</DialogTitle>
-          <DialogContent>
-            <Typography>You have already made a payment for this request.</Typography>
-            <Typography sx={{ mt: 1, color: '#666' }}>
+        <CommonDialog
+          open={showConfirmDialog}
+          onClose={() => setShowConfirmDialog(false)}
+          title="Payment Already Sent"
+          actions={
+            <>
+              <ActionButton 
+                variant="secondary" 
+                onClick={() => setShowConfirmDialog(false)}
+              >
+                Cancel
+              </ActionButton>
+              <ActionButton 
+                variant="primary" 
+                onClick={confirmPayment}
+              >
+                Yes, Pay Again
+              </ActionButton>
+            </>
+          }
+        >
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <Typography sx={{ fontSize: 14, fontWeight: 400, lineHeight: '140%', color: '#fff' }}>
+              You have already made a payment for this request.
+            </Typography>
+            <Typography sx={{ fontSize: 14, fontWeight: 400, lineHeight: '140%', color: '#666' }}>
               Previous transaction hash: {hash}
             </Typography>
-            <Typography sx={{ mt: 1.5, color: '#2C0CB9' }}>
+            <Typography sx={{ fontSize: 14, fontWeight: 400, lineHeight: '140%', color: '#2C0CB9' }}>
               Do you still want to make another payment?
             </Typography>
-            <Box sx={{ mt: 1, fontSize: '12px', color: '#999' }}>
-              <Typography variant="body2">Amount: {paymentInfo.price} $MISATO</Typography>
-              <Typography variant="body2">Recipient: {paymentInfo.recipient_address}</Typography>
-              <Typography variant="body2">Network: {paymentInfo.network}</Typography>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+              <Typography sx={{ fontSize: 14, fontWeight: 400, lineHeight: '140%', color: '#999' }}>
+                Amount: {formattedPrice} ${feeSymbol}
+              </Typography>
+              <Typography sx={{ fontSize: 14, fontWeight: 400, lineHeight: '140%', color: '#999' }}>
+                Recipient: {recipient_address}
+              </Typography>
+              <Typography sx={{ fontSize: 14, fontWeight: 400, lineHeight: '140%', color: '#999' }}>
+                Chain: {network}
+              </Typography>
             </Box>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setShowConfirmDialog(false)}>Cancel</Button>
-            <Button onClick={confirmPayment} variant="contained">Yes, Pay Again</Button>
-          </DialogActions>
-        </>
+          </Box>
+        </CommonDialog>
       );
     }
 
     // 首次支付的确认框
     return (
-      <>
-        <DialogTitle>Send $MISATO</DialogTitle>
-        <DialogContent>
-          <Typography>Are you sure to pay {paymentInfo.price} $MISATO?</Typography>
-          <Box sx={{ mt: 1, fontSize: '12px', color: '#999' }}>
-            <Typography variant="body2">Recipient: {paymentInfo.recipient_address}</Typography>
-            <Typography variant="body2">Network: {paymentInfo.network}</Typography>
+      <CommonDialog
+        open={showConfirmDialog}
+        onClose={() => setShowConfirmDialog(false)}
+        title={`Send $${feeSymbol}`}
+        actions={
+          <>
+            <ActionButton 
+              variant="secondary" 
+              onClick={() => setShowConfirmDialog(false)}
+            >
+              Cancel
+            </ActionButton>
+            <ActionButton 
+              variant="primary" 
+              onClick={confirmPayment}
+            >
+              Confirm
+            </ActionButton>
+          </>
+        }
+      >
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          <Typography sx={{ fontSize: 14, fontWeight: 400, lineHeight: '140%', color: '#fff' }}>
+            Are you sure to pay {formattedPrice} ${feeSymbol}?
+          </Typography>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+            <Typography sx={{ fontSize: 14, fontWeight: 400, lineHeight: '140%', color: '#999' }}>
+              Recipient: {recipient_address}
+            </Typography>
+            <Typography sx={{ fontSize: 14, fontWeight: 400, lineHeight: '140%', color: '#999' }}>
+              Chain: {network}
+            </Typography>
           </Box>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setShowConfirmDialog(false)}>Cancel</Button>
-          <Button onClick={confirmPayment} variant="contained">Confirm</Button>
-        </DialogActions>
-      </>
+        </Box>
+      </CommonDialog>
     );
   };
 
@@ -538,6 +670,51 @@ export default function ChatWindow({ agentName }: ChatWindowProps) {
       'isConfirming:', isConfirming,
       'error:', error
     );
+    console.log('isSendConfirmed:', isSendConfirmed, 'sendHash:', sendHash,
+      'isSendPending:', isSendPending,
+      'isSendConfirming:', isSendConfirming,
+      'sendError:', sendError
+    ); 
+    const fee = currentCollection?.fee;
+    const payment_address = fee?.feeToken;
+    if (payment_address === '0x0000000000000000000000000000000000000000' ||
+        payment_address === undefined ||
+        payment_address === null
+      ) {
+      if (!sendHash) {
+        dispatch(showToast({
+          message: 'Transaction not found.',
+          severity: 'warning'
+        }));
+        return;
+      }
+
+      if (isSendConfirming) {
+        dispatch(showToast({
+          message: 'Transaction is being confirmed...',
+          severity: 'info'
+        }));
+        return;
+      }
+
+      if (isSendConfirmed && sendHash) {
+        dispatch(showToast({
+          message: 'Transaction confirmed.',
+          severity: 'success'
+        }));
+        return;
+      }
+
+      if (sendError) {
+        dispatch(showToast({
+          message: `Failed to send ETH`,
+          severity: 'error'
+        }));
+        return;
+      }
+
+      return;
+    } 
 
     if (!hash) {
       dispatch(showToast({
@@ -571,6 +748,32 @@ export default function ChatWindow({ agentName }: ChatWindowProps) {
     }
   }
 
+  // 监听错误状态
+  useEffect(() => {
+    if (error) {
+      // 设置交易失败状态
+      setIsTransactionFailed(true);
+      // 显示错误弹窗
+      dispatch(showToast({
+        message: `Transaction failed: ${error.message}`,
+        severity: 'error'
+      }));
+    }
+  }, [error]);
+
+  // 监听错误状态
+  useEffect(() => {
+    if (sendError) {
+      // 设置交易失败状态
+      setIsTransactionFailed(true);
+      // 显示错误弹窗
+      dispatch(showToast({
+        message: `Transaction failed: ${sendError.message}`,
+        severity: 'error'
+      }));
+    }
+  }, [sendError]);
+
   // 监听交易状态
   useEffect(() => {
     if (isConfirmed && hash) {
@@ -588,6 +791,24 @@ export default function ChatWindow({ agentName }: ChatWindowProps) {
       }));
     }
   }, [hash, isConfirmed]);
+
+  // 监听Send交易状态
+  useEffect(() => {
+    if (isSendConfirmed && sendHash) {
+      // 交易确认后添加消息
+      dispatch(showToast({
+        message: 'Payment confirmed.',
+        severity: 'success'
+      }));
+      setLatestPaymentHash(sendHash);
+      dispatch(addMessage({
+        id: Date.now(),
+        role: 'user',
+        content: "Submitted the transaction. I will click 'check payment' and copy hash to you, after the transaction is confirmed.",
+        type: 'transaction',
+      }));
+    }
+  }, [sendHash, isSendConfirmed]);
 
   // 根据状态获取要显示的消息
   const messages: Message[] = (() => {
@@ -635,7 +856,8 @@ export default function ChatWindow({ agentName }: ChatWindowProps) {
             isConfirmed,
             isTransactionFailed,
             hash,
-            error
+            error,
+            currentCollection || null
           )
         );
     }
@@ -745,15 +967,8 @@ export default function ChatWindow({ agentName }: ChatWindowProps) {
         </>
       )}
 
-      {/* 添加确认对话框 */}
-      <Dialog 
-        open={showConfirmDialog} 
-        onClose={() => setShowConfirmDialog(false)}
-        maxWidth="sm"
-        fullWidth
-      >
-        {renderDialogContent()}
-      </Dialog>
+      {/* 渲染确认对话框 */}
+      {renderDialogContent()}
     </WindowContainer>
   );
 }

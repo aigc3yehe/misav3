@@ -228,15 +228,13 @@ export const sendMessage = createAsyncThunk(
       dispatch(setWasActive(data.isActive))
 
       // 处理支付相关的响应
-      if ((data.status === 'paying' || data.status?.status === 'paying') && 
-            (data.recipient_address || data.status?.recipient_address) && 
-            (data.price || data.status?.price)) {
+      if (data.status === 'paying' || data.status?.status === 'paying'){
         // 获取正确的支付信息
-        const recipientAddress = data.recipient_address || data.status?.recipient_address
-        const price = data.price || data.status?.price
-        const network = data.network || data.status?.network
-        const chainId = data.chainId || data.status?.chainId
-        const content = data.content || data.status?.content
+        const recipientAddress = data.recipient_address || data.status?.recipient_address || ''
+        const price = data.price || data.status?.price || ''
+        const network = data.network || data.status?.network || ''
+        const chainId = data.chainId || data.status?.chainId || 0
+        const content = data.content || data.status?.content || ''
 
         // 添加支付信息到消息列表
         dispatch(addMessage({
