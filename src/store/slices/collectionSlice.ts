@@ -11,6 +11,7 @@ export interface Collection {
   imageUrl: string;
   contract: string;
   nfts: string;
+  type: string;
   fee?: {
     feeCheck: boolean;
     treasury: string;
@@ -81,12 +82,13 @@ export const fetchCollections = createAsyncThunk(
         return {
           id: item.collection,
           chain: item.network,
-          name: item.metadata.name || contractInfo?.name,
+          name: item.name || item.metadata.name || contractInfo?.name,
           symbol: contractInfo?.symbol || '',
           description: item.metadata.description,
           imageUrl: item.metadata.imageUrl || "/misato_icon.jpg",
           contract: item.collection,
           nfts: contractInfo?.totalSupply || '0',
+          type: item.type,
           fee: item.fee
         };
       });
@@ -122,4 +124,4 @@ export default collectionSlice.reducer;
 
 // 导出选择器
 export const selectCollectionByName = (state: RootState, name: string | null) => 
-  state.collection.collections.find(c => c.name === name); 
+  state.collection.collections.find(c => c.name.toLowerCase() === name?.toLowerCase()); 
