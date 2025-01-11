@@ -230,11 +230,12 @@ const ActionIcon = styled('img')({
 const agents = [
     {
       id: 'misato',
-      name: '$MISATO',
+      name: 'MISATO',
       avatar: '/misato.jpg',
       address: '0xabcdef1234567890abcdef1234567890abcdef12',
       description: 'Co-Founder Of Mirae',
-      action: 'CHAT'
+      action: 'CHAT',
+      wallet_address: '0x900709432a8F2C7E65f90aA7CD35D0afe4eB7169',
     },
     {
         id: '-1',
@@ -242,7 +243,8 @@ const agents = [
         avatar: '/waiting.jpg',
         address: '0x1234567890abcdef1234567890abcdef12345678',
         description: '...',
-        action: 'GENERATING'
+        action: 'GENERATING',
+        wallet_address: '0x1234567890abcdef1234567890abcdef12345678',
     }
 ];
 
