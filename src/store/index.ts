@@ -6,12 +6,14 @@ import toastReducer from './slices/toastSlice';
 import chatReducer, { walletStatusMiddleware } from './slices/chatSlice';
 import walletReducer from './slices/walletSlice';
 import terminalReducer from './slices/terminalSlice';
+import myNftReducer from './slices/mynftSlice';
 
 export const store = configureStore({
   reducer: {
     collection: collectionReducer,
     agent: agentReducer,
     nft: nftReducer,
+    myNft: myNftReducer,
     toast: toastReducer,
     chat: chatReducer,
     wallet: walletReducer,

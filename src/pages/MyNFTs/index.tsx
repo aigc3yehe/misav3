@@ -2,7 +2,7 @@ import { Box, Typography, styled, useTheme, useMediaQuery } from '@mui/material'
 import { useEffect, useState, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '../../store';
-import { fetchAllOwnedNFTs, clearNFTs } from '../../store/slices/nftSlice';
+import { fetchAllOwnedNFTs, isDifferentAddress } from '../../store/slices/mynftSlice';
 import NFTCard from '../../components/NFTCard';
 import Grid from '../../components/Grid';
 import { useAccount } from 'wagmi';
@@ -125,23 +125,14 @@ export default function MyNFTs() {
       return;
     }
 
-    dispatch(clearNFTs());
-    loadNFTs();
-
-    return () => {
-      dispatch(clearNFTs());
-    };
-  }, [address, shouldShowConnect]);
-
-  const loadNFTs = async () => {
-    if (!address) return;
-    
-    try {
-      await dispatch(fetchAllOwnedNFTs(address));
-    } catch (error) {
-      console.error('Failed to load NFTs:', error);
+    if (nfts.length === 0 || isDifferentAddress(address)) {
+      dispatch(fetchAllOwnedNFTs(address));
+    } else {
+      dispatch(fetchAllOwnedNFTs(address)).catch(error => {
+        console.error('Background refresh failed:', error);
+      });
     }
-  };
+  }, [address, shouldShowConnect]);
 
   return (
     <PageContainer 
@@ -178,7 +169,7 @@ export default function MyNFTs() {
         <EmptyState text="No NFTs found" />
       )}
 
-      {isLoading && <LoadingState />}
+      {nfts.length === 0 && isLoading && <LoadingState />}
     </PageContainer>
   );
 } 
