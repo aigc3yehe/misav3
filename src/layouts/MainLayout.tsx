@@ -97,7 +97,7 @@ export default function MainLayout() {
       </LayoutWrapper>
       <Snackbar
         open={toast.open}
-        autoHideDuration={12000}
+        autoHideDuration={2000}
         onClose={handleCloseToast}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
       >
@@ -120,6 +120,7 @@ export default function MainLayout() {
             '& .MuiAlert-action': {
               padding: 0,
               marginRight: 0,
+              marginLeft: '8px',
               alignItems: 'center'
             }
           }}

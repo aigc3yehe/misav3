@@ -375,10 +375,18 @@ export default function Sidebar({ open, onClose, isMobile }: SidebarProps) {
     return `${address.slice(0, 6)}...${address.slice(-4)}`;
   }; */
 
-  const handleCopyAddress = () => {
+  const handleCopyWalletAddress = () => {
+    navigator.clipboard.writeText(currentAgent?.wallet_address || '');
+    dispatch(showToast({
+      message: `${currentAgent?.name}'s wallet copied`,
+      severity: 'success',
+    }));
+  };
+
+  const handleCopyContractAddress = () => {
     navigator.clipboard.writeText(currentAgent?.address || '');
     dispatch(showToast({
-      message: 'Agent Address Copied',
+      message: `$${currentAgent?.name} CA copied`,
       severity: 'success',
     }));
   };
@@ -535,16 +543,17 @@ export default function Sidebar({ open, onClose, isMobile }: SidebarProps) {
   const availableAgents = [
     {
       id: 'misato',
-      name: '$MISATO',
+      name: 'MISATO',
       avatar: '/misato.jpg',
-      address: '0xabcdef1234567890abcdef1234567890abcdef12',
+      address: '0x98f4779FcCb177A6D856dd1DfD78cd15B7cd2af5',
+      wallet_address: '0x900709432a8F2C7E65f90aA7CD35D0afe4eB7169',
     },
-    {
+    /* {
       id: 'niyoko',
       name: 'NiyoKo',
       avatar: '/misato.jpg',
       address: '0x1234567890abcdef1234567890abcdef12345678',
-    },
+    }, */
     // 可以添加更多 agent
   ];
 
@@ -597,7 +606,7 @@ export default function Sidebar({ open, onClose, isMobile }: SidebarProps) {
                       lineHeight: '100%',
                     }}
                   >
-                    {currentAgent?.name}
+                    ${currentAgent?.name}
                   </Typography>
                   <IconButton 
                     size="small" 
@@ -607,8 +616,8 @@ export default function Sidebar({ open, onClose, isMobile }: SidebarProps) {
                   </IconButton>
                 </NameSection>
                 <IconsSection>
-                  <ActionIcon src={walletIcon} alt="wallet" onClick={handleCopyAddress}/>
-                  <ActionIcon src={dockIcon} alt="dock" onClick={handleCopyAddress}/>
+                  <ActionIcon src={walletIcon} alt="wallet" onClick={handleCopyWalletAddress}/>
+                  <ActionIcon src={dockIcon} alt="dock" onClick={handleCopyContractAddress}/>
                 </IconsSection>
               </Box>
             </ProfileInfo>
