@@ -396,7 +396,7 @@ export default function ChatWindow({ agentName }: ChatWindowProps) {
 
     // 检查是否有有效的收藏集信息
     const fee = currentCollection?.fee;
-    if (!fee || !fee.feeAmount || !fee.feeDecimals
+    if (!fee || !fee.feeToken || !fee.feeAmount || !fee.feeDecimals
       || !fee.feeSymbol || !fee.treasury
     ) {
       dispatch(showToast({
@@ -427,10 +427,7 @@ export default function ChatWindow({ agentName }: ChatWindowProps) {
     console.log('Sending Transaction...', recipient_address, price, chainId, requiredChainId, payment_address);
 
     // 判断payment_address地址是否是 0x0000000000000000000000000000000000000000, 如果是，采用 sendTransaction 发送交易
-    if (payment_address === '0x0000000000000000000000000000000000000000' ||
-        payment_address === undefined ||
-        payment_address === null
-    ) {
+    if (payment_address === '0x0000000000000000000000000000000000000000') {
       try {
         sendTransaction({
           to: recipient_address as `0x${string}`,
@@ -547,10 +544,7 @@ export default function ChatWindow({ agentName }: ChatWindowProps) {
     const payment_address = fee?.feeToken;
 
     let hasConfirmed = false;
-    if (payment_address === '0x0000000000000000000000000000000000000000' ||
-        payment_address === undefined ||
-        payment_address === null
-      ) {
+    if (payment_address === '0x0000000000000000000000000000000000000000') {
       hasConfirmed = isSendConfirmed && (sendHash !== undefined && sendHash !== null);
     } else {
       hasConfirmed = isConfirmed && (hash !== undefined && hash !== null);
@@ -677,10 +671,7 @@ export default function ChatWindow({ agentName }: ChatWindowProps) {
     ); 
     const fee = currentCollection?.fee;
     const payment_address = fee?.feeToken;
-    if (payment_address === '0x0000000000000000000000000000000000000000' ||
-        payment_address === undefined ||
-        payment_address === null
-      ) {
+    if (payment_address === '0x0000000000000000000000000000000000000000') {
       if (!sendHash) {
         dispatch(showToast({
           message: 'Transaction not found.',
