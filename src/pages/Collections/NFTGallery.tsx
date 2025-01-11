@@ -23,9 +23,9 @@ const CARD_WIDTH = 212;
 const CARD_GAP = 12;
 const MIN_PADDING = 40;
 
-const PageContainer = styled(Box)<{ padding: number, hasData: boolean }>(({ theme, padding, hasData }) => ({
+const PageContainer = styled(Box)<{ padding: number, hasdata: boolean }>(({ theme, padding, hasdata }) => ({
   padding: `0 ${padding}px`,
-  height: hasData ? '100%' : 'auto',
+  height: hasdata ? '100%' : 'auto',
   minHeight: '100%',
   display: 'flex',
   flexDirection: 'column',
@@ -176,8 +176,7 @@ export default function NFTGallery() {
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
   const collection = location.state?.collection as Collection;
-  const { nfts } = useSelector((state: RootState) => state.nft);
-  const [isRefreshing, setIsRefreshing] = useState(false);
+  const { nfts, isLoading } = useSelector((state: RootState) => state.nft);
   const [containerPadding, setContainerPadding] = useState(MIN_PADDING);
   const [containerWidth, setContainerWidth] = useState(0);
   const [isOwned, setIsOwned] = useState(false);
@@ -228,35 +227,33 @@ export default function NFTGallery() {
   useEffect(() => {
     if (collection) {
       dispatch(clearNFTs());
-      handleRefresh();
-    }
-    return () => {
-      dispatch(clearNFTs());
-    };
-  }, [collection, isOwned]);
-
-  const handleBack = () => {
-    navigate(-1);
-  };
-
-  const handleRefresh = async () => {
-    console.log('handleRefresh', isRefreshing);
-    if (isRefreshing) return;
-    setIsRefreshing(true);
-    try {
-      if (isOwned && isConnected && address) {
-        await dispatch(fetchOwnedNFTs({ 
+      if (isOwned && address) {
+        // 如果是 Owned 状态，使用 fetchOwnedNFTs
+        dispatch(fetchOwnedNFTs({ 
           ownerAddress: address, 
           contractAddress: collection.contract 
         }));
       } else {
-        await dispatch(fetchNFTs(collection.contract));
+        // 非 Owned 状态，使用 fetchNFTs
+        dispatch(fetchNFTs({ 
+          contractAddress: collection.contract, 
+          totalNfts: collection.nfts 
+        })).then(() => {
+          dispatch(fetchNFTs({ 
+            contractAddress: collection.contract, 
+            totalNfts: collection.nfts,
+            isBackground: true 
+          }));
+        });
       }
-    } finally {
-      setTimeout(() => {
-        setIsRefreshing(false);
-      }, 1000);
     }
+    return () => {
+      dispatch(clearNFTs());
+    };
+  }, [collection, isOwned, address]);
+
+  const handleBack = () => {
+    navigate(-1);
   };
 
   const handleOwnedChange = () => {
@@ -301,7 +298,7 @@ export default function NFTGallery() {
     <PageContainer 
       id="nftContainer" 
       padding={isMobile ? 20 : containerPadding}
-      hasData={nfts.length > 0}
+      hasdata={nfts.length > 0}
     >
       <Header>
         <BackButton onClick={handleBack}>
@@ -357,12 +354,12 @@ export default function NFTGallery() {
         </>
       )}
 
-      {nfts.length === 0 && !isRefreshing && (
-        <EmptyState text="No NFTs found" />
+      {isLoading && nfts.length === 0 && (
+        <LoadingState />
       )}
 
-      {isRefreshing && (
-        <LoadingState />
+      {!isLoading && nfts.length === 0 && (
+        <EmptyState text="No NFTs found" />
       )}
     </PageContainer>
   );

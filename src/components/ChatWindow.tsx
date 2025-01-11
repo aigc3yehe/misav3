@@ -194,9 +194,8 @@ const formatTime = (date: Date): string => {
   return `${hours}:${minutes}`;
 };
 
-const formatPrice = (priceStr: string): string => {
+const formatPrice = (price: number): string => {
   // 将价格转换为K,M,B,并保留2位小数
-  const price = parseFloat(priceStr);
   if (price >= 1000000000) {
     return (price / 1000000000).toFixed(2) + 'B';
   } else if (price >= 1000000) {
@@ -234,10 +233,10 @@ const convertChatMessage = (
     };
 
   // 如果是需要支付的消息
-  if (chatMessage.show_status === 'send_eth' && chatMessage.payment_info) {
+  if (chatMessage.show_status === 'send_eth') {
     console.log('currentCollection', currentCollection);
     const feeSymbol = currentCollection?.fee?.feeSymbol || 'MISATO';
-    const price = chatMessage.payment_info.price || currentCollection?.fee?.feeAmount.toString() || '0';
+    const price = currentCollection?.fee?.feeAmount || 0;
     // 获取发送按钮文本
     const getSendButtonLabel = () => {
       if (isTransactionFailed) return `Pay ${formatPrice(price)} $${feeSymbol}`;
@@ -503,14 +502,14 @@ export default function ChatWindow({ agentName }: ChatWindowProps) {
   // 处理发送 ETH
   const handleSendEth = (id: number) => {
     setIsTransactionFailed(false);
-    const currentMessage = chatMessages.find(msg => msg.id === id);
-    const paymentInfo = currentMessage?.payment_info;
+    const fee = currentCollection?.fee;
 
-    if (!paymentInfo
-      || !paymentInfo.recipient_address 
-      || !paymentInfo.price
-      || !paymentInfo.network
-      || !paymentInfo.chainId
+    if (!fee
+      || !fee.treasury 
+      || !fee.feeAmount
+      || !fee.feeSymbol
+      || !fee.feeDecimals
+      || !fee.feeToken
     ) {
       dispatch(showToast({
         message: 'Payment info is incomplete.',
@@ -537,7 +536,7 @@ export default function ChatWindow({ agentName }: ChatWindowProps) {
     if (!fee || !fee.feeSymbol || !fee.feeAmount) return null;
 
     const feeSymbol = fee?.feeSymbol || 'MISATO';
-    const price = fee?.feeAmount.toString() || '0';
+    const price = fee?.feeAmount || 0;
     const formattedPrice = formatPrice(price);
     const recipient_address = fee?.treasury;
     const network = currentCollection?.chain;

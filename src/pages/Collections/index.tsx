@@ -205,9 +205,19 @@ export default function Collections() {
     };
   }, [collections.length]);
 
+  // 修改获取数据的逻辑
   useEffect(() => {
-    dispatch(fetchCollections());
-  }, [dispatch]);
+    // 如果没有数据，显示loading状态
+    if (collections.length === 0) {
+      dispatch(fetchCollections());
+    } else {
+      // 如果有数据，静默更新
+      dispatch(fetchCollections()).catch(error => {
+        // 可以选择是否处理错误，因为有旧数据在，所以可以静默失败
+        console.error('Background refresh failed:', error);
+      });
+    }
+  }, [dispatch, collections.length]);
 
   const handleCollectionClick = (collection: Collection) => {
     navigate(`/collections/${collection.id}/nfts`, { 
@@ -215,7 +225,7 @@ export default function Collections() {
     });
   };
 
-  if (isLoading) {
+  if (isLoading && collections.length === 0) {
     return (
       <PageContainer id="collectionsContainer" padding={containerPadding}>
         <LoadingWrapper>

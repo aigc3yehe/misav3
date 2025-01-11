@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { CHAIN_CONFIG } from '../../config';
+import { RootState } from '../../store';
 
 export interface NFT {
   id: string;
@@ -14,6 +15,7 @@ interface NFTState {
   nfts: NFT[];
   isLoading: boolean;
   error: string | null;
+  cachedNfts: { [key: string]: NFT[] };
 }
 
 interface NFTResponse {
@@ -68,6 +70,7 @@ const initialState: NFTState = {
   nfts: [],
   isLoading: false,
   error: null,
+  cachedNfts: {},
 };
 
 const API_CONFIG = {
@@ -75,48 +78,76 @@ const API_CONFIG = {
   apiKey: 'goUyG3r-JBxlrxzsqIoyv0b_W-LwScsN'
 };
 
+// 修改计算分页的逻辑，返回倒序的页码数组
+const calculatePageKeys = (totalNfts: string, pageSize: number = 90): string[] => {
+  const total = parseInt(totalNfts);
+  const pageCount = Math.ceil(total / pageSize);
+  // 生成倒序的页码数组，比如 [360, 270, 180, 90, 0]
+  return Array.from({ length: pageCount }, (_, index) => 
+    ((pageCount - 1 - index) * pageSize).toString()
+  );
+};
+
 export const fetchNFTs = createAsyncThunk(
   'nft/fetchNFTs',
-  async (contractAddress: string) => {
-    const allNfts: NFT[] = [];
-    let pageKey: string | null = null;
+  async ({ contractAddress, totalNfts, isBackground = false }: { 
+    contractAddress: string, 
+    totalNfts: string,
+    isBackground?: boolean 
+  }, { getState }) => {
+    if (!contractAddress) {
+      throw new Error('Contract address is required');
+    }
 
+    const state = getState() as RootState;
+    const existingNfts = new Set(state.nft.nfts.map(nft => nft.id));
+    const allNfts: NFT[] = [];
+    
     try {
-      // 循环获取所有 NFT
-      do {
+      const pageKeys = calculatePageKeys(totalNfts);
+      const keysToProcess = isBackground ? pageKeys.slice(1) : [pageKeys[0]];
+
+      for (const pageKey of keysToProcess) {
         const queryParams = new URLSearchParams({
           contractAddress: contractAddress,
           withMetadata: 'true',
           limit: '100',
+          pageKey: pageKey
         });
-        if (pageKey) {
-          queryParams.set('pageKey', pageKey);
-        }
 
         const response = await fetch(
           `${API_CONFIG.baseUrl}/${API_CONFIG.apiKey}/getNFTsForContract?${queryParams}`
         );
 
+        if (!response.ok) {
+          throw new Error('Failed to fetch NFTs');
+        }
+
         const data: NFTResponse = await response.json();
 
-        const newNfts = data.nfts.map(nft => ({
-          id: nft.tokenId,
-          name: nft.name || nft.raw?.metadata?.name || `MISATO Frens #${nft.tokenId}`,
-          image: nft.image?.thumbnailUrl || nft.image?.originalUrl || nft.raw?.metadata?.image || nft.image?.cachedUrl || '',
-          imageOriginal: nft.image?.originalUrl || nft.raw?.metadata?.image || nft.image?.cachedUrl,
-          description: nft.description || nft.raw?.metadata?.description,
-          contract: nft.contract.address
-        }));
+        const newNfts = data.nfts
+          .filter(nft => !existingNfts.has(nft.tokenId))
+          .map(nft => ({
+            id: nft.tokenId,
+            name: nft.name || nft.raw?.metadata?.name || `MISATO Frens #${nft.tokenId}`,
+            image: nft.image?.thumbnailUrl || nft.image?.originalUrl || nft.raw?.metadata?.image || nft.image?.cachedUrl || '',
+            imageOriginal: nft.image?.originalUrl || nft.raw?.metadata?.image || nft.image?.cachedUrl,
+            description: nft.description || nft.raw?.metadata?.description,
+            contract: nft.contract.address
+          }));
 
         allNfts.push(...newNfts);
-        pageKey = data.pageKey || null;
-      } while (pageKey);
+      }
 
-      // 按 tokenId 倒序排序
-      return allNfts.sort((a, b) => parseInt(b.id) - parseInt(a.id));
+      return {
+        nfts: allNfts,
+        contractAddress,
+        isBackground
+      };
 
     } catch (error) {
-      throw new Error('Failed to fetch NFTs');
+      console.error('Error fetching NFTs:', error);
+      throw error;
     }
   }
 );
@@ -238,6 +269,7 @@ const nftSlice = createSlice({
   reducers: {
     clearNFTs: (state) => {
       state.nfts = [];
+      state.error = null;
     },
   },
   extraReducers: (builder) => {
@@ -247,7 +279,19 @@ const nftSlice = createSlice({
         state.error = null;
       })
       .addCase(fetchNFTs.fulfilled, (state, action) => {
-        state.nfts = action.payload;
+        const { nfts, contractAddress } = action.payload;
+        
+        if (!state.cachedNfts[contractAddress]) {
+          state.cachedNfts[contractAddress] = [];
+        }
+        
+        const allNfts = [...state.cachedNfts[contractAddress], ...nfts];
+        const uniqueNfts = Array.from(
+          new Map(allNfts.map(nft => [nft.id, nft])).values()
+        );
+        
+        state.cachedNfts[contractAddress] = uniqueNfts;
+        state.nfts = uniqueNfts.sort((a, b) => parseInt(b.id) - parseInt(a.id));
         state.isLoading = false;
       })
       .addCase(fetchNFTs.rejected, (state, action) => {
