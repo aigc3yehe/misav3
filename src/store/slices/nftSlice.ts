@@ -103,6 +103,19 @@ export const fetchNFTs = createAsyncThunk(
     const existingNfts = new Set(state.nft.nfts.map(nft => nft.id));
     const allNfts: NFT[] = [];
     
+    const cachedNfts = state.nft.cachedNfts[contractAddress] || [];
+    // 如果不是后台请求且有缓存数据，立即返回缓存数据
+    if (!isBackground && cachedNfts.length > 0) {
+      console.log('使用缓存', cachedNfts);
+      return {
+        nfts: [],
+        contractAddress,
+        isBackground,
+        useCache: true,
+        cachedNfts  // 直接传递缓存数据
+      };
+    }
+
     try {
       const pageKeys = calculatePageKeys(totalNfts);
       const keysToProcess = isBackground ? pageKeys.slice(1) : [pageKeys[0]];
@@ -213,8 +226,21 @@ const nftSlice = createSlice({
         state.error = null;
       })
       .addCase(fetchNFTs.fulfilled, (state, action) => {
-        const { nfts, contractAddress } = action.payload;
+        const { nfts, contractAddress, useCache, cachedNfts } = action.payload;
         
+        // 如果使用缓存，直接使用传递过来的缓存数据
+        if (useCache && cachedNfts) {
+          // 创建一个新数组进行排序
+          console.log('使用缓存', cachedNfts);
+          console.log("当前时间", new Date().getTime());
+          // 排序完只需要前70个（如果超过70个，则只取70个，小于70个则全部取）
+          state.nfts = [...cachedNfts].sort((a, b) => parseInt(b.id) - parseInt(a.id)).slice(0, 70);
+          console.log("当前时间", new Date().getTime());
+          state.isLoading = false;
+          return;
+        }
+        
+        // 原有的数据处理逻辑
         if (!state.cachedNfts[contractAddress]) {
           state.cachedNfts[contractAddress] = [];
         }

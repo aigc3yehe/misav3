@@ -234,17 +234,18 @@ export default function NFTGallery() {
           contractAddress: collection.contract 
         }));
       } else {
-        // 非 Owned 状态，使用 fetchNFTs
+        // 先尝试获取数据（可能使用缓存）
         dispatch(fetchNFTs({ 
           contractAddress: collection.contract, 
           totalNfts: collection.nfts 
-        })).then(() => {
-          dispatch(fetchNFTs({ 
-            contractAddress: collection.contract, 
-            totalNfts: collection.nfts,
-            isBackground: true 
-          }));
-        });
+        }));
+        
+        // 始终在后台刷新数据
+        dispatch(fetchNFTs({ 
+          contractAddress: collection.contract, 
+          totalNfts: collection.nfts,
+          isBackground: true 
+        }));
       }
     }
     return () => {
