@@ -219,6 +219,7 @@ const convertChatMessage = (
   isConfirmed: boolean,
   isTransactionFailed: boolean,
   hash: `0x${string}` | undefined,
+  sendHash: `0x${string}` | undefined,
   error: Error | null,
   currentCollection: Collection | null
 ): Message => {
@@ -259,7 +260,7 @@ const convertChatMessage = (
           label: 'Check Payment',
           variant: 'secondary',
           onClick: () => checkPayment(),
-          disabled: !hash && !error
+          disabled: !sendHash && !hash && !error
         }
       ]
     };
@@ -316,6 +317,67 @@ const abi = [
   }
 ] as const
 
+// 添加一个新的对话框组件用于显示交易确认
+const TransactionConfirmedDialog = ({ 
+  open, 
+  onClose, 
+  hash, 
+  onCopy 
+}: { 
+  open: boolean, 
+  onClose: () => void, 
+  hash: string, 
+  onCopy: () => void 
+}) => (
+  <CommonDialog
+    open={open}
+    onClose={onClose}
+    title="Transaction Confirmed"
+    actions={
+      <>
+        <ActionButton 
+          variant="secondary" 
+          onClick={onClose}
+        >
+          Close
+        </ActionButton>
+        <ActionButton 
+          variant="primary" 
+          onClick={onCopy}
+        >
+          Copy Hash
+        </ActionButton>
+      </>
+    }
+  >
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+      <Typography sx={{ fontSize: 14, fontWeight: 400, lineHeight: '140%', color: '#fff' }}>
+        Your transaction has been confirmed!
+      </Typography>
+      <Box sx={{ wordBreak: 'break-all' }}>
+        <Typography sx={{ fontSize: 14, fontWeight: 400, lineHeight: '140%', color: '#fff' }}>
+          Transaction Hash: 
+          <Box component="span" sx={{ 
+            color: '#2C0CB9', 
+            fontFamily: 'monospace',
+            ml: 1
+          }}>
+            {hash}
+          </Box>
+        </Typography>
+      </Box>
+      <Typography sx={{ 
+        fontSize: 14, 
+        fontWeight: 400, 
+        lineHeight: '140%', 
+        color: '#666' 
+      }}>
+        You can copy this hash and paste it to the chat with the word "payed" if the AI hasn't detected your payment automatically.
+      </Typography>
+    </Box>
+  </CommonDialog>
+);
+
 export default function ChatWindow({ agentName }: ChatWindowProps) {
   const dispatch = useDispatch<AppDispatch>();
   const { user, login, linkWallet, authenticated } = usePrivy();
@@ -335,6 +397,7 @@ export default function ChatWindow({ agentName }: ChatWindowProps) {
   // 添加对话框状态
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [currentPaymentId, setCurrentPaymentId] = useState<number | null>(null);
+  const [showConfirmedDialog, setShowConfirmedDialog] = useState(false);
 
   const shouldShowConnect = !authenticated || !isConnected;
 
@@ -655,7 +718,7 @@ export default function ChatWindow({ agentName }: ChatWindowProps) {
     })).unwrap();
   };
 
-  // 检查支付状态
+  // 修改 checkPayment 函数
   const checkPayment = () => {
     // 打印所有相关状态
     console.log('isConfirmed:', isConfirmed, 'hash:', hash,
@@ -670,6 +733,7 @@ export default function ChatWindow({ agentName }: ChatWindowProps) {
     ); 
     const fee = currentCollection?.fee;
     const payment_address = fee?.feeToken;
+    
     if (payment_address === '0x0000000000000000000000000000000000000000') {
       if (!sendHash) {
         dispatch(showToast({
@@ -688,10 +752,7 @@ export default function ChatWindow({ agentName }: ChatWindowProps) {
       }
 
       if (isSendConfirmed && sendHash) {
-        dispatch(showToast({
-          message: 'Transaction confirmed.',
-          severity: 'success'
-        }));
+        setShowConfirmedDialog(true);
         return;
       }
 
@@ -702,9 +763,8 @@ export default function ChatWindow({ agentName }: ChatWindowProps) {
         }));
         return;
       }
-
       return;
-    } 
+    }
 
     if (!hash) {
       dispatch(showToast({
@@ -722,12 +782,9 @@ export default function ChatWindow({ agentName }: ChatWindowProps) {
       return;
     }
 
-    // 如果交易成功，显示成功消息
     if (isConfirmed && hash) {
-      dispatch(showToast({
-        message: 'Transaction confirmed.',
-        severity: 'success'
-      }));
+      setShowConfirmedDialog(true);
+      return;
     }
 
     if (error) {
@@ -736,7 +793,26 @@ export default function ChatWindow({ agentName }: ChatWindowProps) {
         severity: 'error'
       }));
     }
-  }
+  };
+
+  // 添加复制 hash 的处理函数
+  const handleCopyHash = async () => {
+    const hashToCopy = hash || sendHash;
+    if (!hashToCopy) return;
+
+    try {
+      await navigator.clipboard.writeText(hashToCopy);
+      dispatch(showToast({
+        message: 'Hash copied to clipboard',
+        severity: 'success'
+      }));
+    } catch (err) {
+      dispatch(showToast({
+        message: 'Failed to copy hash',
+        severity: 'error'
+      }));
+    }
+  };
 
   // 监听错误状态
   useEffect(() => {
@@ -846,6 +922,7 @@ export default function ChatWindow({ agentName }: ChatWindowProps) {
             isConfirmed,
             isTransactionFailed,
             hash,
+            sendHash,
             error,
             currentCollection || null
           )
@@ -959,6 +1036,14 @@ export default function ChatWindow({ agentName }: ChatWindowProps) {
 
       {/* 渲染确认对话框 */}
       {renderDialogContent()}
+
+      {/* 添加交易确认对话框 */}
+      <TransactionConfirmedDialog
+        open={showConfirmedDialog}
+        onClose={() => setShowConfirmedDialog(false)}
+        hash={hash || sendHash || ''}
+        onCopy={handleCopyHash}
+      />
     </WindowContainer>
   );
 }

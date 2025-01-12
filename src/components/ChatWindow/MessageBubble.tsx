@@ -33,7 +33,7 @@ const MessageContent = styled(Box, {
   display: 'flex',
   flexDirection: 'column',
   gap: 7,
-  maxWidth: '80%',
+  maxWidth: '90%',
 
   [theme.breakpoints.down('sm')]: {
     padding: '10px 12px',
@@ -100,7 +100,10 @@ export default function MessageBubble({
             color: '#22116E',
             fontSize: 14,
             lineHeight: '140%',
-            whiteSpace: 'pre-wrap'
+            whiteSpace: 'pre-wrap',
+            wordBreak: 'break-all',
+            wordWrap: 'break-word',
+            overflowWrap: 'break-word'
           }}>
             {content}
           </Box>
