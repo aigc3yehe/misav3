@@ -13,6 +13,7 @@ import copySuccessIcon from '../../assets/copy_success.svg';
 import nftMeIcon from '../../assets/nft_me.svg';
 import pointingCursor from '../../assets/pointer.png';
 import { useAccount } from 'wagmi';
+import { usePrivy } from '@privy-io/react-auth';
 import { showToast } from '../../store/slices/toastSlice';
 import EmptyState from '../../components/EmptyState';
 import LoadingState from '../../components/LoadingState';
@@ -23,9 +24,17 @@ const CARD_WIDTH = 212;
 const CARD_GAP = 12;
 const MIN_PADDING = 40;
 
-const PageContainer = styled(Box)<{ padding: number, hasdata: boolean }>(({ theme, padding, hasdata }) => ({
+// 修改 PageContainer 的类型定义和实现
+interface PageContainerProps {
+  padding: number;
+  hasData: boolean;  // 改为驼峰命名
+}
+
+const PageContainer = styled(Box, {
+  shouldForwardProp: (prop) => prop !== 'hasData' && prop !== 'padding'
+})<PageContainerProps>(({ theme, padding, hasData }) => ({
   padding: `0 ${padding}px`,
-  height: hasdata ? '100%' : 'auto',
+  height: hasData ? '100%' : 'auto',
   minHeight: '100%',
   display: 'flex',
   flexDirection: 'column',
@@ -50,7 +59,7 @@ const PageContainer = styled(Box)<{ padding: number, hasdata: boolean }>(({ them
   scrollbarColor: '#4E318D transparent',
 
   [theme.breakpoints.down('sm')]: {
-    padding: '0 20px', // 移动端固定间距
+    padding: '0 20px',
   },
 }));
 
@@ -182,8 +191,11 @@ export default function NFTGallery() {
   const [isOwned, setIsOwned] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
   const { address, isConnected } = useAccount();
+  const { authenticated } = usePrivy();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
+  const shouldShowConnect = !authenticated || !isConnected;
 
   // 计算布局
   useEffect(() => {
@@ -258,7 +270,7 @@ export default function NFTGallery() {
   };
 
   const handleOwnedChange = () => {
-    if (!isConnected || !address) {
+    if (shouldShowConnect || !address) {
       dispatch(showToast({
         message: 'Please connect your wallet first',
         severity: 'error'
@@ -299,7 +311,7 @@ export default function NFTGallery() {
     <PageContainer 
       id="nftContainer" 
       padding={isMobile ? 20 : containerPadding}
-      hasdata={nfts.length > 0}
+      hasData={nfts.length > 0}
     >
       <Header>
         <BackButton onClick={handleBack}>

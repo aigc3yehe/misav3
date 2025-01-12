@@ -12,6 +12,7 @@ export interface Collection {
   contract: string;
   nfts: string;
   type: string;
+  total: number;
   fee?: {
     feeCheck: boolean;
     treasury: string;
@@ -89,6 +90,7 @@ export const fetchCollections = createAsyncThunk(
           contract: item.collection,
           nfts: contractInfo?.totalSupply || '0',
           type: item.type,
+          total: item.metadata.totalSupply || 500,
           fee: item.fee
         };
       });

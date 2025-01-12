@@ -78,14 +78,20 @@ const API_CONFIG = {
   apiKey: 'goUyG3r-JBxlrxzsqIoyv0b_W-LwScsN'
 };
 
-// 修改计算分页的逻辑，返回倒序的页码数组
+// 修改计算分页的逻辑，返回倒序的页码数组,由于nft链的同步数据有可能存在更新不及时，所以我们这里在计算数量
+// 的时候，需要多计算10个，另外，如果不是后台请求，我们只会请求首页数据，为了加快加载速度，所以首页的数量
+// 可以设置为70
 const calculatePageKeys = (totalNfts: string, pageSize: number = 90): string[] => {
-  const total = parseInt(totalNfts);
-  const pageCount = Math.ceil(total / pageSize);
-  // 生成倒序的页码数组，比如 [360, 270, 180, 90, 0]
-  return Array.from({ length: pageCount }, (_, index) => 
-    ((pageCount - 1 - index) * pageSize).toString()
-  );
+  try {
+    const total = parseInt(totalNfts) + 10;
+    const pageCount = Math.ceil(total / pageSize);
+    // 生成倒序的页码数组，比如 [360, 270, 180, 90, 0]
+    return Array.from({ length: pageCount }, (_, index) => 
+      ((pageCount - 1 - index) * pageSize).toString()
+    );
+  } catch (error) {
+    return ['0']
+  }
 };
 
 export const fetchNFTs = createAsyncThunk(
@@ -106,7 +112,6 @@ export const fetchNFTs = createAsyncThunk(
     const cachedNfts = state.nft.cachedNfts[contractAddress] || [];
     // 如果不是后台请求且有缓存数据，立即返回缓存数据
     if (!isBackground && cachedNfts.length > 0) {
-      console.log('使用缓存', cachedNfts);
       return {
         nfts: [],
         contractAddress,
@@ -117,8 +122,8 @@ export const fetchNFTs = createAsyncThunk(
     }
 
     try {
-      const pageKeys = calculatePageKeys(totalNfts);
-      const keysToProcess = isBackground ? pageKeys.slice(1) : [pageKeys[0]];
+      const pageKeys = calculatePageKeys(totalNfts, 90);
+      const keysToProcess = isBackground ? pageKeys : [pageKeys[0]];
 
       for (const pageKey of keysToProcess) {
         const queryParams = new URLSearchParams({
@@ -231,11 +236,8 @@ const nftSlice = createSlice({
         // 如果使用缓存，直接使用传递过来的缓存数据
         if (useCache && cachedNfts) {
           // 创建一个新数组进行排序
-          console.log('使用缓存', cachedNfts);
-          console.log("当前时间", new Date().getTime());
           // 排序完只需要前70个（如果超过70个，则只取70个，小于70个则全部取）
           state.nfts = [...cachedNfts].sort((a, b) => parseInt(b.id) - parseInt(a.id)).slice(0, 70);
-          console.log("当前时间", new Date().getTime());
           state.isLoading = false;
           return;
         }

@@ -67,7 +67,7 @@ const Title = styled(Typography)(({ theme }) => ({
 
 export default function MyNFTs() {
   const dispatch = useDispatch<AppDispatch>();
-  const { nfts, isLoading } = useSelector((state: RootState) => state.nft);
+  const { nfts, isLoading } = useSelector((state: RootState) => state.myNft);
   const [containerPadding, setContainerPadding] = useState(MIN_PADDING);
   const [containerWidth, setContainerWidth] = useState(0);
   const { address, isConnected } = useAccount();
