@@ -360,7 +360,7 @@ export const pollImageStatus = createAsyncThunk(
     try {
       let attempts = 0;
       const maxAttempts = 60; // 最多尝试60次
-      const interval = 2000; // 每2秒检查一次
+      const interval = 6000; // 每6秒检查一次
 
       while (attempts < maxAttempts) {
         await waitForRequestAvailable(getState as () => RootState);
@@ -630,16 +630,6 @@ const chatSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      // 处理心跳请求
-      /* .addCase(sendHeartbeat.fulfilled, (state, action) => {
-        state.wasActive = action.payload.isActive;
-        if (action.payload.inQueue) {
-          state.connectionState = 'queuing';
-          state.queuePosition = action.payload.position || 100;
-        } else if (action.payload.isActive) {
-          state.connectionState = 'ready';
-        }
-      }) */
       // 处理发送消息
       .addCase(sendMessage.pending, (state) => {
         console.log('执行sendMessage.pending');
@@ -650,13 +640,11 @@ const chatSlice = createSlice({
         console.log('执行sendMessage.fulfilled');
         if (!action.payload.request_id) {
           state.processingState = 'idle';
-          state.currentRequestId = null;
         }
       })
       .addCase(sendMessage.rejected, (state, action) => {
         console.log('执行sendMessage.rejected', action.payload);
         state.processingState = 'idle';
-        state.currentRequestId = null;
         state.error = action.payload as string || 'Failed to send message';
       })
       // 处理图片状态轮询
@@ -668,7 +656,6 @@ const chatSlice = createSlice({
       })
       .addCase(pollImageStatus.rejected, (state) => {
         state.processingState = 'idle';
-        state.currentRequestId = null;
       })
       // 处理检查连接状态
       .addCase(checkConnectionStatus.fulfilled, (state, action) => {

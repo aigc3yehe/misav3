@@ -110,11 +110,9 @@ export default function UnityGame() {
 
   const Call = () => {
     window.unityInstance.SendMessage('JSCall', 'AddVoice', 
-      '{"content": "Hi, welcome back to MISATO Studio!","finish": true}'
+      '{"content": "Hi, welcome back to MAVAE Studio!","finish": true}'
     );
   };
-  console.log('来自UnityGame.tsx的');
-  console.log('UnityGame 组件渲染');
 
   useEffect(() => {
     console.log('检查是否需要加载 Unity:', !hasLoadedRef.current);
@@ -154,7 +152,7 @@ export default function UnityGame() {
       codeUrl: `${buildUrl}/ceafbebd956be6bc87ffa11cbccc8a1f.wasm.br`,
       streamingAssetsUrl: "StreamingAssets",
       companyName: "yehe",
-      productName: "Misato",
+      productName: "MAVAE",
       productVersion: "1.2",
       showBanner: unityShowBanner,
     };
