@@ -9,6 +9,10 @@
       "destination": "http://43.153.40.155:5577/:path*"
     },
     {
+      "source": "/tts/:path*",
+      "destination": "https://voice.mavae.ai/tts/:path*"
+    },
+    {
       "source": "/:path*",
       "destination": "/index.html"
     }
@@ -74,6 +78,15 @@
         { "key": "Content-Encoding", "value": "br" },
         { "key": "Cache-Control", "value": "public, max-age=31536000" },
         { "key": "Access-Control-Allow-Origin", "value": "*" }
+      ]
+    },
+    {
+      "source": "/tts/(.*)",
+      "headers": [
+        { "key": "Access-Control-Allow-Credentials", "value": "true" },
+        { "key": "Access-Control-Allow-Origin", "value": "*" },
+        { "key": "Access-Control-Allow-Methods", "value": "GET,OPTIONS,PATCH,DELETE,POST,PUT" },
+        { "key": "Access-Control-Allow-Headers", "value": "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version" }
       ]
     }
   ]
