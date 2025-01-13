@@ -147,9 +147,9 @@ export default function UnityGame() {
     // Unity 配置
     const buildUrl = "/Build";
     const config = {
-      dataUrl: `${buildUrl}/f1bb28aff9d57849f9ab02fd84cbb8f2.data.br`,
+      dataUrl: `${buildUrl}/b3a6e2d0fcf38b515144e6cb686fa0e3.data.br`,
       frameworkUrl: `${buildUrl}/79c44ca5710802631019722ec90e3f79.framework.js.br`,
-      codeUrl: `${buildUrl}/ceafbebd956be6bc87ffa11cbccc8a1f.wasm.br`,
+      codeUrl: `${buildUrl}/6616815c221de3d9b788abae0bb965c8.wasm.br`,
       streamingAssetsUrl: "StreamingAssets",
       companyName: "yehe",
       productName: "MAVAE",
@@ -159,7 +159,7 @@ export default function UnityGame() {
 
     // 加载 Unity
     const script = document.createElement("script");
-    script.src = `${buildUrl}/fa809976e7244565d81c35bb1e22f856.loader.js`;
+    script.src = `${buildUrl}/eebc1586e57de8622031503e80dcf696.loader.js`;
     script.onload = async () => {
       console.log('加载脚本');
       try {

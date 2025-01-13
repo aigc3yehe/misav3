@@ -102,7 +102,7 @@ export default function UnityVoiceCall() {
     // Unity 配置
     const buildUrl = "/Build";
     const config = {
-      dataUrl: buildUrl + "/9d25a14b06c4bee9fffd0f1869321448.data.unityweb",
+      dataUrl: buildUrl + "/161acb4755fc80bf395f6d31275d124a.data.unityweb",
       frameworkUrl: buildUrl + "/7362a96327c1f85b86405fc85119e499.framework.js.unityweb",
       codeUrl: buildUrl + "/3e4e4e870d7dd483297335435378864d.wasm.unityweb",
       symbolsUrl: buildUrl + "/d33855a90934d0101c75cae1519c6e42.symbols.json.unityweb",
