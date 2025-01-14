@@ -64,7 +64,9 @@ export default function UnityGame() {
   const [loading, setLoading] = useState(true);
   const hasLoadedRef = useRef(false);
   const theme = useTheme();
+  // @ts-ignore
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const dontCheckMobile = true;
 
   const unityShowBanner = (msg: string, type: 'error' | 'warning') => {
     const warningBanner = document.querySelector("#unity-warning");
@@ -102,8 +104,8 @@ export default function UnityGame() {
     }
 
     let mobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-    if (isMobile) {
-      mobile = true;
+    if (dontCheckMobile) {
+      mobile = false;
     }
     window.unityInstance.SendMessage('PlatformSystem', 'NotificationPlatform', mobile ? "0" : "1");
   };
@@ -129,7 +131,10 @@ export default function UnityGame() {
     window.UnityStartCallback = UnityStartCallback;
     
     // 检查移动设备
-    const mobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    let mobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    if (dontCheckMobile) {
+      mobile = false;
+    }
     if (mobile) {
       const meta = document.createElement('meta');
       meta.name = 'viewport';
