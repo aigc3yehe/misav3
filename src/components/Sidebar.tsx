@@ -137,14 +137,13 @@ const NameSection = styled(Box)({
   display: 'flex',
   alignItems: 'center',
   gap: '0px',
-  marginTop: '-5px',
-  cursor: `url(${pointingCursor}), pointer`,
+  marginTop: '0px',
 });
 
 const IconsSection = styled(Box)({
   display: 'flex',
   alignItems: 'center',
-  marginTop: '-6px',
+  marginTop: '0px',
   marginLeft: '-2px',
 });
 
@@ -369,7 +368,7 @@ export default function Sidebar({ open, onClose, isMobile }: SidebarProps) {
   // @ts-ignore
   const [chatHistory, setChatHistory] = useState<ChatHistoryProps[]>([]);
 
-  const showShared = currentAgent?.id === 'niyoko';
+  const showShared = currentAgent?.id === 'misato';
 
   /* const formatAddress = (address: string) => {
     return `${address.slice(0, 6)}...${address.slice(-4)}`;
@@ -556,7 +555,7 @@ export default function Sidebar({ open, onClose, isMobile }: SidebarProps) {
     }, */
     // 可以添加更多 agent
   ];
-
+  // @ts-ignore
   const handleAgentMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
     event.stopPropagation();
     setAgentMenuAnchor(event.currentTarget);
@@ -597,7 +596,7 @@ export default function Sidebar({ open, onClose, isMobile }: SidebarProps) {
                 <Box sx={{ width: 40, height: 40 }} />
               )}
               <Box sx={{ gap: '0px' }}>
-                <NameSection onClick={handleAgentMenuOpen}>
+                <NameSection>
                   <Typography 
                     variant="subtitle1" 
                     sx={{ 
@@ -610,7 +609,7 @@ export default function Sidebar({ open, onClose, isMobile }: SidebarProps) {
                   </Typography>
                   <IconButton 
                     size="small" 
-                    sx={{ padding: 1, width: 28, height: 28 }}
+                    sx={{ padding: 1, width: 28, height: 28, display: 'none' }}
                   >
                     <ArrowIcon src={arrowDropDown} alt="expand" />
                   </IconButton>
@@ -723,7 +722,7 @@ export default function Sidebar({ open, onClose, isMobile }: SidebarProps) {
           {showShared && (
           <SocialIconsWrapper>
             <SocialIconLink
-              href="https://twitter.com/yourhandle"
+              href="https://x.com/Misato_virtuals"
               target="_blank"
               rel="noopener noreferrer"
               underline="none"
@@ -735,12 +734,14 @@ export default function Sidebar({ open, onClose, isMobile }: SidebarProps) {
               target="_blank"
               rel="noopener noreferrer"
               underline="none"
+              sx={{ display: 'none' }}
             >
               <SocialIcon src={discardIcon} alt="Discard" />
             </SocialIconLink>
             <SocialIconLink
               href="/docs"
               underline="none"
+              sx={{ display: 'none' }}
             >
               <SocialIcon src={docsIcon} alt="Docs" />
             </SocialIconLink>

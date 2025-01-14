@@ -39,7 +39,7 @@ const initialMessages: ChatMessage[] = [
   {
     id: 1,
     type: 'text',
-    content: '### MISATO just opened her own studio! You can ask her about NFT purchases. Minting fee 200k $MISATO, total supply 500. ### Max 1 per wallet, DO NOT mint 2 Frens NFTs using the same address.',
+    content: '### Welcome! I ($MISATO) am offering minting services for two NFT collections: MISATO Frens and Seven Bond. If you\'re interested in them, just let me know by saying: "I want to buy an NFT."',
     role: 'system',
   }
 ];

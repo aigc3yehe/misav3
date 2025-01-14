@@ -10,15 +10,15 @@ import { RouterProvider } from 'react-router-dom';
 import { router } from './routes';
 import { Provider } from 'react-redux';
 import { store } from './store';
-import { baseSepolia } from 'viem/chains';
+import { base } from 'viem/chains';
 import { http } from 'wagmi';
 import { PrivyClientConfig } from '@privy-io/react-auth';
 
 // 创建 wagmi 配置
 const wagmiConfig = createConfig({
-  chains: [baseSepolia],
+  chains: [base],
   transports: {
-    [baseSepolia.id]: http(),
+    [base.id]: http(),
     //[base.id]: http(),
   },
 });
@@ -40,8 +40,8 @@ const privyConfig: PrivyClientConfig  = {
     requireUserPasswordOnCreate: true,
     showWalletUIs: true,
   },
-  defaultChain: baseSepolia,
-  supportedChains: [baseSepolia],
+  defaultChain: base,
+  supportedChains: [base],
 };
 
 function AppProvider({ children }: { children: React.ReactNode }) {

@@ -484,7 +484,7 @@ export default function Navbar({ onSidebarOpen, sidebarOpen, isMobile, avatar }:
           </LeftSection>
 
           <RightSection>
-            <JoinButton>
+            <JoinButton sx={{ display: 'none' }}>
               <GradientBorderButton className="desktop-button">
                 JOIN THE STUDIO!
               </GradientBorderButton>
