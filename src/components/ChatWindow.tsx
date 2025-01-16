@@ -937,14 +937,13 @@ export default function ChatWindow({ agentName }: ChatWindowProps) {
   };
 
   const handleSend = async () => {
-    console.log('handleSend', message, isRequesting);
-    console.log('trim', !message.trim());
-    if (!message.trim() || isRequesting) return;
-
+    // 只保留消息内容的检查
+    if (!message.trim()) return;
+    
     try {
       // 清空输入框
       setMessage('');
-      // 使用正确的类型
+      // 发送消息，让逻辑层处理等待
       await dispatch(sendMessage({ 
         messageText: message.trim(),
         payFeeHash: latestPaymentHash || undefined
