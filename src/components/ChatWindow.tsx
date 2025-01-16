@@ -937,6 +937,8 @@ export default function ChatWindow({ agentName }: ChatWindowProps) {
   };
 
   const handleSend = async () => {
+    console.log('handleSend', message, isRequesting);
+    console.log('trim', !message.trim());
     if (!message.trim() || isRequesting) return;
 
     try {
