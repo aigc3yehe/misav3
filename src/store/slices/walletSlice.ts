@@ -3,7 +3,7 @@ import { formatUnits } from 'viem';
 
 // 常量定义
 const MISATO_TOKEN_ADDRESS = '0x98f4779FcCb177A6D856dd1DfD78cd15B7cd2af5';
-const REQUIRED_BALANCE = 50_000; // 需要持有的最小数量
+// const REQUIRED_BALANCE = 50_000; // 需要持有的最小数量
 // const PROJECT_ID = '24138badb492a0fbadb1a04687d27fcd';
 const WALLET_INFO_CACHE_KEY = 'wallet_info_cache';
 const UUID_STORAGE_KEY = 'misato_user_uuid';
@@ -50,7 +50,7 @@ const initialState: WalletState = {
     icon: '',
   },
   tokenBalance: 0,
-  hasEnoughTokens: false,
+  hasEnoughTokens: true,
   maxBalances: {},
   isLoading: false,
   error: null,
@@ -157,13 +157,14 @@ const walletSlice = createSlice({
       state.isConnected = false;
       state.walletInfo = { name: '', icon: '' };
       state.tokenBalance = 0;
-      state.hasEnoughTokens = false;
+      state.hasEnoughTokens = true;
       state.userUuid = '';
     },
     updateMaxBalance: (state, action: PayloadAction<{ address: string; balance: number }>) => {
       const { address, balance } = action.payload;
       state.maxBalances[address] = Math.max(state.maxBalances[address] || 0, balance);
-      state.hasEnoughTokens = state.maxBalances[address] >= REQUIRED_BALANCE;
+      // state.hasEnoughTokens = state.maxBalances[address] >= REQUIRED_BALANCE;
+      state.hasEnoughTokens = true;
     },
   },
   extraReducers: (builder) => {
