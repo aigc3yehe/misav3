@@ -166,6 +166,15 @@ export const sendMessage = createAsyncThunk(
     // 更新最后活动时间
     dispatch(updateLastActivity());
     try {
+      // 添加用户消息到列表
+      const messageId = Date.now();
+      dispatch(addMessage({
+        id: messageId,
+        type: 'text',
+        role: 'user',
+        content: messageText,
+        time: formatTime(new Date()),
+      }));
       await waitForRequestAvailable(getState as () => RootState);
       dispatch(setIsRequesting(true));
 
@@ -177,18 +186,11 @@ export const sendMessage = createAsyncThunk(
         throw new Error('Connection not ready');
       } */
 
-      // 添加用户消息到列表
-      dispatch(addMessage({
-        id: Date.now(),
-        type: 'text',
-        role: 'user',
-        content: messageText,
-        time: formatTime(new Date()),
-      }));
-
       // 过滤并准备对话历史
       const conversation_history = state.chat.messages
         .filter(msg => 
+          // 排除当前发送的新消息
+          !(msg.id === messageId && msg.content === messageText) &&
           (msg.role === 'assistant' || msg.role === 'user') && 
           msg.type !== 'transaction'
         )
