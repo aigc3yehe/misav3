@@ -28,7 +28,11 @@ const initialState: TerminalState = {
 export const fetchTerminalLogs = createAsyncThunk(
   'terminal/fetchLogs',
   async ({ channel, event }: { channel: string, event: string }) => {
-    const response = await fetch(`/studio-api/terminal/records?channel=${channel}&event=${event}`);
+    const response = await fetch(`/studio-api/terminal/records?channel=${channel}&event=${event}`, {
+      headers: {
+        'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6InN0dWRpbyIsImlhdCI6MTczNjA4MzA3MX0.nBfMsRYqjOkOfjFqCEbmBJWjz1I_CkIr5emwdMS2nXo'
+      }
+    });
     if (!response.ok) throw new Error('Failed to fetch terminal logs');
     const data = await response.json();
     return data.map((text: string, index: number) => ({

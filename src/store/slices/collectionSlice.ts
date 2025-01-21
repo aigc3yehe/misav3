@@ -37,7 +37,11 @@ const initialState: CollectionState = {
 
 // 获取基本列表信息
 const fetchStudioCollections = async (network: number) => {
-  const response = await fetch(`/studio-api/studio/collections?network=${network}`);
+  const response = await fetch(`/studio-api/studio/collections?network=${network}`, {
+    headers: {
+      'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6InN0dWRpbyIsImlhdCI6MTczNjA4MzA3MX0.nBfMsRYqjOkOfjFqCEbmBJWjz1I_CkIr5emwdMS2nXo'
+    }
+  });
   if (!response.ok) throw new Error('Failed to fetch studio collections');
   return await response.json();
 };
