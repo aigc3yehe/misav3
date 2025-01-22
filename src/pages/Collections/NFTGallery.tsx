@@ -283,7 +283,7 @@ export default function NFTGallery() {
   };
 
   const handleNFTMeClick = () => {
-    window.open(`https://magiceden.io/collections/${collection.chain}/${collection.contract}`, '_blank');
+    window.open(`https://magiceden.io/collections/base/${collection.contract}`, '_blank');
   };
 
   const handleCopyAddress = async () => {
