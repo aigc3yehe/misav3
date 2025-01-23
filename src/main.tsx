@@ -47,7 +47,7 @@ const privyConfig: PrivyClientConfig  = {
 function AppProvider({ children }: { children: React.ReactNode }) {
   return (
     <PrivyProvider
-      appId="cm5lv29x9004b7sm0zundvun8"
+      appId="cm68ssno000jm4isiy31vlvpr"
       config={privyConfig}
     >
       <QueryClientProvider client={queryClient}>
