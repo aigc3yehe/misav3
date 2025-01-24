@@ -117,15 +117,15 @@ export default function UnityGame() {
   };
 
   useEffect(() => {
-    console.log('检查是否需要加载 Unity:', !hasLoadedRef.current);
+    console.log('check load unity:', !hasLoadedRef.current);
     
     if (hasLoadedRef.current) {
-      console.log('Unity 已经加载过，跳过加载');
+      console.log('Unity already loaded, skip load');
       return;
     }
     
     hasLoadedRef.current = true;
-    console.log('开始加载 Unity');
+    console.log('start load unity');
 
     // 设置全局回调
     window.UnityStartCallback = UnityStartCallback;
@@ -166,7 +166,7 @@ export default function UnityGame() {
     const script = document.createElement("script");
     script.src = `${buildUrl}/eebc1586e57de8622031503e80dcf696.loader.js`;
     script.onload = async () => {
-      console.log('加载脚本');
+      console.log('load script');
       try {
         const unityInstance = await window.createUnityInstance(canvasRef.current, config, (progress: number) => {
           progress += 0.7;
@@ -176,20 +176,20 @@ export default function UnityGame() {
             console.log('progress', progress);
           }
         })
-        console.log('实例加载成功', unityInstance)
+        console.log('instance load success', unityInstance)
         window.unityInstance = unityInstance;
         UnityStartCallback(unityInstance);
         setTimeout(Call, 2000);
       } catch (error) {
-        console.error('Unity 加载失败:', error);
-        unityShowBanner('Unity 加载失败', 'error');
+        console.error('Unity error:', error);
+        unityShowBanner('Unity error', 'error');
       }
     };
     document.body.appendChild(script);
 
     // 清理
     return () => {
-      console.log('清理', window.unityInstance);
+      console.log('clear', window.unityInstance);
       // @ts-ignore
       window.UnityStartCallback = undefined;
       window.removeEventListener('resize', handleResize);
