@@ -1,5 +1,5 @@
-import { Box, styled, Typography, Link, CircularProgress } from '@mui/material';
-import { useEffect, useState, useCallback } from 'react';
+import { Box, styled, Typography, Link } from '@mui/material';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import arrowIcon from '../assets/arrow.svg';
 import addIcon from '../assets/add.svg';
@@ -7,6 +7,8 @@ import ModelCard from '../components/ModelCard';
 import EnabledModelCard from '../components/EnabledModelCard';
 import VirtualizedGrid from '../components/VirtualizedGrid';
 import pointingCursor from '../assets/pointer.png';
+import EmptyState from '../components/EmptyState';
+import LoadingState from '../components/LoadingState';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch } from '../store';
 import { 
@@ -15,14 +17,19 @@ import {
   selectVotingModels, 
   selectVotingModelsLoading,
   selectEnabledModels,
-  selectEnabledModelsTotalCount
+  selectEnabledModelsTotalCount,
+  selectEnabledModelsLoading,
+  selectVotingDuration
 } from '../store/slices/modelSlice';
+import { formatDateRange } from '../utils/format';
 
 
 const CARD_WIDTH = 175;
 const CARD_GAP = 12;
 const MIN_PADDING = 40;
 const SCROLLBAR_WIDTH = 17; // Windows 系统默认滚动条宽度
+const PAGE_SIZE = 20
+const PAGE_ENABLED_SIZE = 20
 
 const PageContainer = styled(Box)<{ padding: number }>(({ padding }) => ({
   padding: `0 ${padding}px`,
@@ -50,6 +57,7 @@ const Title = styled(Typography)({
   color: '#FFFFFF',
 });
 
+//@ts-ignore
 const DateRange = styled(Typography)({
   fontSize: '16px',
   fontWeight: 400,
@@ -122,28 +130,21 @@ const Divider = styled(Box)({
   marginBottom: '22px',
 });
 
-const LoadingWrapper = styled(Box)({
+const LoadingWrapper = styled(Box)(({ theme }) => ({
   display: 'flex',
+  position: 'relative',
   justifyContent: 'center',
   alignItems: 'center',
-  height: '80px',
-});
-
-// 修改模拟 API 调用，确保每个模型有唯一的 ID
-const fetchEnabledModelsOld = (page: number, pageSize: number): Promise<any[]> => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const start = page * pageSize;
-      const models = Array.from({ length: pageSize }, (_, index) => ({
-        id: `e${start + index + (page * pageSize)}`,
-        coverUrl: `/mock/model${(start + index) % 10 + 1}.jpg`,
-        name: `Model ${start + index + 1} ${index % 3 === 0 ? 'with a very long name that will wrap to the next line' : ''}`,
-        status: ['Training', 'Ready', 'Processing'][Math.floor(Math.random() * 3)],
-      }));
-      resolve(models);
-    }, 1000);
-  });
-};
+  opacity: 0,
+  transition: 'opacity 0.3s ease-in-out',
+  '&.visible': {
+    opacity: 1,
+  },
+  height: 128,
+  [theme.breakpoints.down('sm')]: {
+    height: '4rem',
+  },
+}));
 
 export default function Models() {
   const navigate = useNavigate();
@@ -151,14 +152,14 @@ export default function Models() {
   const [cardsPerRow, setCardsPerRow] = useState(6);
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
-  const [page, setPage] = useState(1);
-  const pageSize = 6;
-  const [isInitialLoad, setIsInitialLoad] = useState(true);
   const dispatch = useDispatch<AppDispatch>();
   const votingModels = useSelector(selectVotingModels);
   const votingModelsLoading = useSelector(selectVotingModelsLoading);
+  const isLoading = useSelector(selectEnabledModelsLoading);
+  const loadingRef = useRef(false);
   const enabledModels = useSelector(selectEnabledModels);
   const totalCount = useSelector(selectEnabledModelsTotalCount);
+  const votingDuration = useSelector(selectVotingDuration);
 
   // 添加布局计算的 useEffect
   useEffect(() => {
@@ -205,47 +206,57 @@ export default function Models() {
 
   // 修改初始加载逻辑
   useEffect(() => {
-    if (isInitialLoad) {
-      loadMoreModels();
-      setIsInitialLoad(false);
-    }
-  }, [isInitialLoad]); // 只依赖 isInitialLoad
+    dispatch(fetchEnabledModels({
+      page: 1,
+      pageSize: PAGE_ENABLED_SIZE,
+      order: 'created_at',
+      desc: 'desc'
+    }))
+  }, [dispatch]);
 
-  const loadMoreModels = useCallback(async () => {
-    if (loading || !hasMore) return;
-    
-    setLoading(true);
-    try {
-      await dispatch(fetchEnabledModels({ 
-        page, 
-        pageSize,
+  // 更新是否有更多数据
+  useEffect(() => {
+    setHasMore(enabledModels.length < totalCount);
+  }, [enabledModels.length, totalCount]);
+
+  // 处理加载状态显示
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (isLoading) {
+      timer = setTimeout(() => {
+        setLoading(true);
+      }, 200);
+    } else {
+      setLoading(false);
+      // 确保loading状态被重置
+      loadingRef.current = false;
+    }
+    return () => clearTimeout(timer);
+  }, [isLoading]);
+
+  const handleLoadMore = useCallback(() => {
+    if (!isLoading && hasMore && !loadingRef.current) {
+      loadingRef.current = true;
+      
+      // 通过当前数据量计算下一页的页码
+      const nextPage = Math.floor(enabledModels.length / PAGE_SIZE) + 1;
+      console.log('next page:', {
+        currentItems: enabledModels.length,
+        pageSize: PAGE_SIZE,
+        nextPage
+      });
+      
+      dispatch(fetchEnabledModels({ 
+        page: nextPage, 
+        pageSize: PAGE_ENABLED_SIZE,
         order: 'created_at',
         desc: 'desc'
-      })).unwrap();
-      
-      setPage(prev => prev + 1);
-      // 根据返回的总数来判断是否还有更多数据
-      setHasMore(enabledModels.length < totalCount);
-    } catch (error) {
-      console.error('❌ Failed to load models:', error);
-    } finally {
-      setLoading(false);
+      }))
+        .finally(() => {
+          loadingRef.current = false;
+        });
     }
-  }, [page, loading, hasMore, pageSize, dispatch, enabledModels.length, totalCount]);
-
-  // 扩展模拟数据到10条
-  const mockModels = [
-    { id: '1', coverUrl: '/mock/model1.jpg', name: 'Cool Style Model', likes: 128, isliked: true },
-    { id: '2', coverUrl: '/mock/model2.jpg', name: 'Awesome Long Name Style That Will Be Truncated', likes: 256, isliked: false },
-    { id: '3', coverUrl: '/mock/model3.jpg', name: 'Another Style', likes: 64, isliked: false },
-    { id: '4', coverUrl: '/mock/model4.jpg', name: 'Great Style', likes: 512, isliked: true },
-    { id: '5', coverUrl: '/mock/model5.jpg', name: 'Amazing Style', likes: 1024, isliked: false },
-    { id: '6', coverUrl: '/mock/model6.jpg', name: 'Super Style', likes: 2048, isliked: true },
-    { id: '7', coverUrl: '/mock/model7.jpg', name: 'Fantastic Style', likes: 4096, isliked: false },
-    { id: '8', coverUrl: '/mock/model8.jpg', name: 'Incredible Style', likes: 8192, isliked: true },
-    { id: '9', coverUrl: '/mock/model9.jpg', name: 'Ultimate Style', likes: 16384, isliked: false },
-    { id: '10', coverUrl: '/mock/model10.jpg', name: 'Perfect Style', likes: 32768, isliked: true },
-  ];
+  }, [dispatch, isLoading, hasMore]);
 
   const handleLike = (id: string) => {
     console.log('Like model:', id);
@@ -272,14 +283,16 @@ export default function Models() {
     const { scrollTop, scrollHeight, clientHeight } = scrollInfo;
     const threshold = 200; // 距离底部200px时开始加载
     
-    if (scrollHeight - (scrollTop + clientHeight) < threshold) {
-      loadMoreModels();
+    if (!loadingRef.current && 
+      hasMore && 
+      scrollHeight - (scrollTop + clientHeight) < threshold) {
+      handleLoadMore();
     }
-  }, [loadMoreModels]);
+  }, [hasMore, handleLoadMore]);
 
   useEffect(() => {
-    dispatch(fetchVotingModels({ page: 1, pageSize: cardsPerRow - 1 }));
-  }, [dispatch, cardsPerRow]);
+    dispatch(fetchVotingModels({ page: 1, pageSize: PAGE_SIZE }));
+  }, [dispatch]);
 
   // 修改展示enabled模型的部分
   const displayEnabledModels = enabledModels.map(model => ({
@@ -289,11 +302,29 @@ export default function Models() {
     // 模型的训练状态，0 为未开始，1 为进行中，2 为完成，-1 为失败  
     status: model.model_tran?.[0]?.train_state === 2 ? 'Ready' : 
             model.model_tran?.[0]?.train_state === 1 ? 'Training' : 
-            model.model_tran?.[0]?.train_state === -1 ? 'Failed' : 'Not Started',
+            model.model_tran?.[0]?.train_state === -1 ? 'Failed' : 'Voting',
     showStatus: model.model_tran?.[0]?.train_state === 2 ? false : true,
   }));
 
-
+  if (votingModelsLoading) {
+    return (
+      <PageContainer id="modelsContainer" padding={containerPadding}>
+        <SectionHeader>
+          <TitleSection>
+            <Title>VOTING MODELS</Title>
+          </TitleSection>
+          <SeeAllLink href="/voting-models">
+            See All Voting
+            <ArrowIcon src={arrowIcon} alt="See all" />
+          </SeeAllLink>
+        </SectionHeader>
+      
+        <LoadingWrapper  className="visible">
+          <LoadingState />
+        </LoadingWrapper>
+      </PageContainer>
+    )
+  }
 
 
   return (
@@ -301,7 +332,9 @@ export default function Models() {
       <SectionHeader>
         <TitleSection>
           <Title>VOTING MODELS</Title>
-          <DateRange>2024-10-20~2024-11-20</DateRange>
+          <DateRange>
+            {formatDateRange(votingDuration?.start, votingDuration?.end)}
+          </DateRange>
         </TitleSection>
         <SeeAllLink href="/voting-models">
           See All Voting
@@ -310,13 +343,8 @@ export default function Models() {
       </SectionHeader>
       
       <ModelsGrid>
-        {votingModelsLoading ? (
-          <LoadingWrapper>
-            <CircularProgress size={24} sx={{ color: '#C7FF8C' }} />
-          </LoadingWrapper>
-        ) : (
-          <>
-            {displayModels.map(model => (
+        <>
+            {displayModels.slice(0, Math.min(cardsPerRow - 1, displayModels.length)).map(model => (
               <ModelCard
                 key={model.id}
                 {...model}
@@ -329,8 +357,7 @@ export default function Models() {
               <AddIcon src={addIcon} alt="Add new style" />
               <NewStyleText>New Style</NewStyleText>
             </AddModelCard>
-          </>
-        )}
+        </>
       </ModelsGrid>
 
       <Divider />
@@ -359,9 +386,13 @@ export default function Models() {
       />
 
       {loading && (
-        <LoadingWrapper>
-          <CircularProgress size={24} sx={{ color: '#C7FF8C' }} />
+        <LoadingWrapper className="visible">
+          <LoadingState />
         </LoadingWrapper>
+      )}
+
+      {enabledModels.length === 0 && !loading && (
+        <EmptyState text="No Enabled Models found" />
       )}
     </PageContainer>
   );

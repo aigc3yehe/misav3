@@ -14,6 +14,10 @@ interface ModelTran {
   urls?: string[]; // 训练的图片链接
 }
 
+export interface Duration {
+  start?: number;
+  end?: number;
+}
 
 export interface Model {
   id: number;
@@ -49,7 +53,7 @@ export interface Vote {
   dislikes: number;
 }
 
-interface VoteState {
+export interface VoteState {
   model_id?: number;
   state?: number; // 1为喜欢，2为不喜欢
 }
@@ -69,11 +73,13 @@ export interface GalleryImage {
 
 interface ModelState {
   votingModels: Model[];
+  votingDuration: Duration | null;
 
   enabledModels: Model[];
   enabledTotalCount: number;
   totalCount: number;
   isLoading: boolean;
+  isEnabledLoading: boolean;
   error: string | null;
   currentPage: number;
 
@@ -96,10 +102,12 @@ interface ModelState {
 
 const initialState: ModelState = {
   votingModels: [],
+  votingDuration: null,
   enabledModels: [],
   enabledTotalCount: 0,
   totalCount: 0,
   isLoading: false,
+  isEnabledLoading: false,
   error: null,
   currentPage: 1,
   pageSize: 10,
@@ -317,6 +325,7 @@ const modelSlice = createSlice({
       })
       .addCase(fetchVotingModels.fulfilled, (state, action) => {
         state.votingModels = action.payload.data.models;
+        state.votingDuration = action.payload.data.duration;
         state.totalCount = action.payload.data.totalCount || 0;
         state.isLoading = false;
       })
@@ -325,16 +334,23 @@ const modelSlice = createSlice({
         state.error = action.error.message || 'get voting models failed';
       })
       .addCase(fetchEnabledModels.pending, (state) => {
-        state.isLoading = true;
+        state.isEnabledLoading = true;
         state.error = null;
       })
       .addCase(fetchEnabledModels.fulfilled, (state, action) => {
-        state.enabledModels = action.payload.data.models;
+        if (action.meta.arg.page === 1) {
+          state.enabledModels = action.payload.data.models || [];
+        } else {
+          const existingIds = new Set(state.enabledModels.map(model => model.id));
+          // @ts-ignore
+          const newModels = (action.payload.data.models || []).filter(model => !existingIds.has(model.id));
+          state.enabledModels = [...state.enabledModels, ...newModels];
+        }
         state.enabledTotalCount = action.payload.data.totalCount || 0;
-        state.isLoading = false;
+        state.isEnabledLoading = false;
       })
       .addCase(fetchEnabledModels.rejected, (state, action) => {
-        state.isLoading = false;
+        state.isEnabledLoading = false;
         state.error = action.error.message || 'get enabled models failed';
       })
       .addCase(fetchModelDetail.pending, (state) => {
@@ -398,6 +414,7 @@ export default modelSlice.reducer;
 
 export const selectVotingModels = (state: RootState) => state.model.votingModels;
 export const selectVotingModelsLoading = (state: RootState) => state.model.isLoading;
+export const selectEnabledModelsLoading = (state: RootState) => state.model.isEnabledLoading;
 export const selectVotingModelsTotalCount = (state: RootState) => state.model.totalCount;
 export const selectEnabledModels = (state: RootState) => state.model.enabledModels;
 export const selectEnabledModelsTotalCount = (state: RootState) => state.model.enabledTotalCount;
@@ -412,3 +429,4 @@ export const selectGalleryList = (state: RootState) => state.model.galleryList;
 export const selectGalleryListTotalCount = (state: RootState) => state.model.galleryListTotalCount;
 export const selectGalleryListLoading = (state: RootState) => state.model.galleryListLoading;
 export const selectGalleryListError = (state: RootState) => state.model.galleryListError;
+export const selectVotingDuration = (state: RootState) => state.model.votingDuration;

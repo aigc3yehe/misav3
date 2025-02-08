@@ -315,6 +315,7 @@ function CustomTabPanel(props: TabPanelProps) {
 }
 
 // 添加防抖函数
+// @ts-ignore
 function useDebounce<T>(value: T, delay: number): T {
   const [debouncedValue, setDebouncedValue] = useState(value);
 
@@ -362,7 +363,6 @@ export default function ModelDetail() {
 
   // 加载图片列表
   useEffect(() => {
-    console.log("请求图片：", id, page)
     if (id) {
       dispatch(fetchGalleryImages({
         page,
@@ -374,7 +374,6 @@ export default function ModelDetail() {
   }, [dispatch, id, page]);
 
   useEffect(() => {
-    console.log("当前值", galleryImages.length, totalCount)
     setHasMore(galleryImages.length < totalCount);
   }, [galleryImages.length, totalCount]);
 
@@ -392,7 +391,6 @@ export default function ModelDetail() {
   }, [galleryLoading]);
 
   const handleLoadMore = useCallback(() => {
-    console.log("当前加载状态为：", galleryLoading, hasMore)
     if (!galleryLoading && hasMore) {
       const nextPage = Math.floor(galleryImages.length / PAGE_SIZE) + 1;
       setPage(nextPage);
@@ -401,19 +399,9 @@ export default function ModelDetail() {
 
   const handleScroll = useCallback((scrollInfo: { scrollTop: number, scrollHeight: number, clientHeight: number }) => {
     const { scrollTop, scrollHeight, clientHeight } = scrollInfo;
-    console.log("滚动状态：", {
-      hasMore,
-      scrollTop,
-      scrollHeight,
-      clientHeight,
-      distance: scrollHeight - (scrollTop + clientHeight),
-      loading: loadingRef.current
-    });
-
     if (!loadingRef.current && 
         hasMore && 
         scrollHeight - (scrollTop + clientHeight) < 200) {
-      console.log("触发加载更多");
       loadingRef.current = true;
       handleLoadMore();
       setTimeout(() => {
