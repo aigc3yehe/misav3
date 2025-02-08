@@ -7,6 +7,11 @@ import createIcon from '../assets/create.svg';
 import shareIcon from '../assets/share.svg';
 import coinsIcon from '../assets/coins.svg';
 import xIcon from '../assets/x.svg';
+import voting from '../assets/Voting.svg';
+import training from '../assets/training.svg';
+import bigLikedIcon from '../assets/big_liked.svg';
+import bigLikeIcon from '../assets/big_like.svg';
+import bigUnlikeIcon from '../assets/big_unlike.svg';
 import avatarIcon from '../assets/avatar.png';
 import WaterfallGrid from '../components/WaterfallGrid';
 import GalleryCard from '../components/GalleryCard';
@@ -24,9 +29,10 @@ import {
   selectModelError,
   selectGalleryImages,
   selectGalleryLoading,
-  selectGalleryTotalCount
+  selectGalleryTotalCount,
+  selectVotingDuration
 } from '../store/slices/modelSlice';
-import { formatId } from '../utils/format';
+import { formatId, formatDateRange } from '../utils/format';
 
 function formatAddress(address: string | undefined) {
   return address ? address.slice(0, 6) + '...' + address.slice(-4) : '';
@@ -117,6 +123,8 @@ const ModelTitle = styled(Typography)({
   WebkitBoxOrient: 'vertical',
   overflow: 'hidden',
   textOverflow: 'ellipsis',
+  height: '80px',
+  marginBottom: '0',
 });
 
 const AuthorSection = styled(Box)({
@@ -189,9 +197,10 @@ const BaseButton = styled(Button)({
 const GenerateButton = styled(BaseButton)({
   width: '245px',
   gap: '0px',
-  backgroundColor: '#C7FF8C',
+  background: 'linear-gradient(90deg, #C7FF8C 0%, #E8C4EA 43%, #39EDFF 100%)',
   '&:hover': {
-    backgroundColor: '#b3ff66',
+    background: 'linear-gradient(90deg, #C7FF8C 0%, #E8C4EA 43%, #39EDFF 100%)',
+    opacity: 0.9,
   },
   '& .MuiButton-startIcon': {
     margin: 0,
@@ -332,6 +341,82 @@ function useDebounce<T>(value: T, delay: number): T {
   return debouncedValue;
 }
 
+const StatusBox = styled(Box)({
+  width: '100%',
+  height: '82px',
+  borderRadius: '4px',
+  padding: '15px 20px',
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '6px',
+  position: 'relative',
+});
+
+const StatusBackground = styled('img')({
+  position: 'absolute',
+  top: 0,
+  left: 0,
+  width: 386,
+  height: 82,
+  objectFit: 'cover',
+  zIndex: -1,
+});
+
+const StatusText = styled(Typography)({
+  fontSize: '30px',
+  fontWeight: 700,
+  lineHeight: '100%',
+  color: '#000000',
+});
+
+const TimeRangeText = styled(Typography)({
+  fontSize: '16px',
+  fontWeight: 400,
+  lineHeight: '100%',
+  color: '#000000',
+});
+
+const VoteButtonGroup = styled(Box)({
+  display: 'flex',
+  gap: '10px',
+});
+
+const UnlikeButton = styled(Button)({
+  width: '80px',
+  height: '50px',
+  borderRadius: '4px',
+  backgroundColor: 'rgba(57, 237, 255, 0.1)',
+  border: '1px solid #39EDFF',
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: 'center',
+  '&:hover': {
+    backgroundColor: 'rgba(57, 237, 255, 0.2)',
+  },
+});
+
+const LikeButton = styled(Button)<{ $isLiked: boolean }>(({ $isLiked }) => ({
+  width: '295px',
+  height: '50px',
+  borderRadius: '4px',
+  backgroundColor: $isLiked ? '#39EDFF' : 'rgba(57, 237, 255, 0.1)',
+  border: '1px solid #39EDFF',
+  display: 'flex',
+  gap: '10px',
+  justifyContent: 'center',
+  alignItems: 'center',
+  '&:hover': {
+    backgroundColor: $isLiked ? '#39EDFF' : 'rgba(57, 237, 255, 0.2)',
+  },
+}));
+
+const LikeCount = styled(Typography)<{ $isLiked: boolean }>(({ $isLiked }) => ({
+  fontSize: '20px',
+  fontWeight: 700,
+  lineHeight: '100%',
+  color: $isLiked ? '#000000' : '#39EDFF',
+}));
+
 export default function ModelDetail() {
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
@@ -349,6 +434,7 @@ export default function ModelDetail() {
   const galleryImages = useSelector(selectGalleryImages);
   const galleryLoading = useSelector(selectGalleryLoading);
   const totalCount = useSelector(selectGalleryTotalCount);
+  const votingDuration = useSelector(selectVotingDuration);
 
   // 加载模型详情
   useEffect(() => {
@@ -414,6 +500,14 @@ export default function ModelDetail() {
     navigate(-1); // 返回上一页
   };
 
+  const handleLike = (id: number) => {
+    console.log('Like model:', id);
+  };
+
+  const handleUnlike = (id: number) => {
+    console.log('Unlike model:', id);
+  };
+
   if (isLoading) {
     return (
       <PageContainer>
@@ -458,6 +552,105 @@ export default function ModelDetail() {
     return Math.round(CARD_WIDTH / aspectRatio);
   };
 
+  const renderStatusContent = () => {
+    const status = getModelStatus();
+    const isLiked = model.model_vote?.state === 1;
+    const formatLikes = (num: number) => {
+      return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    };
+    
+    switch (status) {
+      case 'Ready':
+        return (
+          <>
+            <DescriptionBox>
+              <InfoRow>
+                <InfoText>Version</InfoText>
+                <InfoText>{model.model_tran?.[0]?.version || 1}</InfoText>
+              </InfoRow>
+              <InfoRow>
+                <InfoText>Users</InfoText>
+                <InfoText>{model.usersCount || 0}</InfoText>
+              </InfoRow>
+              <InfoRow>
+                <InfoText>Published</InfoText>
+                <InfoText>
+                  {model.created_at ? new Date(model.created_at).toLocaleDateString() : 'N/A'}
+                </InfoText>
+              </InfoRow>
+              <InfoRow $withBorder={false}>
+                <InfoText>Status</InfoText>
+                <InfoText>{status}</InfoText>
+              </InfoRow>
+            </DescriptionBox>
+
+            <ButtonGroup>
+              <GenerateButton
+                startIcon={<ButtonIcon src={createIcon} alt="Create" />}
+              >
+                <GenerateText>GENERATE</GenerateText>
+              </GenerateButton>
+              <InfoButton $bgColor="#FF8A7B">
+                <ButtonIcon src={shareIcon} alt="Share" />
+              </InfoButton>
+              <InfoButton $bgColor="#A176FF">
+                <ButtonIcon src={coinsIcon} alt="Coins" />
+              </InfoButton>
+            </ButtonGroup>
+          </>
+        );
+        
+      case 'Voting':
+        return (
+          <>
+            <StatusBox>
+              <StatusBackground src={voting} />
+              <StatusText>VOTING...</StatusText>
+              <TimeRangeText>
+              {formatDateRange(votingDuration?.start, votingDuration?.end)}
+              </TimeRangeText>
+            </StatusBox>
+            <VoteButtonGroup>
+              <LikeButton 
+                $isLiked={isLiked}
+                onClick={() => handleLike(model.id)}
+              >
+                <img 
+                  src={isLiked ? bigLikedIcon : bigLikeIcon} 
+                  alt="Like" 
+                  width={22} 
+                  height={12} 
+                />
+                <LikeCount $isLiked={isLiked}>
+                  {formatLikes(model.model_vote?.like || 0)}
+                </LikeCount>
+              </LikeButton>
+              <UnlikeButton onClick={() => handleUnlike(model.id)}>
+                <img 
+                  src={bigUnlikeIcon} 
+                  alt="Unlike" 
+                  width={22} 
+                  height={14} 
+                />
+              </UnlikeButton>
+            </VoteButtonGroup>
+          </>
+        );
+        
+      case 'Training':
+        return (
+          <StatusBox>
+            <StatusBackground src={training} />
+            <StatusText>Training...</StatusText>
+            <TimeRangeText>Please Wait</TimeRangeText>
+          </StatusBox>
+        );
+        
+      default:
+        return null;
+    }
+  };
+
   return (
     <PageContainer ref={containerRef} id="galleryContainer">
       <ContentContainer>
@@ -487,40 +680,7 @@ export default function ModelDetail() {
               </XButton>
             </AuthorSection>
 
-            <DescriptionBox>
-              <InfoRow>
-                <InfoText>Version</InfoText>
-                <InfoText>{model.model_tran?.[0]?.version || 1}</InfoText>
-              </InfoRow>
-              <InfoRow>
-                <InfoText>Users</InfoText>
-                <InfoText>{model.usersCount || 0}</InfoText>
-              </InfoRow>
-              <InfoRow>
-                <InfoText>Published</InfoText>
-                <InfoText>
-                  {model.created_at ? new Date(model.created_at).toLocaleDateString() : 'N/A'}
-                </InfoText>
-              </InfoRow>
-              <InfoRow $withBorder={false}>
-                <InfoText>Status</InfoText>
-                <InfoText>{getModelStatus()}</InfoText>
-              </InfoRow>
-            </DescriptionBox>
-
-            <ButtonGroup>
-              <GenerateButton
-                startIcon={<ButtonIcon src={createIcon} alt="Create" />}
-              >
-                <GenerateText>GENERATE</GenerateText>
-              </GenerateButton>
-              <InfoButton $bgColor="#FF8A7B">
-                <ButtonIcon src={shareIcon} alt="Share" />
-              </InfoButton>
-              <InfoButton $bgColor="#A176FF">
-                <ButtonIcon src={coinsIcon} alt="Coins" />
-              </InfoButton>
-            </ButtonGroup>
+            {renderStatusContent()}
           </InfoPanel>
         </MainSection>
 
