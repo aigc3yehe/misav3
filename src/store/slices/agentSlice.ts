@@ -14,8 +14,8 @@ interface AgentState {
 
 const initialState: AgentState = {
   currentAgent: {
-    id: 'misato',
-    name: 'MISATO',
+    id: 'niyoko',
+    name: 'NIYOKO',
     avatar: '/misato.jpg',
     address: '0x98f4779FcCb177A6D856dd1DfD78cd15B7cd2af5',
     wallet_address: '0x900709432a8F2C7E65f90aA7CD35D0afe4eB7169',

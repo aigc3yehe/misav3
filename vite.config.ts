@@ -17,6 +17,11 @@ export default defineConfig({
         target: 'http://43.153.40.155:5577',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/studio-api/, '')
+      },
+      '/niyoko-api': {
+        target: 'http://43.153.40.155:5576',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/niyoko-api/, '')
       }
     }
   },

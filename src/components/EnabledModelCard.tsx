@@ -8,7 +8,9 @@ interface EnabledModelCardProps {
   name: string;
   status: string;
   onCardClick: () => void;
+  showStatus: boolean;
 }
+
 
 const Card = styled(Box)({
   width: 268,
@@ -72,7 +74,7 @@ const StatusText = styled(Typography)({
   color: '#000',
 });
 
-export default function EnabledModelCard({ id, coverUrl, name, status, onCardClick }: EnabledModelCardProps) {
+export default function EnabledModelCard({ id, coverUrl, name, status, onCardClick, showStatus }: EnabledModelCardProps) {
   const [imageLoaded, setImageLoaded] = useState(false);
 
   return (
@@ -84,10 +86,13 @@ export default function EnabledModelCard({ id, coverUrl, name, status, onCardCli
         onLoad={() => setImageLoaded(true)}
       />
       <ContentOverlay>
-        <StatusLabel>
-          <StatusText>{status}</StatusText>
-        </StatusLabel>
+        {showStatus && (
+          <StatusLabel>
+            <StatusText>{status}</StatusText>
+          </StatusLabel>
+        )}
         <ModelName>{name}</ModelName>
+
       </ContentOverlay>
     </Card>
   );

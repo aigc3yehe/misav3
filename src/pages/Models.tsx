@@ -7,6 +7,16 @@ import ModelCard from '../components/ModelCard';
 import EnabledModelCard from '../components/EnabledModelCard';
 import VirtualizedGrid from '../components/VirtualizedGrid';
 import pointingCursor from '../assets/pointer.png';
+import { useDispatch, useSelector } from 'react-redux';
+import { AppDispatch } from '../store';
+import { 
+  fetchVotingModels, 
+  fetchEnabledModels,
+  selectVotingModels, 
+  selectVotingModelsLoading,
+  selectEnabledModels,
+  selectEnabledModelsTotalCount
+} from '../store/slices/modelSlice';
 
 
 const CARD_WIDTH = 175;
@@ -120,7 +130,7 @@ const LoadingWrapper = styled(Box)({
 });
 
 // 修改模拟 API 调用，确保每个模型有唯一的 ID
-const fetchEnabledModels = (page: number, pageSize: number): Promise<any[]> => {
+const fetchEnabledModelsOld = (page: number, pageSize: number): Promise<any[]> => {
   return new Promise((resolve) => {
     setTimeout(() => {
       const start = page * pageSize;
@@ -139,12 +149,16 @@ export default function Models() {
   const navigate = useNavigate();
   const [containerPadding, setContainerPadding] = useState(MIN_PADDING);
   const [cardsPerRow, setCardsPerRow] = useState(6);
-  const [enabledModels, setEnabledModels] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
-  const [page, setPage] = useState(0);
+  const [page, setPage] = useState(1);
   const pageSize = 6;
   const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const dispatch = useDispatch<AppDispatch>();
+  const votingModels = useSelector(selectVotingModels);
+  const votingModelsLoading = useSelector(selectVotingModelsLoading);
+  const enabledModels = useSelector(selectEnabledModels);
+  const totalCount = useSelector(selectEnabledModelsTotalCount);
 
   // 添加布局计算的 useEffect
   useEffect(() => {
@@ -198,29 +212,26 @@ export default function Models() {
   }, [isInitialLoad]); // 只依赖 isInitialLoad
 
   const loadMoreModels = useCallback(async () => {
-    if (loading || !hasMore) {
-      return;
-    }
+    if (loading || !hasMore) return;
     
     setLoading(true);
     try {
-      const newModels = await fetchEnabledModels(page, pageSize);
-
-      // 添加去重逻辑
-      setEnabledModels(prev => {
-        const existingIds = new Set(prev.map(model => model.id));
-        const uniqueNewModels = newModels.filter(model => !existingIds.has(model.id));
-        return [...prev, ...uniqueNewModels];
-      });
-
+      await dispatch(fetchEnabledModels({ 
+        page, 
+        pageSize,
+        order: 'created_at',
+        desc: 'desc'
+      })).unwrap();
+      
       setPage(prev => prev + 1);
-      setHasMore(newModels.length === pageSize);
+      // 根据返回的总数来判断是否还有更多数据
+      setHasMore(enabledModels.length < totalCount);
     } catch (error) {
       console.error('❌ Failed to load models:', error);
     } finally {
       setLoading(false);
     }
-  }, [page, loading, hasMore, pageSize]);
+  }, [page, loading, hasMore, pageSize, dispatch, enabledModels.length, totalCount]);
 
   // 扩展模拟数据到10条
   const mockModels = [
@@ -245,11 +256,17 @@ export default function Models() {
   };
 
   const handleCardClick = (id: string) => {
-    navigate(`/app/models/${id}`);
+    navigate(`/models/${id}`);
   };
 
   // 只显示一行数据（cardsPerRow - 1 是为了给添加按钮留位置）
-  const displayModels = mockModels.slice(0, cardsPerRow - 1);
+  const displayModels = votingModels.map(model => ({
+    id: model.id.toString(),
+    coverUrl: model.cover || '/mock/model1.jpg',
+    name: model.name || 'Unnamed Model',
+    likes: model.model_vote?.like || 0,
+    isliked: model.model_vote?.state === 1, // 直接使用model_vote中的state
+  }));
 
   const handleScroll = useCallback((scrollInfo: { scrollTop: number, scrollHeight: number, clientHeight: number }) => {
     const { scrollTop, scrollHeight, clientHeight } = scrollInfo;
@@ -259,6 +276,25 @@ export default function Models() {
       loadMoreModels();
     }
   }, [loadMoreModels]);
+
+  useEffect(() => {
+    dispatch(fetchVotingModels({ page: 1, pageSize: cardsPerRow - 1 }));
+  }, [dispatch, cardsPerRow]);
+
+  // 修改展示enabled模型的部分
+  const displayEnabledModels = enabledModels.map(model => ({
+    id: model.id.toString(),
+    coverUrl: model.cover || '/mock/model1.jpg',
+    name: model.name || 'Unnamed Model',
+    // 模型的训练状态，0 为未开始，1 为进行中，2 为完成，-1 为失败  
+    status: model.model_tran?.[0]?.train_state === 2 ? 'Ready' : 
+            model.model_tran?.[0]?.train_state === 1 ? 'Training' : 
+            model.model_tran?.[0]?.train_state === -1 ? 'Failed' : 'Not Started',
+    showStatus: model.model_tran?.[0]?.train_state === 2 ? false : true,
+  }));
+
+
+
 
   return (
     <PageContainer id="modelsContainer" padding={containerPadding}>
@@ -274,19 +310,27 @@ export default function Models() {
       </SectionHeader>
       
       <ModelsGrid>
-        {displayModels.map(model => (
-          <ModelCard
-            key={model.id}
-            {...model}
-            onLike={() => handleLike(model.id)}
-            onUnlike={() => handleUnlike(model.id)}
-            onCardClick={() => handleCardClick(model.id)}
-          />
-        ))}
-        <AddModelCard>
-          <AddIcon src={addIcon} alt="Add new style" />
-          <NewStyleText>New Style</NewStyleText>
-        </AddModelCard>
+        {votingModelsLoading ? (
+          <LoadingWrapper>
+            <CircularProgress size={24} sx={{ color: '#C7FF8C' }} />
+          </LoadingWrapper>
+        ) : (
+          <>
+            {displayModels.map(model => (
+              <ModelCard
+                key={model.id}
+                {...model}
+                onLike={() => handleLike(model.id)}
+                onUnlike={() => handleUnlike(model.id)}
+                onCardClick={() => handleCardClick(model.id)}
+              />
+            ))}
+            <AddModelCard>
+              <AddIcon src={addIcon} alt="Add new style" />
+              <NewStyleText>New Style</NewStyleText>
+            </AddModelCard>
+          </>
+        )}
       </ModelsGrid>
 
       <Divider />
@@ -298,7 +342,7 @@ export default function Models() {
       </SectionHeader>
 
       <VirtualizedGrid
-        items={enabledModels}
+        items={displayEnabledModels}
         renderItem={(model) => (
           <EnabledModelCard
             key={model.id}

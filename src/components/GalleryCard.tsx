@@ -1,14 +1,15 @@
 import { Box, styled } from '@mui/material';
 import pointingCursor from '../assets/pointer.png';
+import avatar from '../assets/image_avatar.png';
+
+function formatAddress(address: string | undefined) {
+  return address ? address.slice(0, 6) + '...' + address.slice(-4) : '';
+}
 
 interface GalleryCardProps {
-  id: string;
   imageUrl: string;
   title: string;
-  author: {
-    avatar: string;
-    address: string;
-  };
+  author: string;
   width: number;
   height: number;
   onClick: () => void;
@@ -88,21 +89,21 @@ const Title = styled('div')({
 });
 
 export default function GalleryCard({ 
-  id, 
   imageUrl, 
   title, 
   author,
   height, 
   onClick 
 }: GalleryCardProps) {
+  
   return (
-    <Card height={height} onClick={onClick} id={id}>
+    <Card height={height} onClick={onClick}>
       <Image className="main-image" src={imageUrl} alt={title} />
       <Overlay className="overlay">
         <Title>{title}</Title>
         <AuthorSection>
-          <Avatar src={author.avatar} alt={author.address} />
-          <AuthorAddress>{author.address}</AuthorAddress>
+          <Avatar src={avatar} alt="avatar" />
+          <AuthorAddress>{formatAddress(author)}</AuthorAddress>
         </AuthorSection>
       </Overlay>
     </Card>

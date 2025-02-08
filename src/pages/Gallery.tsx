@@ -1,17 +1,29 @@
-import { Box, styled, Typography, CircularProgress } from '@mui/material';
+import { Box, styled, Typography } from '@mui/material';
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
 import pointingCursor from '../assets/pointer.png';
 import WaterfallGrid from '../components/WaterfallGrid';
 import GalleryCard from '../components/GalleryCard';
 import outlineRight from '../assets/outline_right.svg';
 import generateImage from '../assets/generate_image.jpg';
-import avatar from '../assets/image_avatar.png';
+import EmptyState from '../components/EmptyState';
+import LoadingState from '../components/LoadingState';
+import { useDispatch, useSelector } from 'react-redux';
+import { AppDispatch } from '../store';
+import {
+  fetchGalleryList,
+  clearGalleryList,
+  selectGalleryList,
+  selectGalleryListLoading,
+  selectGalleryListTotalCount,
+  selectGalleryListError
+} from '../store/slices/modelSlice';
+import { formatId } from '../utils/format';
 
-const CARD_WIDTH = 269;
+const CARD_WIDTH = 268.5;
 const ADD_CARD_HEIGHT = 463;
 const CARD_GAP = 12;
 const MIN_PADDING = 40;
+const PAGE_SIZE = 20;
 
 const PageContainer = styled(Box)<{ padding: number }>(({ padding }) => ({
   padding: `0 ${padding}px`,
@@ -48,17 +60,21 @@ const AddGalleryCard = styled(Box)({
   },
 });
 
-const LoadingWrapper = styled(Box)({
+const LoadingWrapper = styled(Box)(({ theme }) => ({
   display: 'flex',
+  position: 'relative',
   justifyContent: 'center',
   alignItems: 'center',
-  height: '80px',
   opacity: 0,
   transition: 'opacity 0.3s ease-in-out',
   '&.visible': {
     opacity: 1,
   },
-});
+  height: 128,
+  [theme.breakpoints.down('sm')]: {
+    height: '4rem',
+  },
+}));
 
 const Title = styled(Typography)({
   fontSize: '22px',
@@ -103,117 +119,49 @@ const OutlineIcon = styled('img')({
   top: 95,
 });
 
-// 模拟 API 调用，返回不同高度的图片数据
-const fetchGalleryItems = (page: number, pageSize: number): Promise<any[]> => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const start = page * pageSize;
-      const items = Array.from({ length: pageSize }, (_, index) => ({
-        id: `g${start + index}`,
-        imageUrl: `/mock/gallery${(start + index) % 10 + 1}.jpg`,
-        height: Math.floor(Math.random() * 200 + 300), // 随机高度 300-500px
-        title: `Gallery Item ${start + index + 1}`,
-        author: {
-          avatar: `${avatar}`,  // 统一使用 image_avatar.png
-          address: `0x${Math.random().toString(16).slice(2, 10)}...${Math.random().toString(16).slice(2, 6)}` // 生成模拟的地址
-        }
-      }));
-      resolve(items);
-    }, 1000);
-  });
-};
-
-// 添加防抖函数
-function useDebounce<T>(value: T, delay: number): T {
-  const [debouncedValue, setDebouncedValue] = useState(value);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedValue(value);
-    }, delay);
-
-    return () => {
-      clearTimeout(timer);
-    };
-  }, [value, delay]);
-
-  return debouncedValue;
-}
-
 export default function Gallery() {
-  const navigate = useNavigate();
-  const [containerPadding, setContainerPadding] = useState(MIN_PADDING);
-  const [galleryItems, setGalleryItems] = useState<any[]>([]);
+  const dispatch = useDispatch<AppDispatch>();
+  const containerRef = useRef<HTMLDivElement>(null);
+  
   const [hasMore, setHasMore] = useState(true);
-  const [page, setPage] = useState(0);
-  const pageSize = 10;
-  const [isInitialLoad, setIsInitialLoad] = useState(true);
-  const [isLoading, setIsLoading] = useState(false);
-  const loadingRef = useRef(false);
-  const galleryContainerRef = useRef<HTMLDivElement>(null); // 添加 ref
   const [isLoadingVisible, setIsLoadingVisible] = useState(false);
-  const debouncedItems = useDebounce(galleryItems, 150);
+  const [containerPadding, setContainerPadding] = useState(MIN_PADDING);
+  const loadingRef = useRef(false);
 
-  const loadMoreItems = useCallback(async () => {
-    if (loadingRef.current || !hasMore) return;
-    
-    loadingRef.current = true;
-    setIsLoading(true);
-    
-    try {
-      console.log('Starting to load more items...');
-      const newItems = await fetchGalleryItems(page, pageSize);
-      
-      setGalleryItems(prev => {
-        const existingIds = new Set(prev.map(item => item.id));
-        const uniqueNewItems = newItems.filter(item => !existingIds.has(item.id));
-        
-        if (uniqueNewItems.length === 0 && newItems.length > 0) {
-          setHasMore(false);
-          return prev;
-        }
-        
-        console.log(`Adding ${uniqueNewItems.length} new items`);
-        return [...prev, ...uniqueNewItems];
-      });
-      
-      setPage(prev => prev + 1);
-      setHasMore(newItems.length === pageSize);
-    } catch (error) {
-      console.error('Failed to load gallery items:', error);
-    } finally {
-      setIsLoading(false);
+  const galleryList = useSelector(selectGalleryList);
+  const isLoading = useSelector(selectGalleryListLoading);
+  const totalCount = useSelector(selectGalleryListTotalCount);
+  const error = useSelector(selectGalleryListError);
+
+  // 初始加载
+  useEffect(() => {
+    dispatch(fetchGalleryList({ page: 1, pageSize: PAGE_SIZE }));
+    return () => {
+      dispatch(clearGalleryList());
+    };
+  }, [dispatch]);
+
+  // 更新是否有更多数据
+  useEffect(() => {
+    setHasMore(galleryList.length < totalCount);
+  }, [galleryList.length, totalCount]);
+
+  // 处理加载状态显示
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (isLoading) {
+      timer = setTimeout(() => {
+        setIsLoadingVisible(true);
+      }, 200);
+    } else {
+      setIsLoadingVisible(false);
+      // 确保loading状态被重置
       loadingRef.current = false;
     }
-  }, [page, hasMore, pageSize]);
+    return () => clearTimeout(timer);
+  }, [isLoading]);
 
-  const checkAndLoadMore = useCallback(() => {
-    const container = document.getElementById('galleryContainer');
-    if (!container) return;
-
-    const { scrollTop, clientHeight, scrollHeight } = container;
-    if (scrollHeight <= clientHeight || scrollHeight - (scrollTop + clientHeight) < 200) {
-      loadMoreItems();
-    }
-  }, [loadMoreItems]);
-
-  const handleScroll = useCallback((scrollInfo: { scrollTop: number, scrollHeight: number, clientHeight: number }) => {
-    const { scrollTop, scrollHeight, clientHeight } = scrollInfo;
-    console.log('Gallery scroll handler called:', { 
-      scrollTop, 
-      scrollHeight, 
-      clientHeight,
-      isLoading: loadingRef.current,
-      hasMore
-    });
-    
-    if (!loadingRef.current && hasMore && scrollHeight - (scrollTop + clientHeight) < 200) {
-      console.log('Attempting to load more items...');
-      loadMoreItems();
-    }
-  }, [loadMoreItems, hasMore]);
-
-  // Layout 计算
+  // 动态计算布局
   useEffect(() => {
     const container = document.getElementById('galleryContainer');
     if (!container) return;
@@ -236,38 +184,63 @@ export default function Gallery() {
     return () => resizeObserver.disconnect();
   }, []);
 
-  // 初始加载
-  useEffect(() => {
-    if (isInitialLoad) {
-      loadMoreItems();
-      setIsInitialLoad(false);
-    }
-  }, [isInitialLoad, loadMoreItems]);
-
-  // 监听内容变化
-  useEffect(() => {
-    checkAndLoadMore();
-  }, [galleryItems.length, checkAndLoadMore]);
-
-  // 处理加载状态的显示
-  useEffect(() => {
-    let timer: NodeJS.Timeout;
-    if (isLoading) {
-      timer = setTimeout(() => {
-        setIsLoadingVisible(true);
-      }, 200);
+  const handleLoadMore = useCallback(() => {
+    if (!isLoading && hasMore && !loadingRef.current) {
+      loadingRef.current = true;
+      
+      // 通过当前数据量计算下一页的页码
+      const nextPage = Math.floor(galleryList.length / PAGE_SIZE) + 1;
+      console.log('next page:', {
+        currentItems: galleryList.length,
+        pageSize: PAGE_SIZE,
+        nextPage
+      });
+      
+      dispatch(fetchGalleryList({ page: nextPage, pageSize: PAGE_SIZE }))
+        .finally(() => {
+          loadingRef.current = false;
+        });
     } else {
-      setIsLoadingVisible(false);
+      console.log('跳过加载:', {
+        isLoading,
+        hasMore,
+        currentlyLoading: loadingRef.current
+      });
     }
-    return () => clearTimeout(timer);
-  }, [isLoading]);
+  }, [dispatch, isLoading, hasMore]);
+
+  const handleScroll = useCallback((scrollInfo: { scrollTop: number, scrollHeight: number, clientHeight: number }) => {
+    const { scrollTop, scrollHeight, clientHeight } = scrollInfo;
+    console.log('Gallery status:', {
+      hasMore,
+      scrollTop,
+      scrollHeight,
+      clientHeight,
+      distance: scrollHeight - (scrollTop + clientHeight),
+      loading: loadingRef.current
+    });
+    
+    if (!loadingRef.current && 
+        hasMore && 
+        scrollHeight - (scrollTop + clientHeight) < 200) {
+      console.log('Gallery load more');
+      handleLoadMore();
+    }
+  }, [hasMore, handleLoadMore]);
+
+  // 计算缩放后的高度
+  const calculateScaledHeight = (image: any) => {
+    if (!image.height || !image.width) return 0;
+    const aspectRatio = image.width / image.height;
+    return Math.round(CARD_WIDTH / aspectRatio);
+  };
 
   return (
-    <PageContainer id="galleryContainer" padding={containerPadding} ref={galleryContainerRef}>
+    <PageContainer padding={containerPadding} ref={containerRef} id="galleryContainer">
       <Title>GALLERY</Title>
-        
+      
       <WaterfallGrid
-        items={[{ id: 'add', isAddCard: true }, ...debouncedItems]}
+        items={galleryList}
         renderItem={(item) => (
           item.isAddCard ? (
             <AddGalleryCard key="add">
@@ -278,27 +251,40 @@ export default function Gallery() {
             </AddGalleryCard>
           ) : (
             <GalleryCard
-              key={item.id}
               {...item}
-              onClick={() => navigate(`/gallery/${item.id}`)}
-              style={{
-                opacity: 0,
-                animation: 'fadeIn 0.3s ease-in-out forwards',
-              }}
+              title={formatId(item.id)}
+              author={item.creator || 'unknown'}
+              key={item.task_id}
+              imageUrl={item.url || ''}
+              width={CARD_WIDTH}
+              height={calculateScaledHeight(item)}
+              onClick={() => {/* handle click */}}
             />
           )
         )}
         itemWidth={CARD_WIDTH}
-        itemHeight={(item) => item.isAddCard ? ADD_CARD_HEIGHT : item.height}
+        itemHeight={(item) => item.isAddCard ? ADD_CARD_HEIGHT : calculateScaledHeight(item)}
         gap={CARD_GAP}
         containerWidth={(document.getElementById('galleryContainer')?.offsetWidth ?? 0) - containerPadding * 2}
         onScroll={handleScroll}
-        containerRef={galleryContainerRef}
+        containerRef={containerRef}
+        threshold={600}
       />
+      {isLoadingVisible && (
+        <LoadingWrapper className="visible">
+          <LoadingState />
+        </LoadingWrapper>
+      )}
 
-      <LoadingWrapper className={isLoadingVisible ? 'visible' : ''}>
-        <CircularProgress size={24} sx={{ color: '#C7FF8C' }} />
-      </LoadingWrapper>
+      {error && (
+        <Typography color="error" sx={{ mt: 2, textAlign: 'center' }}>
+          {error}
+        </Typography>
+      )}
+
+      {galleryList.length === 0 && !isLoadingVisible && (
+        <EmptyState text="No Images found" />
+      )}
     </PageContainer>
   );
 }

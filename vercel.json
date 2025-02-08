@@ -9,9 +9,14 @@
       "destination": "http://43.153.40.155:5577/:path*"
     },
     {
+      "source": "/niyoko-api/:path*",
+      "destination": "http://43.153.40.155:5576/:path*"
+    },
+    {
       "source": "/tts/:path*",
       "destination": "https://voice.mavae.ai/tts/:path*"
     },
+
     {
       "source": "/:path*",
       "destination": "/index.html"

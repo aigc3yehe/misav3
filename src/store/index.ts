@@ -7,6 +7,7 @@ import chatReducer, { walletStatusMiddleware } from './slices/chatSlice';
 import walletReducer from './slices/walletSlice';
 import terminalReducer from './slices/terminalSlice';
 import myNftReducer from './slices/mynftSlice';
+import modelReducer from './slices/modelSlice';
 
 export const store = configureStore({
   reducer: {
@@ -18,6 +19,7 @@ export const store = configureStore({
     chat: chatReducer,
     wallet: walletReducer,
     terminal: terminalReducer,
+    model: modelReducer,
   },
   middleware: (getDefaultMiddleware) => getDefaultMiddleware().concat(walletStatusMiddleware),
 });

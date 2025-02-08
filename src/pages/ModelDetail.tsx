@@ -1,6 +1,6 @@
-import { Box, styled, IconButton, Typography, Tabs, Tab, Button, CircularProgress } from '@mui/material';
+import { Box, styled, IconButton, Typography, Tabs, Tab, Button } from '@mui/material';
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import backIcon from '../assets/back.svg';
 import ImageViewPager from '../components/ImageViewPager';
 import createIcon from '../assets/create.svg';
@@ -10,7 +10,27 @@ import xIcon from '../assets/x.svg';
 import avatarIcon from '../assets/avatar.png';
 import WaterfallGrid from '../components/WaterfallGrid';
 import GalleryCard from '../components/GalleryCard';
-import avatar from '../assets/image_avatar.png';
+import EmptyState from '../components/EmptyState';
+import LoadingState from '../components/LoadingState';
+import { useDispatch, useSelector } from 'react-redux';
+import { AppDispatch } from '../store';
+import { 
+  fetchModelDetail, 
+  fetchGalleryImages,
+  clearCurrentModel,
+  clearGallery,
+  selectCurrentModel, 
+  selectModelLoading, 
+  selectModelError,
+  selectGalleryImages,
+  selectGalleryLoading,
+  selectGalleryTotalCount
+} from '../store/slices/modelSlice';
+import { formatId } from '../utils/format';
+
+function formatAddress(address: string | undefined) {
+  return address ? address.slice(0, 6) + '...' + address.slice(-4) : '';
+}
 
 const PageContainer = styled(Box)({
   padding: '0 40px',
@@ -25,7 +45,18 @@ const PageContainer = styled(Box)({
 
 const ContentContainer = styled(Box)({
   width: '1110px',
+  height: '100%',
   margin: '0 auto',
+  display: 'flex',
+  flexDirection: 'column',
+});
+
+const CenterContainer = styled(Box)({
+  flex: 1,  // 占满剩余空间
+  display: 'flex',  // 启用flex布局
+  alignItems: 'center',  // 垂直居中
+  justifyContent: 'center',  // 水平居中
+  minHeight: '500px',  // 确保最小高度
 });
 
 const Header = styled(Box)({
@@ -214,7 +245,14 @@ const StyledTab = styled(Tab)({
 });
 
 const TabPanel = styled(Box)({
-  padding: '24px 0',
+  color: '#D6C0FF',
+  fontSize: '16px',
+  fontWeight: 400,
+  lineHeight: 'auto',
+  marginTop: 24
+});
+
+const EmptyGallery = styled(Box)({
   color: '#D6C0FF',
   fontSize: '16px',
   fontWeight: 400,
@@ -222,7 +260,7 @@ const TabPanel = styled(Box)({
 });
 
 const GallerySection = styled(Box)({
-  marginTop: '40px',
+  marginTop: '30px',
   position: 'relative',
   minHeight: '500px',
 });
@@ -235,40 +273,25 @@ const GalleryTitle = styled(Typography)({
   marginBottom: '30px',
 });
 
-const LoadingWrapper = styled(Box)({
+const LoadingWrapper = styled(Box)(({ theme }) => ({
   display: 'flex',
+  position: 'relative',
   justifyContent: 'center',
   alignItems: 'center',
-  height: '80px',
   opacity: 0,
   transition: 'opacity 0.3s ease-in-out',
   '&.visible': {
     opacity: 1,
   },
-});
-
-// 模拟 API 调用，返回不同高度的图片数据
-const fetchGalleryItems = (page: number, pageSize: number): Promise<any[]> => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const start = page * pageSize;
-      const items = Array.from({ length: pageSize }, (_, index) => ({
-        id: `g${start + index}`,
-        imageUrl: `/mock/gallery${(start + index) % 10 + 1}.jpg`,
-        height: Math.floor(Math.random() * 200 + 300), // 随机高度 300-500px
-        title: `Gallery Item ${start + index + 1}`,
-        author: {
-          avatar: `${avatar}`,  // 统一使用 image_avatar.png
-          address: `0x${Math.random().toString(16).slice(2, 10)}...${Math.random().toString(16).slice(2, 6)}` // 生成模拟的地址
-        }
-      }));
-      resolve(items);
-    }, 1000);
-  });
-};
+  height: 128,
+  [theme.breakpoints.down('sm')]: {
+    height: '4rem',
+  },
+}));
 
 const CARD_WIDTH = 268.5;
 const CARD_GAP = 12;
+const PAGE_SIZE = 20;
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -309,96 +332,56 @@ function useDebounce<T>(value: T, delay: number): T {
 }
 
 export default function ModelDetail() {
+  const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
-  const [tabValue, setTabValue] = useState(0);
-  const [galleryItems, setGalleryItems] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [hasMore, setHasMore] = useState(true);
-  const [page, setPage] = useState(0);
-  const pageSize = 10;
-  const loadingRef = useRef(false);
+  const { id } = useParams<{ id: string }>();
   const containerRef = useRef<HTMLDivElement>(null);
+  
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
   const [isLoadingVisible, setIsLoadingVisible] = useState(false);
-  const debouncedItems = useDebounce(galleryItems, 150); // 防抖处理列表数据
+  const loadingRef = useRef(false);
+  
+  const model = useSelector(selectCurrentModel);
+  const isLoading = useSelector(selectModelLoading);
+  const error = useSelector(selectModelError);
+  const galleryImages = useSelector(selectGalleryImages);
+  const galleryLoading = useSelector(selectGalleryLoading);
+  const totalCount = useSelector(selectGalleryTotalCount);
 
-  const loadMoreItems = useCallback(async () => {
-    if (loadingRef.current || !hasMore) return;
-    
-    loadingRef.current = true;
-    setIsLoading(true);
-    
-    try {
-      const newItems = await fetchGalleryItems(page, pageSize);
-      
-      setGalleryItems(prev => {
-        const existingIds = new Set(prev.map(item => item.id));
-        const uniqueNewItems = newItems.filter(item => !existingIds.has(item.id));
-        
-        if (uniqueNewItems.length === 0 && newItems.length > 0) {
-          setHasMore(false);
-          return prev;
-        }
-        
-        return [...prev, ...uniqueNewItems];
-      });
-      
-      setPage(prev => prev + 1);
-      setHasMore(newItems.length === pageSize);
-    } catch (error) {
-      console.error('Failed to load gallery items:', error);
-    } finally {
-      setIsLoading(false);
-      loadingRef.current = false;
-    }
-  }, [page, hasMore, pageSize]);
-
-  const handleScroll = useCallback((scrollInfo: { scrollTop: number, scrollHeight: number, clientHeight: number }) => {
-    const { scrollTop, scrollHeight, clientHeight } = scrollInfo;
-    
-    if (!loadingRef.current && 
-        hasMore && 
-        scrollTop > 0 &&
-        scrollHeight - (scrollTop + clientHeight) < 200) {
-      loadMoreItems();
-    }
-  }, [loadMoreItems, hasMore]);
-
-  // 初始加载只加载一次
+  // 加载模型详情
   useEffect(() => {
-    if (galleryItems.length === 0) {
-      loadMoreItems();
+    if (id) {
+      dispatch(fetchModelDetail(Number(id)));
     }
-  }, [loadMoreItems]);
+    return () => {
+      dispatch(clearCurrentModel());
+      dispatch(clearGallery());
+    };
+  }, [dispatch, id]);
 
-  // 示例图片数组
-  const images = [
-    '/mock/model1.jpg',
-    '/mock/model2.jpg',
-    '/mock/model3.jpg',
-    '/mock/model4.jpg',
-    '/mock/model5.jpg',
-    '/mock/model6.jpg',
-    '/mock/model7.jpg',
-    '/mock/model8.jpg',
-    '/mock/model9.jpg',
-    '/mock/model10.jpg',
-  ];
-
-  const handleBack = () => {
-    navigate(-1); // 返回上一页
-  };
-
-  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
-    setTabValue(newValue);
-    if (newValue > 3) {
-      console.log('tab change to 3', event);
+  // 加载图片列表
+  useEffect(() => {
+    console.log("请求图片：", id, page)
+    if (id) {
+      dispatch(fetchGalleryImages({
+        page,
+        pageSize: PAGE_SIZE,
+        model_id: Number(id),
+        state: 'success'
+      }));
     }
-  };
+  }, [dispatch, id, page]);
 
-  // 处理加载状态的显示
+  useEffect(() => {
+    console.log("当前值", galleryImages.length, totalCount)
+    setHasMore(galleryImages.length < totalCount);
+  }, [galleryImages.length, totalCount]);
+
+  // 处理加载状态显示
   useEffect(() => {
     let timer: NodeJS.Timeout;
-    if (isLoading) {
+    if (galleryLoading) {
       timer = setTimeout(() => {
         setIsLoadingVisible(true);
       }, 200);
@@ -406,7 +389,86 @@ export default function ModelDetail() {
       setIsLoadingVisible(false);
     }
     return () => clearTimeout(timer);
-  }, [isLoading]);
+  }, [galleryLoading]);
+
+  const handleLoadMore = useCallback(() => {
+    console.log("当前加载状态为：", galleryLoading, hasMore)
+    if (!galleryLoading && hasMore) {
+      const nextPage = Math.floor(galleryImages.length / PAGE_SIZE) + 1;
+      setPage(nextPage);
+    }
+  }, [galleryLoading, hasMore]);
+
+  const handleScroll = useCallback((scrollInfo: { scrollTop: number, scrollHeight: number, clientHeight: number }) => {
+    const { scrollTop, scrollHeight, clientHeight } = scrollInfo;
+    console.log("滚动状态：", {
+      hasMore,
+      scrollTop,
+      scrollHeight,
+      clientHeight,
+      distance: scrollHeight - (scrollTop + clientHeight),
+      loading: loadingRef.current
+    });
+
+    if (!loadingRef.current && 
+        hasMore && 
+        scrollHeight - (scrollTop + clientHeight) < 200) {
+      console.log("触发加载更多");
+      loadingRef.current = true;
+      handleLoadMore();
+      setTimeout(() => {
+        loadingRef.current = false;
+      }, 500);
+    }
+  }, [hasMore, handleLoadMore]);
+
+  const handleBack = () => {
+    navigate(-1); // 返回上一页
+  };
+
+  if (isLoading) {
+    return (
+      <PageContainer>
+        <ContentContainer>
+        <CenterContainer>
+          <LoadingWrapper className="visible">
+            <LoadingState />
+          </LoadingWrapper>
+          </CenterContainer>
+        </ContentContainer>
+      </PageContainer>
+    );
+  }
+
+  if (error || !model || (!model.id && !model.name)) {
+    return (
+      <PageContainer>
+        <ContentContainer>
+          <CenterContainer>
+            <EmptyState text="No Model found" />
+          </CenterContainer>
+        </ContentContainer>
+      </PageContainer>
+    );
+  }
+
+  const getModelStatus = () => {
+    const trainState = model.model_tran?.[0]?.train_state;
+    return trainState === 2 ? 'Ready' :
+           trainState === 1 ? 'Training' :
+           trainState === -1 ? 'Failed' : 'Voting';
+  };
+
+  const getModelUrls = () => {
+    return model.model_tran?.[0]?.urls || [model.cover || ''];
+  };
+
+  // 计算缩放后的高度
+  const calculateScaledHeight = (image: any) => {
+    if (!image.height || !image.width) return 0;
+    const aspectRatio = image.width / image.height;
+    return Math.round(CARD_WIDTH / aspectRatio);
+  };
 
   return (
     <PageContainer ref={containerRef} id="galleryContainer">
@@ -419,19 +481,19 @@ export default function ModelDetail() {
         </Header>
         <MainSection>
           <ImageViewPager 
-            items={images} 
+            items={getModelUrls()} 
             slidesPerView={2}
             spacing={12}
             loop={true}
           />
           <InfoPanel>
             <ModelTitle>
-              This is a very long model title that might need two lines to display properly
+              {model.name || 'Unnamed Model'}
             </ModelTitle>
             
             <AuthorSection>
               <AvatarIcon src={avatarIcon} alt="Author" />
-              <AuthorAddress>0x1234...5678</AuthorAddress>
+              <AuthorAddress>{formatAddress(model.creator)}</AuthorAddress>
               <XButton>
                 <img src={xIcon} alt="X" />
               </XButton>
@@ -440,19 +502,21 @@ export default function ModelDetail() {
             <DescriptionBox>
               <InfoRow>
                 <InfoText>Version</InfoText>
-                <InfoText>1.0</InfoText>
+                <InfoText>{model.model_tran?.[0]?.version || 1}</InfoText>
               </InfoRow>
               <InfoRow>
                 <InfoText>Users</InfoText>
-                <InfoText>132</InfoText>
+                <InfoText>{model.usersCount || 0}</InfoText>
               </InfoRow>
               <InfoRow>
                 <InfoText>Published</InfoText>
-                <InfoText>2024.12.23</InfoText>
+                <InfoText>
+                  {model.created_at ? new Date(model.created_at).toLocaleDateString() : 'N/A'}
+                </InfoText>
               </InfoRow>
               <InfoRow $withBorder={false}>
-                <InfoText>Hash</InfoText>
-                <InfoText>234234EB</InfoText>
+                <InfoText>Status</InfoText>
+                <InfoText>{getModelStatus()}</InfoText>
               </InfoRow>
             </DescriptionBox>
 
@@ -473,43 +537,34 @@ export default function ModelDetail() {
         </MainSection>
 
         <StyledTabs 
-          value={tabValue} 
-          onChange={handleTabChange}
+          value={0}
         >
           <StyledTab label="DESCRIPTION" disableRipple />
-          <StyledTab label="DATA" disableRipple />
-          <StyledTab label="EPOCH" disableRipple />
         </StyledTabs>
 
-        <CustomTabPanel value={tabValue} index={0}>
-        The most noticeable difference between the XPlus 3 and XPlus MIX 3 models is the lighting effect. The XPlus 3 delivers an absolute black tone more effectively, while the XPlus MIX 3 excels at warm tones, providing softer light that highlights facial and skin details more clearly.
-        </CustomTabPanel>
-        <CustomTabPanel value={tabValue} index={1}>
-        For example, in a photo taken in a dark room, the XPlus 3 produces a deeper black background, whereas the MIX 3 makes the face appear brighter and more evenly toned. In outdoor photos under sunlight, the MIX 3 creates a more realistic and natural effect.
-        </CustomTabPanel>
-        <CustomTabPanel value={tabValue} index={2}>
-        Additionally, there are some differences in hair, skin, and material rendering. Finally, the XPlus 3 Dark model is undoubtedly the darkest version, evoking lighting and atmosphere similar to images set in dungeons. The Dark 3 also introduces more noise, making it ideal for dark art, horror themes, and images that require a gloomy atmosphere.
+        <CustomTabPanel value={0} index={0}>
+          {model.description || 'This model has no description yet'}
         </CustomTabPanel>
 
         <GallerySection>
           <GalleryTitle>GALLERY</GalleryTitle>
           
           <WaterfallGrid
-            items={debouncedItems}
+            items={galleryImages}
             renderItem={(item) => (
               <GalleryCard
-                key={item.id}
                 {...item}
+                title={formatId(item.id)}
+                author={item.creator || 'unknown'}
+                key={item.task_id}
+                imageUrl={item.url || ''}
                 width={CARD_WIDTH}
-                onClick={() => navigate(`/gallery/${item.id}`)}
-                style={{
-                  opacity: 0,
-                  animation: 'fadeIn 0.3s ease-in-out forwards',
-                }}
+                height={calculateScaledHeight(item)}
+                onClick={() => {/* handle click */}}
               />
             )}
             itemWidth={CARD_WIDTH}
-            itemHeight={(item) => item.height}
+            itemHeight={(item) => calculateScaledHeight(item)}
             gap={CARD_GAP}
             containerWidth={1110}
             onScroll={handleScroll}
@@ -517,12 +572,19 @@ export default function ModelDetail() {
             threshold={600}
           />
 
-          <LoadingWrapper className={isLoadingVisible ? 'visible' : ''}>
-            <CircularProgress size={24} sx={{ color: '#C7FF8C' }} />
-          </LoadingWrapper>
+          {isLoadingVisible && (
+            <LoadingWrapper className="visible">
+              <LoadingState />
+            </LoadingWrapper>
+          )}
+
+          {galleryImages.length === 0 && !isLoadingVisible && (
+            <EmptyGallery>
+              No Creations Yet.
+            </EmptyGallery>
+          )}
         </GallerySection>
       </ContentContainer>
-      
     </PageContainer>
   );
 } 

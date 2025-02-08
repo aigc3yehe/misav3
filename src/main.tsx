@@ -13,6 +13,7 @@ import { store } from './store';
 import { base } from 'viem/chains';
 import { http } from 'wagmi';
 import { PrivyClientConfig } from '@privy-io/react-auth';
+import { CHAIN_CONFIG } from './config';
 
 // 创建 wagmi 配置
 const wagmiConfig = createConfig({
@@ -47,10 +48,11 @@ const privyConfig: PrivyClientConfig  = {
 function AppProvider({ children }: { children: React.ReactNode }) {
   return (
     <PrivyProvider
-      appId="cm68ssno000jm4isiy31vlvpr"
+      appId={CHAIN_CONFIG.privy_id}
       config={privyConfig}
     >
       <QueryClientProvider client={queryClient}>
+
         <WagmiProvider config={wagmiConfig}>
           {children}
         </WagmiProvider>
