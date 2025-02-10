@@ -10,6 +10,7 @@ import VoiceCall from '../pages/VoiceCall';
 import VisualizeX from '../pages/VisualizeX';
 import NotFound from '../pages/NotFound';
 import MyNFTs from '../pages/MyNFTs';
+import MySpace from '../pages/MySpace';
 
 export const router = createBrowserRouter([
   {
@@ -55,6 +56,10 @@ export const router = createBrowserRouter([
       {
         path: '/my-nfts',
         element: <MyNFTs />,
+      },
+      {
+        path: '/my-space',
+        element: <MySpace />,
       },
     ],
   },

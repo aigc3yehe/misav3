@@ -475,7 +475,7 @@ export default function Sidebar({ open, onClose, isMobile }: SidebarProps) {
     
     return [
       {
-        path: '/my-models',
+        path: '/my-space?tab=models',
         label: 'My Models',
         icon: {
           normal: modelsNormal,
@@ -483,8 +483,8 @@ export default function Sidebar({ open, onClose, isMobile }: SidebarProps) {
         }
       },
       {
-        path: '/my-nfts',
-        label: 'My NFTs',
+        path: '/my-space?tab=images',
+        label: 'My Images',
         icon: {
           normal: galleryNormal,
           selected: gallerySelected
@@ -522,8 +522,16 @@ export default function Sidebar({ open, onClose, isMobile }: SidebarProps) {
   };
 
   const renderNavItems = (items: typeof navigationItems) => {
+    const location = useLocation();
+    const currentPath = location.pathname;
+    const currentParams = new URLSearchParams(location.search);
+
     return items.map((item) => {
-      const isSelected = location.pathname === item.path;
+      // 对于 my-space 路由，需要同时匹配路径和参数
+      const isSelected = currentPath === '/my-space' 
+        ? item.path === `${currentPath}?${currentParams.toString()}`
+        : currentPath === item.path;
+
       return (
         <StyledListItemButton
           key={item.path}

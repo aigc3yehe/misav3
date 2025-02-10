@@ -115,6 +115,16 @@ interface ModelState {
   galleryListTotalCount: number;
   galleryListLoading: boolean;
   galleryListError: string | null;
+
+  myModels: Model[];
+  myModelsLoading: boolean;
+  myModelsTotalCount: number;
+  myModelsError: string | null;
+
+  myImages: GalleryImage[];
+  myImagesLoading: boolean;
+  myImagesTotalCount: number;
+  myImagesError: string | null;
 }
 
 const initialState: ModelState = {
@@ -145,6 +155,14 @@ const initialState: ModelState = {
   galleryListTotalCount: 0,
   galleryListLoading: false,
   galleryListError: null,
+  myModels: [],
+  myModelsLoading: false,
+  myModelsTotalCount: 0,
+  myModelsError: null,
+  myImages: [],
+  myImagesLoading: false,
+  myImagesTotalCount: 0,
+  myImagesError: null
 };
 
 export const fetchVotingModels = createAsyncThunk(
@@ -344,6 +362,44 @@ export const fetchGalleryList = createAsyncThunk(
   }
 );
 
+export const fetchMyImages = createAsyncThunk(
+  'model/fetchMyImages',
+  async ({
+    user,
+    page = 1, 
+    pageSize = 10,
+    order = 'created_at',
+    desc = 'desc',
+    state
+  }: {
+    user: string,
+    page?: number;
+    pageSize?: number;
+    order?: 'created_at' | 'updated_at';
+    desc?: 'desc' | 'asc';
+    model_id?: number;
+    state?: 'success' | 'pending';
+  }) => {
+    const params = new URLSearchParams({
+      user,
+      page: page.toString(),
+      pageSize: pageSize.toString(),
+      order,
+      desc,
+      ...(state && { state }),
+    });
+
+
+    const response = await fetch(`/niyoko-api/model/list/gallery?${params}`, {
+      headers: {
+        'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6InN0dWRpbyIsImlhdCI6MTczNjA4MzA3MX0.nBfMsRYqjOkOfjFqCEbmBJWjz1I_CkIr5emwdMS2nXo'
+      }
+    });
+    if (!response.ok) throw new Error('Failed to fetch gallery images');
+    return await response.json();
+  }
+);
+
 export const voteModel = createAsyncThunk(
   'model/voteModel',
   async ({ 
@@ -388,6 +444,39 @@ export const fetchModelVoteState = createAsyncThunk(
     });
 
     if (!response.ok) throw new Error('Failed to fetch vote state');
+    return await response.json();
+  }
+);
+
+export const fetchMyModels = createAsyncThunk(
+  'model/fetchMyModels',
+  async ({
+    user, 
+    page, 
+    pageSize, 
+    order = 'created_at', 
+    desc = 'desc' 
+  }: { 
+    user: string;
+    page: number; 
+    pageSize: number; 
+    order?: 'created_at' | 'updated_at';
+    desc?: 'desc' | 'asc';
+  }) => {
+    const params = new URLSearchParams({
+      user,
+      page: page.toString(),
+      pageSize: pageSize.toString(),
+      order,
+      desc,
+    });
+
+    const response = await fetch(`/niyoko-api/model/list/owned?${params}`, {
+      headers: {
+        'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6InN0dWRpbyIsImlhdCI6MTczNjA4MzA3MX0.nBfMsRYqjOkOfjFqCEbmBJWjz1I_CkIr5emwdMS2nXo'
+      }
+    });
+    if (!response.ok) throw new Error('Failed to fetch owned models');
     return await response.json();
   }
 );
@@ -470,6 +559,17 @@ const modelSlice = createSlice({
         };
       }
     },
+    clearMyModels: (state) => {
+      state.myModels = [];
+      state.myModelsTotalCount = 0;
+    },
+    clearMyImages: (state) => {
+      state.myImages = [];
+      state.myImagesTotalCount = 0;
+    },
+    updateGalleryListTotalCount: (state, action: PayloadAction<number>) => {
+      state.galleryListTotalCount = action.payload;
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -544,15 +644,22 @@ const modelSlice = createSlice({
         state.galleryListError = null;
       })
       .addCase(fetchGalleryList.fulfilled, (state, action) => {
+        const resultImages = action.payload.data.images || [];
         if (action.meta.arg.page === 1) {
-          state.galleryList = [state.galleryAdd, ... (action.payload.data.images || [])];
+          state.galleryList = [state.galleryAdd, ...resultImages];
         } else {
           const existingIds = new Set(state.galleryList.map(img => img.id));
           // @ts-ignore
-          const newImages = (action.payload.data.images || []).filter(img => !existingIds.has(img.id));
+          const newImages = resultImages.filter(img => !existingIds.has(img.id));
           state.galleryList = [...state.galleryList, ...newImages];
+
         }
-        state.galleryListTotalCount = action.payload.data.totalCount || 0;
+        // 如果新数据为空，更新totalCount为当前数量
+        if (resultImages.length === 0) {
+          state.galleryListTotalCount = state.galleryList.length;
+        } else {
+          state.galleryListTotalCount = action.payload.data.totalCount || 0;
+        }
         state.galleryListLoading = false;
       })
       .addCase(fetchGalleryList.rejected, (state, action) => {
@@ -593,11 +700,65 @@ const modelSlice = createSlice({
             state: action.payload.data
           };
         }
+      })
+      .addCase(fetchMyModels.pending, (state) => {
+        state.myModelsLoading = true;
+        state.myModelsError = null;
+      })
+      .addCase(fetchMyModels.fulfilled, (state, action) => {
+        if (action.meta.arg.page === 1) {
+          state.myModels = action.payload.data.models || [];
+        } else {
+          const existingIds = new Set(state.myModels.map(model => model.id));
+          // @ts-ignore
+          const newModels = (action.payload.data.models || []).filter(model => !existingIds.has(model.id));
+          state.myModels = [...state.myModels, ...newModels];
+        }
+        state.myModelsTotalCount = action.payload.data.totalCount || 0;
+        state.myModelsLoading = false;
+      })
+      .addCase(fetchMyModels.rejected, (state, action) => {
+        state.myModelsLoading = false;
+        state.myModelsError = action.error.message || 'Failed to fetch my models';
+      })
+      .addCase(fetchMyImages.pending, (state) => {
+        state.myImagesLoading = true;
+        state.myImagesError = null;
+      })
+      .addCase(fetchMyImages.fulfilled, (state, action) => {
+        const resultImages = action.payload.data.images || [];
+        if (action.meta.arg.page === 1) {
+          state.myImages = resultImages;
+        } else {
+          const existingIds = new Set(state.myImages.map(image => image.id));
+          // @ts-ignore
+          const newImages = resultImages.filter(image => !existingIds.has(image.id));
+          state.myImages = [...state.myImages, ...newImages];
+          
+        }
+        if (resultImages.length === 0) {
+          state.myImagesTotalCount = state.myImages.length;
+        } else {
+          state.myImagesTotalCount = action.payload.data.totalCount || 0;
+        }
+        state.myImagesLoading = false;
+      })
+      .addCase(fetchMyImages.rejected, (state, action) => {
+        state.myImagesLoading = false;
+        state.myImagesError = action.error.message || 'Failed to fetch my images';
       });
   },
 });
 
-export const { clearCurrentModel, clearGallery, clearGalleryList, updateVoteOptimistically } = modelSlice.actions;
+export const { 
+  clearCurrentModel, 
+  clearGallery, 
+  clearGalleryList, 
+  updateVoteOptimistically, 
+  clearMyModels, 
+  clearMyImages,
+  updateGalleryListTotalCount 
+} = modelSlice.actions;
 
 export default modelSlice.reducer;
 
@@ -619,3 +780,9 @@ export const selectGalleryListTotalCount = (state: RootState) => state.model.gal
 export const selectGalleryListLoading = (state: RootState) => state.model.galleryListLoading;
 export const selectGalleryListError = (state: RootState) => state.model.galleryListError;
 export const selectVotingDuration = (state: RootState) => state.model.votingDuration;
+export const selectMyModels = (state: RootState) => state.model.myModels;
+export const selectMyModelsLoading = (state: RootState) => state.model.myModelsLoading;
+export const selectMyModelsTotalCount = (state: RootState) => state.model.myModelsTotalCount;
+export const selectMyImages = (state: RootState) => state.model.myImages;
+export const selectMyImagesLoading = (state: RootState) => state.model.myImagesLoading;
+export const selectMyImagesTotalCount = (state: RootState) => state.model.myImagesTotalCount;
