@@ -394,7 +394,7 @@ export default function Models() {
     showStatus: model.model_tran?.[0]?.train_state === 2 ? false : true,
   }));
 
-  if (votingModelsLoading) {
+  if (votingModelsLoading && displayModels.length == 0) {
     return (
       <PageContainer id="modelsContainer" padding={containerPadding}>
         <SectionHeader>
