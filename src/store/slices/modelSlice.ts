@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { RootState } from '..';
+import { PayloadAction } from '@reduxjs/toolkit';
 
 interface ModelVote {
   state?: number;  // 1为喜欢，2为不喜欢
@@ -71,6 +72,22 @@ export interface GalleryImage {
   isAddCard?: boolean
 }
 
+export interface VoteResponse {
+  message: string;
+  data: {
+    vote_id: number;
+    vote_log_id?: number;
+    like: boolean;
+    likes?: number;
+    dislikes?: number;
+  };
+}
+
+export interface VoteStateResponse {
+  message: string;
+  data: number;
+}
+
 interface ModelState {
   votingModels: Model[];
   votingDuration: Duration | null;
@@ -133,8 +150,7 @@ const initialState: ModelState = {
 export const fetchVotingModels = createAsyncThunk(
   'model/fetchVotingModels',
   async ({ page, pageSize, batch }: { page: number; pageSize: number; batch?: number }, { getState }) => {
-    const state = getState() as RootState;
-    const walletAddress = state.wallet.address;
+    
 
     // 首先获取投票模型列表
     const params = new URLSearchParams({
@@ -152,6 +168,9 @@ export const fetchVotingModels = createAsyncThunk(
     const votingModelsData = await response.json();
 
     // 如果用户已登录，获取投票状态
+    const state = getState() as RootState;
+    const walletAddress = state.wallet.address;
+    console.log("当前用户状态", walletAddress, votingModelsData.data.models?.length)
     if (walletAddress && votingModelsData.data.models?.length > 0) {
       const modelIds = votingModelsData.data.models.map((model: Model) => model.id);
       const voteParams = new URLSearchParams({
@@ -217,14 +236,41 @@ export const fetchEnabledModels = createAsyncThunk(
 
 export const fetchModelDetail = createAsyncThunk(
   'model/fetchModelDetail',
-  async (id: number) => {
+  async (id: number, { getState }) => {
     const response = await fetch(`/niyoko-api/model/detail?id=${id}`, {
       headers: {
         'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6InN0dWRpbyIsImlhdCI6MTczNjA4MzA3MX0.nBfMsRYqjOkOfjFqCEbmBJWjz1I_CkIr5emwdMS2nXo'
       }
     });
     if (!response.ok) throw new Error('Failed to fetch model detail');
-    return await response.json();
+    const modelData = await response.json();
+
+    // 如果用户已登录，获取投票状态
+    const state = getState() as RootState;
+    const walletAddress = state.wallet.address;
+    
+    if (walletAddress) {
+      try {
+        const voteResponse = await fetch(`/niyoko-api/model/vote/state?user=${walletAddress}&id=${id}`, {
+          headers: {
+            'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6InN0dWRpbyIsImlhdCI6MTczNjA4MzA3MX0.nBfMsRYqjOkOfjFqCEbmBJWjz1I_CkIr5emwdMS2nXo'
+          }
+        });
+        
+        if (voteResponse.ok) {
+          const voteData = await voteResponse.json();
+          // 将投票状态合并到模型数据中
+          modelData.data.model_vote = {
+            ...modelData.data.model_vote,
+            state: voteData.data
+          };
+        }
+      } catch (error) {
+        console.error('Failed to fetch vote state:', error);
+      }
+    }
+
+    return modelData;
   }
 );
 
@@ -298,6 +344,54 @@ export const fetchGalleryList = createAsyncThunk(
   }
 );
 
+export const voteModel = createAsyncThunk(
+  'model/voteModel',
+  async ({ 
+    user, 
+    model_id, 
+    like 
+  }: { 
+    user: string; 
+    model_id: number; 
+    like: boolean 
+  }) => {
+    const response = await fetch('/niyoko-api/model/vote', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6InN0dWRpbyIsImlhdCI6MTczNjA4MzA3MX0.nBfMsRYqjOkOfjFqCEbmBJWjz1I_CkIr5emwdMS2nXo'
+      },
+      body: JSON.stringify({
+        user,
+        model_id,
+        like
+      })
+    });
+
+    if (!response.ok) throw new Error('Vote failed');
+    return await response.json();
+  }
+);
+
+export const fetchModelVoteState = createAsyncThunk(
+  'model/fetchModelVoteState',
+  async ({ user, id }: { user: string; id: number }) => {
+    const params = new URLSearchParams({
+      user,
+      id: id.toString(),
+    });
+
+    const response = await fetch(`/niyoko-api/model/vote/state?${params}`, {
+      headers: {
+        'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6InN0dWRpbyIsImlhdCI6MTczNjA4MzA3MX0.nBfMsRYqjOkOfjFqCEbmBJWjz1I_CkIr5emwdMS2nXo'
+      }
+    });
+
+    if (!response.ok) throw new Error('Failed to fetch vote state');
+    return await response.json();
+  }
+);
+
 const modelSlice = createSlice({
   name: 'model',
   initialState,
@@ -315,7 +409,67 @@ const modelSlice = createSlice({
       state.galleryList = [];
       state.galleryListTotalCount = 0;
       state.galleryListError = null;
-    }
+    },
+    updateVoteOptimistically: (state, action: PayloadAction<{
+      modelId: number;
+      like: boolean;
+      previousState?: number;
+    }>) => {
+      const { modelId, like, previousState } = action.payload;
+      
+      // 更新投票模型列表
+      // @ts-ignore
+      state.votingModels = state.votingModels.map(model => {
+        if (model.id === modelId) {
+          const currentLikes = model.model_vote?.like || 0;
+          // 如果是从未投票状态变为喜欢，likes+1
+          // 如果是从不喜欢状态变为喜欢，likes+1
+          // 如果是从喜欢状态变为不喜欢，likes-1
+          let newLikes = currentLikes;
+          if (previousState === 1) {
+            // 原来是喜欢的
+            if (like === false) {
+              newLikes = newLikes - 1;
+            }
+          } else if (like) {
+            // 现在点了喜欢的
+            newLikes = newLikes + 1
+          }
+          
+          return {
+            ...model,
+            model_vote: {
+              ...model.model_vote,
+              state: like ? 1 : 2,
+              like: newLikes,
+            }
+          };
+        }
+        return model;
+      });
+
+      // 同样更新当前模型详情（如果存在）
+      if (state.currentModel && state.currentModel.id === modelId) {
+        const currentLikes = state.currentModel.model_vote?.like || 0;
+        let newLikes = currentLikes;
+        if (previousState === 1) {
+            // 原来是喜欢的
+          if (like === false) {
+            newLikes = newLikes - 1;
+          }
+        } else if (like) {
+          // 现在点了喜欢的
+          newLikes = newLikes + 1
+        }
+        
+        // @ts-ignore
+        state.currentModel.model_vote = {
+          ...state.currentModel.model_vote,
+          state: like ? 1 : 2,
+          like: newLikes,
+        };
+      }
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -404,11 +558,46 @@ const modelSlice = createSlice({
       .addCase(fetchGalleryList.rejected, (state, action) => {
         state.galleryListLoading = false;
         state.galleryListError = action.error.message || '获取图片列表失败';
+      })
+      .addCase(voteModel.fulfilled, (state, action) => {
+        // 使用实际的服务器响应更新状态
+        if (state.currentModel && state.currentModel.id === action.meta.arg.model_id) {
+          state.currentModel.model_vote = {
+            ...state.currentModel.model_vote,
+            state: action.meta.arg.like ? 1 : 2,
+            like: action.payload.data.likes || 0,
+            dislike: action.payload.data.dislikes || 0
+          };
+        }
+        
+        state.votingModels = state.votingModels.map(model => {
+          if (model.id === action.meta.arg.model_id) {
+            return {
+              ...model,
+              model_vote: {
+                ...model.model_vote,
+                state: action.meta.arg.like ? 1 : 2,
+                like: action.payload.data.likes || 0,
+                dislike: action.payload.data.dislikes || 0
+              }
+            };
+          }
+          return model;
+        });
+      })
+      .addCase(fetchModelVoteState.fulfilled, (state, action) => {
+        if (state.currentModel) {
+          // @ts-ignore
+          state.currentModel.model_vote = {
+            ...state.currentModel.model_vote,
+            state: action.payload.data
+          };
+        }
       });
   },
 });
 
-export const { clearCurrentModel, clearGallery, clearGalleryList } = modelSlice.actions;
+export const { clearCurrentModel, clearGallery, clearGalleryList, updateVoteOptimistically } = modelSlice.actions;
 
 export default modelSlice.reducer;
 

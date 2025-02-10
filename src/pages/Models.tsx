@@ -19,9 +19,13 @@ import {
   selectEnabledModels,
   selectEnabledModelsTotalCount,
   selectEnabledModelsLoading,
-  selectVotingDuration
+  selectVotingDuration,
+  updateVoteOptimistically
 } from '../store/slices/modelSlice';
 import { formatDateRange } from '../utils/format';
+import { showToast } from '../store/slices/toastSlice';
+import { voteModel } from '../store/slices/modelSlice';
+import { RootState } from '../store';
 
 
 const CARD_WIDTH = 175;
@@ -160,6 +164,7 @@ export default function Models() {
   const enabledModels = useSelector(selectEnabledModels);
   const totalCount = useSelector(selectEnabledModelsTotalCount);
   const votingDuration = useSelector(selectVotingDuration);
+  const walletAddress = useSelector((state: RootState) => state.wallet.address);
 
   // 添加布局计算的 useEffect
   useEffect(() => {
@@ -258,12 +263,95 @@ export default function Models() {
     }
   }, [dispatch, isLoading, hasMore]);
 
-  const handleLike = (id: string) => {
-    console.log('Like model:', id);
+  const handleLike = async (id: string) => {
+    if (!walletAddress) {
+      dispatch(showToast({
+        message: 'Please connect your wallet first',
+        severity: 'error'
+      }));
+      return;
+    }
+
+    const modelId = Number(id);
+    const currentModel = votingModels.find(model => model.id === modelId);
+    const previousState = currentModel?.model_vote?.state;
+
+    // 如果已经点过赞了，直接返回
+    if (previousState === 1) {
+      return;
+    }
+
+    // 立即更新 UI
+    dispatch(updateVoteOptimistically({
+      modelId,
+      like: true,
+      previousState
+    }));
+
+    try {
+      await dispatch(voteModel({
+        user: walletAddress,
+        model_id: modelId,
+        like: true
+      })).unwrap();
+    } catch (error) {
+      console.error('Vote failed:', error);
+      // 如果失败，回滚到之前的状态
+      dispatch(updateVoteOptimistically({
+        modelId,
+        like: false,
+        previousState: 1
+      }));
+      dispatch(showToast({
+        message: 'Vote failed',
+        severity: 'error'
+      }));
+    }
   };
 
-  const handleUnlike = (id: string) => {
-    console.log('Unlike model:', id);
+  const handleUnlike = async (id: string) => {
+    if (!walletAddress) {
+      dispatch(showToast({
+        message: 'Please connect your wallet first',
+        severity: 'error'
+      }));
+      return;
+    }
+
+    const modelId = Number(id);
+    const currentModel = votingModels.find(model => model.id === modelId);
+    const previousState = currentModel?.model_vote?.state;
+
+    // 如果已经点过不喜欢了，直接返回
+    if (previousState === 2) {
+      return;
+    }
+
+    // 立即更新 UI
+    dispatch(updateVoteOptimistically({
+      modelId,
+      like: false,
+      previousState
+    }));
+
+    try {
+      await dispatch(voteModel({
+        user: walletAddress,
+        model_id: modelId,
+        like: false
+      })).unwrap();
+    } catch (error) {
+      console.error('Vote failed:', error);
+      // 如果失败，回滚到之前的状态
+      dispatch(updateVoteOptimistically({
+        modelId,
+        like: previousState === 1,
+      }));
+      dispatch(showToast({
+        message: 'Vote failed',
+        severity: 'error'
+      }));
+    }
   };
 
   const handleCardClick = (id: string) => {

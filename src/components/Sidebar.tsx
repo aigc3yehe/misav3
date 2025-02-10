@@ -17,9 +17,11 @@ import { useState } from 'react';
 import { keyframes } from '@mui/system';
 import livingroomNormal from '../assets/livingroom_normal.svg';
 import livingroomSelected from '../assets/livingroom_selected.svg';
-import modelsNormal from '../assets/models_normal.svg';
+import modelsNormal from '../assets/model_normal.svg';
+import collectionsNormal from '../assets/models_normal.svg';
 import editIcon from '../assets/edit.svg';
-import modelsSelected from '../assets/models_selected.svg';
+import modelsSelected from '../assets/model_selected.svg';
+import collectionsSelected from '../assets/models_selected.svg';
 import galleryNormal from '../assets/gallery_normal.svg';
 import gallerySelected from '../assets/gallery_selected.svg';
 import arrowDropDown from '../assets/arrow_drop_down.svg';
@@ -410,8 +412,8 @@ export default function Sidebar({ open, onClose, isMobile }: SidebarProps) {
           path: '/collections', 
           label: 'Collections', 
           icon: {
-            normal: modelsNormal,
-            selected: modelsSelected
+            normal: collectionsNormal,
+            selected: collectionsSelected
           }
         },
         {
