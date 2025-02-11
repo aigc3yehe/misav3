@@ -760,7 +760,8 @@ const modelSlice = createSlice({
       .addCase(fetchGalleryList.fulfilled, (state, action) => {
         const resultImages = action.payload.data.images || [];
         if (action.meta.arg.page === 1) {
-          state.galleryList = [state.galleryAdd, ...resultImages];
+          //state.galleryList = [state.galleryAdd, ...resultImages];
+          state.galleryList = resultImages;
         } else {
           const existingIds = new Set(state.galleryList.map(img => img.id));
           // @ts-ignore
@@ -861,6 +862,7 @@ const modelSlice = createSlice({
         state.myImagesLoading = false;
         state.myImagesError = action.error.message || 'Failed to fetch my images';
       })
+      // @ts-ignore
       .addCase(generateImage.pending, (state, action) => {
         state.generatingStatus = 'generating';
       })

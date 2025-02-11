@@ -46,7 +46,6 @@ export default function MainLayout() {
   const isFullscreen = location.pathname === '/workstation' || location.pathname === '/voice_call';
   const dispatch = useDispatch<AppDispatch>();
   const toast = useSelector((state: RootState) => state.toast);
-  const isGenerateModalOpen = useSelector((state: RootState) => state.ui.isGenerateModalOpen);
 
   useEffect(() => {
     dispatch(fetchCollections());

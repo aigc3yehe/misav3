@@ -200,12 +200,6 @@ export default function Gallery() {
         .finally(() => {
           loadingRef.current = false;
         });
-    } else {
-      console.log('跳过加载:', {
-        isLoading,
-        hasMore,
-        currentlyLoading: loadingRef.current
-      });
     }
   }, [dispatch, isLoading, hasMore]);
 

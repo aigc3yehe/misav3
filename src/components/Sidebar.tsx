@@ -360,7 +360,6 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ open, onClose, isMobile }: SidebarProps) {
-  const location = useLocation();
   const navigate = useNavigate();
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
   const [selectedChat, setSelectedChat] = useState<string | null>(null);
