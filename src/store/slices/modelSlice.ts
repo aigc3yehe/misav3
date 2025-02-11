@@ -88,6 +88,38 @@ export interface VoteStateResponse {
   data: number;
 }
 
+export interface AigcResponse {
+  message: string;
+  data: {
+    id?: number;
+    task_id?: string;
+  };
+}
+
+export interface CheckStatsResponse {
+  data?: {
+    id?: string;
+    status?: string;
+    date_created?: string;
+    upscaled_urls?: string[];
+  };
+}
+
+export interface AspectRatio {
+  label: string;
+  value: string;
+  width: number;
+  height: number;
+}
+
+export const aspectRatios: AspectRatio[] = [
+  { label: '1:1', value: '1:1', width: 512, height: 512 },
+  { label: '3:4', value: '3:4', width: 512, height: 682 },
+  { label: '9:16', value: '9:16', width: 512, height: 912 },
+  { label: '4:3', value: '4:3', width: 682, height: 512 },
+  { label: '16:9', value: '16:9', width: 912, height: 512 },
+];
+
 interface ModelState {
   votingModels: Model[];
   votingDuration: Duration | null;
@@ -125,6 +157,11 @@ interface ModelState {
   myImagesLoading: boolean;
   myImagesTotalCount: number;
   myImagesError: string | null;
+
+  generatingTaskId: string | null;
+  generatingStatus: 'idle' | 'generating' | 'completed' | 'failed';
+  generatedImageUrl: string | null;
+  generatedRatio: AspectRatio | null;
 }
 
 const initialState: ModelState = {
@@ -162,7 +199,11 @@ const initialState: ModelState = {
   myImages: [],
   myImagesLoading: false,
   myImagesTotalCount: 0,
-  myImagesError: null
+  myImagesError: null,
+  generatingTaskId: null,
+  generatingStatus: 'idle',
+  generatedImageUrl: null,
+  generatedRatio: null,
 };
 
 export const fetchVotingModels = createAsyncThunk(
@@ -481,6 +522,64 @@ export const fetchMyModels = createAsyncThunk(
   }
 );
 
+// 创建生成图片的 thunk
+export const generateImage = createAsyncThunk(
+  'model/generateImage',
+  async ({
+    model_id,
+    creator,
+    prompt,
+    version,
+    strength,
+    ratio,
+  }: {
+    model_id: number;
+    creator: string;
+    prompt: string;
+    version?: number;
+    strength: number;
+    ratio: AspectRatio
+  }, { getState, dispatch }) => {
+    const state = getState() as RootState;
+    const model = state.model.currentModel;
+    dispatch(setGeneratedRatio(ratio));
+    
+    const response = await fetch('/niyoko-api/model/aigc', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6InN0dWRpbyIsImlhdCI6MTczNjA4MzA3MX0.nBfMsRYqjOkOfjFqCEbmBJWjz1I_CkIr5emwdMS2nXo'
+      },
+      body: JSON.stringify({
+        model_id,
+        creator,
+        prompt: `<lora:${model?.name}:${strength}> ${prompt}`,
+        width: ratio.width,
+        height: ratio.height,
+        version
+      })
+    });
+
+    if (!response.ok) throw new Error('Failed to start generation');
+    return await response.json();
+  }
+);
+
+// 创建检查状态的 thunk
+export const checkGenerationStatus = createAsyncThunk(
+  'model/checkGenerationStatus',
+  async (taskId: string) => {
+    const response = await fetch(`/niyoko-api/model/aigc/state?task_id=${taskId}&refreshState=true`, {
+      headers: {
+        'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6InN0dWRpbyIsImlhdCI6MTczNjA4MzA3MX0.nBfMsRYqjOkOfjFqCEbmBJWjz1I_CkIr5emwdMS2nXo'
+      }
+    });
+    
+    if (!response.ok) throw new Error('Failed to check status');
+    return await response.json();
+  }
+);
+
 const modelSlice = createSlice({
   name: 'model',
   initialState,
@@ -569,6 +668,15 @@ const modelSlice = createSlice({
     },
     updateGalleryListTotalCount: (state, action: PayloadAction<number>) => {
       state.galleryListTotalCount = action.payload;
+    },
+    setGeneratedRatio: (state, action: PayloadAction<AspectRatio>) => {
+      state.generatedRatio = action.payload;
+    },
+    resetGeneration: (state) => {
+      state.generatingTaskId = null;
+      state.generatingStatus = 'idle';
+      state.generatedImageUrl = null;
+      state.generatedRatio = null;
     },
   },
   extraReducers: (builder) => {
@@ -746,6 +854,25 @@ const modelSlice = createSlice({
       .addCase(fetchMyImages.rejected, (state, action) => {
         state.myImagesLoading = false;
         state.myImagesError = action.error.message || 'Failed to fetch my images';
+      })
+      .addCase(generateImage.pending, (state, action) => {
+        state.generatingStatus = 'generating';
+      })
+      .addCase(generateImage.fulfilled, (state, action) => {
+        state.generatingTaskId = action.payload.data.task_id;
+      })
+      .addCase(generateImage.rejected, (state) => {
+        state.generatingStatus = 'failed';
+      })
+      .addCase(checkGenerationStatus.fulfilled, (state, action) => {
+        if (action.payload.data?.status === 'completed') {
+          state.generatingStatus = 'completed';
+          state.generatedImageUrl = action.payload.data.upscaled_urls?.[0] || null;
+        } else if (action.payload.data?.status === 'failed') {
+          state.generatingStatus = 'failed';
+        } else if (action.payload.data?.status === 'in-progress') {
+          state.generatingStatus = 'generating';
+        }
       });
   },
 });
@@ -757,7 +884,9 @@ export const {
   updateVoteOptimistically, 
   clearMyModels, 
   clearMyImages,
-  updateGalleryListTotalCount 
+  updateGalleryListTotalCount,
+  setGeneratedRatio,
+  resetGeneration
 } = modelSlice.actions;
 
 export default modelSlice.reducer;
@@ -786,3 +915,7 @@ export const selectMyModelsTotalCount = (state: RootState) => state.model.myMode
 export const selectMyImages = (state: RootState) => state.model.myImages;
 export const selectMyImagesLoading = (state: RootState) => state.model.myImagesLoading;
 export const selectMyImagesTotalCount = (state: RootState) => state.model.myImagesTotalCount;
+export const selectGeneratingStatus = (state: RootState) => state.model.generatingStatus;
+export const selectGeneratedImageUrl = (state: RootState) => state.model.generatedImageUrl;
+export const selectGeneratingTaskId = (state: RootState) => state.model.generatingTaskId;
+export const selectGeneratedRatio = (state: RootState) => state.model.generatedRatio;

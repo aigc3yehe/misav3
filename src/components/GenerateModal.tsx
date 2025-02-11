@@ -1,17 +1,31 @@
-import { Box, styled, Typography, IconButton } from '@mui/material';
+import { Box, styled, Typography, IconButton, Button } from '@mui/material';
 import { useSelector, useDispatch } from 'react-redux';
 import { closeGenerateModal } from '../store/slices/uiSlice';
 import { RootState } from '../store';
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import closeIcon from '../assets/close.svg';
 import gbgIcon from '../assets/gbg.svg';
 import statusIcon from '../assets/status.svg';
-import gdownloadIcon from '../assets/gdownload.svg';
+import gdownloadIcon from '../assets/g_download.svg';
+
+import createIcon from '../assets/create.svg';
 import pointingCursor from '../assets/pointer.png';
+import cursor from '../assets/cursor.png';
 import resizeIcon from '../assets/resize.svg';
 import gokIcon from '../assets/gok.svg';
-import { selectCurrentModel } from '../store/slices/modelSlice';
+import { 
+  selectCurrentModel, 
+  selectGeneratingStatus, 
+  selectGeneratedImageUrl, 
+  selectGeneratingTaskId,
+  selectGeneratedRatio,
+  generateImage,
+  checkGenerationStatus,
+  resetGeneration,
+  AspectRatio,
+  aspectRatios
+} from '../store/slices/modelSlice';
 import { keyframes } from '@mui/material/styles';
 import { AppDispatch } from '../store';
 
@@ -189,21 +203,87 @@ const TipsText = styled(Typography)({
   color: 'rgba(255, 255, 255, 0.4)',
 });
 
+const GeneratedImageContainer = styled(Box)({
+  width: '100%',
+  maxHeight: '512px',
+  marginTop: '16px',
+  marginBottom: '16px',
+  position: 'relative',
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: 'center',
+});
+
 const GeneratedImage = styled('img')({
-  maxWidth: '100%',
-  maxHeight: '100%',
+  maxHeight: '512px',
   objectFit: 'contain',
+  borderRadius: '10px',
+});
+
+const DownloadButton = styled(IconButton)({
+  position: 'absolute',
+  top: '12px',
+  right: '16px',
+  width: '51px',
+  height: '51px',
+  padding: '0 4px',
+  cursor: `url(${pointingCursor}), pointer`,
+  opacity: 0,
+  transition: 'opacity 0.2s ease',
+  '& img': {
+    width: '51px',
+    height: '43px',
+    objectFit: 'contain',
+  },
+});
+
+const ImageWrapper = styled(Box)({
+  position: 'relative',
+  '&:hover button': {  // 使用普通的 CSS 选择器
+    opacity: 1,
+  },
 });
 
 interface ImageDisplayContentProps {
-  status: 'initial' | 'generating' | 'completed';
+  status: 'idle' | 'generating' | 'completed' | 'failed';
   generatedImageUrl?: string;
+  generatedRatio?: AspectRatio;
 }
 
 const ImageDisplayContent: React.FC<ImageDisplayContentProps> = ({
   status,
-  generatedImageUrl
+  generatedImageUrl,
+  generatedRatio
 }) => {
+  const currentModel = useSelector(selectCurrentModel);
+
+  const handleDownload = async () => {
+    if (!generatedImageUrl || !currentModel || !generatedRatio) return;
+    
+    try {
+      const response = await fetch(generatedImageUrl);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${currentModel.name}_${generatedRatio.width}_${generatedRatio.height}.png`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error('Download failed:', error);
+    }
+  };
+
+  const calculateImageDimensions = (originalWidth: number, originalHeight: number) => {
+    const maxHeight = 512;
+    const aspectRatio = originalWidth / originalHeight;
+    const height = Math.min(maxHeight, originalHeight);
+    const width = height * aspectRatio;
+    return { width, height };
+  };
+
   switch (status) {
     case 'generating':
       return (
@@ -219,10 +299,34 @@ const ImageDisplayContent: React.FC<ImageDisplayContentProps> = ({
         </GeneratingContent>
       );
     case 'completed':
+      if (!generatedImageUrl || !generatedRatio) return null;
+      const dimensions = calculateImageDimensions(generatedRatio.width, generatedRatio.height);
+      
       return (
-        <GeneratedImage src={generatedImageUrl} alt="Generated" />
+        <GeneratedImageContainer>
+          <ImageWrapper>
+            <GeneratedImage 
+              src={generatedImageUrl} 
+              alt="Generated"
+              style={{
+                width: `${dimensions.width}px`,
+                height: `${dimensions.height}px`,
+              }}
+            />
+            <DownloadButton onClick={handleDownload}>
+              <img src={gdownloadIcon} alt="Download" />
+            </DownloadButton>
+          </ImageWrapper>
+        </GeneratedImageContainer>
       );
-    case 'initial':
+    case 'failed':
+      return (
+        <GeneratingContent>
+          <GeneratingStatus>
+            <GeneratingText>Image Generation Failed</GeneratingText>
+          </GeneratingStatus>
+        </GeneratingContent>
+      );
     default:
       return (
         <StatusIcon src={statusIcon} alt="Status" />
@@ -304,23 +408,119 @@ const CheckIcon = styled('img')({
   height: '24px',
 });
 
-interface AspectRatio {
-  label: string;
-  value: string;
-}
-
-const aspectRatios: AspectRatio[] = [
-  { label: '1:1', value: '1:1' },
-  { label: '3:4', value: '3:4' },
-  { label: '9:16', value: '9:16' },
-  { label: '4:3', value: '4:3' },
-  { label: '16:9', value: '16:9' },
-];
-
 const PromptInput = styled(Box)({
   width: '100%',
   height: '50px',
-  backgroundColor: 'rgba(255, 255, 0, 0.1)', // 临时黄色填充
+  display: 'flex',
+  gap: '10px',
+  border: '1px solid #4E318D',
+});
+
+const StyledInput = styled('input')<{ disabled?: boolean }>(({ disabled }) => ({
+  flex: 1,
+  height: '50px',
+  padding: '0 25px',
+  backgroundColor: 'rgba(0, 0, 0, 0.3)',
+  border: '1px solid #4E318D',
+  borderRadius: '4px',
+  fontSize: '14px',
+  fontWeight: 400,
+  lineHeight: '140%',
+  color: '#FFFFFF',
+  transition: 'border-color 0.2s ease',
+  '&::placeholder': {
+    color: 'rgba(255, 255, 255, 0.3)',
+  },
+  '&:disabled': {
+    color: 'rgba(255, 255, 255, 0.3)',
+  },
+  '&:focus': {
+    outline: 'none',
+    borderColor: '#6B48BD',  // 选中时使用更亮的紫色
+  },
+}));
+
+const GenerateButton = styled(Button)<{ disabled?: boolean }>(({ disabled }) => ({
+  width: '190px',
+  height: '50px',
+  padding: '0 30px',
+  background: disabled ? '#AAABB4' : 'linear-gradient(90deg, #C7FF8C 0%, #E8C4EA 43%, #39EDFF 100%)',
+  borderRadius: '4px',
+  border: 'none',
+  color: '#FFFFFF',
+  fontSize: '16px',
+  fontWeight: 600,
+  lineHeight: '140%',
+  cursor: disabled ? 'not-allowed' : `url(${pointingCursor}), pointer`,
+  '&:hover': {
+    background: disabled ? '#AAABB4' : 'linear-gradient(90deg, #C7FF8C 0%, #E8C4EA 43%, #39EDFF 100%)',
+    opacity: disabled ? 1.0 : 0.9,
+  },
+  '&:active': {
+    background: disabled ? '#AAABB4' : 'linear-gradient(90deg, #C7FF8C 0%, #E8C4EA 43%, #39EDFF 100%)',
+    opacity: disabled ? 1.0 : 0.9,
+  },
+  '& .MuiButton-startIcon': {
+    margin: 0,
+    marginRight: '0px',
+  },
+}));
+
+const ButtonIcon = styled('img')({
+  width: '30px',
+  height: '30px',
+});
+
+const GenerateText = styled(Typography)({
+  color: '#000000',
+  fontSize: '18px',
+  fontWeight: 700,
+  lineHeight: '24px',
+});
+
+const StrengthSlider = styled(Box)({
+  width: '147px',
+  height: '32px',
+  borderRadius: '4px',
+  border: '1px solid #4E318D',
+  backgroundColor: 'rgba(0, 0, 0, 0.3)',
+  display: 'flex',
+  alignItems: 'center',
+  padding: '0 14px',
+  gap: '14px',
+  position: 'relative',
+  cursor: `url(${cursor}), pointer`,
+});
+
+const SliderLabel = styled(Typography)({
+  fontSize: '14px',
+  fontWeight: 400,
+  lineHeight: '140%',
+  color: '#FFFFFF',
+  userSelect: 'none',
+  position: 'relative',
+  zIndex: 1,
+});
+
+const SliderValue = styled(Typography)({
+  fontSize: '14px',
+  fontWeight: 400,
+  lineHeight: '140%',
+  color: '#C7FF8C',
+  userSelect: 'none',
+  position: 'relative',
+  zIndex: 1,
+});
+
+const SliderTrack = styled(Box)({
+  position: 'absolute',
+  top: 0,
+  left: 0,
+  height: '100%',
+  backgroundColor: '#4E318D',
+  borderRadius: '4px 0 0 4px',
+  pointerEvents: 'none',
+  zIndex: 0,  // 确保在文字下面
 });
 
 export default function GenerateModal() {
@@ -329,10 +529,47 @@ export default function GenerateModal() {
   const location = useLocation();
   const isOpen = useSelector((state: RootState) => state.ui.isGenerateModalOpen);
   const currentModel = useSelector(selectCurrentModel);
-  const [generationStatus, setGenerationStatus] = useState<'initial' | 'generating' | 'completed'>('generating');
-  const [generatedImageUrl, setGeneratedImageUrl] = useState<string>();
+  const walletAddress = useSelector((state: RootState) => state.wallet.address);
+  const generatingStatus = useSelector(selectGeneratingStatus);
+  const generatedImageUrl = useSelector(selectGeneratedImageUrl);
+  const generatingTaskId = useSelector(selectGeneratingTaskId);
+  const generatedRatio = useSelector(selectGeneratedRatio);
+  
+  // 所有需要重置的状态
   const [isRatioMenuOpen, setIsRatioMenuOpen] = useState(false);
   const [selectedRatio, setSelectedRatio] = useState<AspectRatio>(aspectRatios[0]);
+  const [strength, setStrength] = useState(0.5);
+  const [prompt, setPrompt] = useState('');
+  const [isGenerating, setIsGenerating] = useState(false);
+  const sliderRef = useRef<HTMLDivElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
+
+  // 监听 isOpen 变化，当模态框打开时重置所有状态
+  useEffect(() => {
+    if (isOpen) {
+      dispatch(resetGeneration());
+      // 重置所有状态到初始值
+      setIsRatioMenuOpen(false);
+      setSelectedRatio(aspectRatios[0]);
+      setStrength(0.5);
+      setPrompt('');
+      setIsGenerating(false);
+    }
+  }, [isOpen, dispatch]);
+
+  useEffect(() => {
+    let intervalId: NodeJS.Timeout;
+    
+    if (generatingTaskId && generatingStatus === 'generating') {
+      intervalId = setInterval(() => {
+        dispatch(checkGenerationStatus(generatingTaskId));
+      }, 2000);
+    }
+
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [generatingTaskId, generatingStatus, dispatch]);
 
   const handleClose = useCallback(() => {
     document.body.style.overflow = '';
@@ -342,6 +579,54 @@ export default function GenerateModal() {
   const handleRatioClick = (ratio: AspectRatio) => {
     setSelectedRatio(ratio);
     setIsRatioMenuOpen(false);  // 选择后关闭菜单
+  };
+
+  const handleSliderInteraction = useCallback((e: React.MouseEvent | MouseEvent) => {
+    if (!sliderRef.current) return;
+    
+    const rect = sliderRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const width = rect.width;
+    
+    let newStrength = Math.max(0, Math.min(1, x / width));
+    newStrength = Math.round(newStrength * 100) / 100;
+    
+    setStrength(newStrength);
+  }, []);
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (isDragging) {
+        handleSliderInteraction(e);
+      }
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(false);
+    };
+
+    if (isDragging) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isDragging, handleSliderInteraction]);
+
+  const handleGenerate = async () => {
+    if (!prompt || generatingStatus === 'generating' || !currentModel || !walletAddress) return;
+
+    dispatch(generateImage({
+      model_id: currentModel.id,
+      creator: walletAddress,
+      prompt,
+      version: currentModel.model_tran?.[0]?.version,
+      strength,
+      ratio: selectedRatio
+    }));
   };
 
   return (
@@ -368,8 +653,9 @@ export default function GenerateModal() {
         </TitleBar>
         <ImageDisplay>
           <ImageDisplayContent 
-            status={generationStatus}
-            generatedImageUrl={generatedImageUrl}
+            status={generatingStatus}
+            generatedImageUrl={generatedImageUrl || undefined}
+            generatedRatio={generatedRatio || undefined}
           />
         </ImageDisplay>
         <ParametersArea>
@@ -404,8 +690,39 @@ export default function GenerateModal() {
               </RatioMenu>
             )}
           </AspectRatioButton>
+          <StrengthSlider
+            ref={sliderRef}
+            onClick={handleSliderInteraction}
+            onMouseDown={(e) => {
+              e.preventDefault();
+              setIsDragging(true);
+              handleSliderInteraction(e);
+            }}
+          >
+            <SliderTrack 
+              sx={{ 
+                width: `${strength * 100}%`,
+                transition: isDragging ? 'none' : 'width 0.1s ease-out'
+              }} 
+            />
+            <SliderLabel>Strength:</SliderLabel>
+            <SliderValue>{strength.toFixed(2)}</SliderValue>
+          </StrengthSlider>
         </ParametersArea>
-        <PromptInput />
+        <PromptInput>
+          <StyledInput
+            placeholder="Input Your Prompt"
+            value={prompt}
+            onChange={(e) => setPrompt(e.target.value)}
+            disabled={generatingStatus === 'generating'}
+          />
+          <GenerateButton
+            startIcon={<ButtonIcon src={createIcon} alt="Create" />}
+            disabled={!prompt || generatingStatus === 'generating'}
+            onClick={handleGenerate}>
+            <GenerateText>Generate</GenerateText>
+          </GenerateButton>
+        </PromptInput>
       </ContentContainer>
     </ModalOverlay>
   );
