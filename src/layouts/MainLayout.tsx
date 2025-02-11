@@ -10,6 +10,7 @@ import { RootState, AppDispatch } from '../store';
 import { useLocation, Navigate } from 'react-router-dom';
 import { hideToast } from '../store/slices/toastSlice';
 import { fetchCollections } from '../store/slices/collectionSlice';
+import GenerateModal from '../components/GenerateModal';  
 
 const LayoutRoot = styled('div')(({ theme }) => ({
   display: 'flex',
@@ -45,6 +46,7 @@ export default function MainLayout() {
   const isFullscreen = location.pathname === '/workstation' || location.pathname === '/voice_call';
   const dispatch = useDispatch<AppDispatch>();
   const toast = useSelector((state: RootState) => state.toast);
+  const isGenerateModalOpen = useSelector((state: RootState) => state.ui.isGenerateModalOpen);
 
   useEffect(() => {
     dispatch(fetchCollections());
@@ -63,71 +65,75 @@ export default function MainLayout() {
   };
 
   return (
-    <LayoutRoot>
-      {!isMobile && (
-        <SharedAvatar 
-          expanded={sidebarOpen} 
-          src={currentAgent.avatar} 
+    <>
+      <LayoutRoot>
+        {!isMobile && (
+          <SharedAvatar 
+            expanded={sidebarOpen} 
+            src={currentAgent.avatar} 
+          />
+        )}
+        {!isMobile && (
+          <SharedMenuButton 
+            isExpanded={sidebarOpen}
+            onClick={handleToggleSidebar}
+          />
+        )}
+        <Navbar 
+          onSidebarOpen={handleToggleSidebar}
+          sidebarOpen={sidebarOpen}
+          isMobile={isMobile}
+          avatar={currentAgent.avatar}
         />
-      )}
-      {!isMobile && (
-        <SharedMenuButton 
-          isExpanded={sidebarOpen}
-          onClick={handleToggleSidebar}
+        <Sidebar
+          open={sidebarOpen}
+          onClose={handleToggleSidebar}
+          isMobile={isMobile}
         />
-      )}
-      <Navbar 
-        onSidebarOpen={handleToggleSidebar}
-        sidebarOpen={sidebarOpen}
-        isMobile={isMobile}
-        avatar={currentAgent.avatar}
-      />
-      <Sidebar
-        open={sidebarOpen}
-        onClose={handleToggleSidebar}
-        isMobile={isMobile}
-      />
-      <LayoutWrapper sidebarOpen={!isMobile && sidebarOpen} isFullscreen={isFullscreen}>
-        <Box sx={{ 
-          width: '100%',
-          height: '100%',
-        }}>
-          <Outlet />
-        </Box>
-      </LayoutWrapper>
-      <Snackbar
-        open={toast.open}
-        autoHideDuration={2000}
-        onClose={handleCloseToast}
-        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
-      >
-        <Alert 
-          onClose={handleCloseToast} 
-          severity={toast.severity}
-          sx={{ 
+        <LayoutWrapper sidebarOpen={!isMobile && sidebarOpen} isFullscreen={isFullscreen}>
+          <Box sx={{ 
             width: '100%',
-            backgroundColor: 'rgba(47, 29, 86, 0.95)',
-            padding: '10px 20px',
-            '& .MuiAlert-message': {
-              color: '#fff',
-              fontSize: 14,
-              fontWeight: 400,
-              lineHeight: '140%'
-            },
-            '& .MuiAlert-icon': {
-              color: '#fff'
-            },
-            '& .MuiAlert-action': {
-              padding: 0,
-              marginRight: 0,
-              marginLeft: '8px',
-              alignItems: 'center'
-            }
-          }}
+            height: '100%',
+          }}>
+            <Outlet />
+          </Box>
+        </LayoutWrapper>
+        <Snackbar
+          open={toast.open}
+          autoHideDuration={2000}
+          onClose={handleCloseToast}
+          anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
         >
-          {toast.message}
-        </Alert>
-      </Snackbar>
-    </LayoutRoot>
+          <Alert 
+            onClose={handleCloseToast} 
+            severity={toast.severity}
+            sx={{ 
+              width: '100%',
+              backgroundColor: 'rgba(47, 29, 86, 0.95)',
+              padding: '10px 20px',
+              '& .MuiAlert-message': {
+                color: '#fff',
+                fontSize: 14,
+                fontWeight: 400,
+                lineHeight: '140%'
+              },
+              '& .MuiAlert-icon': {
+                color: '#fff'
+              },
+              '& .MuiAlert-action': {
+                padding: 0,
+                marginRight: 0,
+                marginLeft: '8px',
+                alignItems: 'center'
+              }
+            }}
+          >
+            {toast.message}
+          </Alert>
+        </Snackbar>
+      </LayoutRoot>
+      
+      <GenerateModal />
+    </>
   );
 } 

@@ -557,9 +557,9 @@ export default function MySpace() {
               />
 
               {isGalleryLoadingVisible && (
-                <LoadingWrapper className="visible">
+                <BottomLoadingWrapper className="visible">
                   <LoadingState />
-                </LoadingWrapper>
+                </BottomLoadingWrapper>
               )}
 
               {galleryImages.length > 0 && !isGalleryLoadingVisible && (

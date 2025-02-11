@@ -8,6 +8,7 @@ import walletReducer from './slices/walletSlice';
 import terminalReducer from './slices/terminalSlice';
 import myNftReducer from './slices/mynftSlice';
 import modelReducer from './slices/modelSlice';
+import uiReducer from './slices/uiSlice';
 
 export const store = configureStore({
   reducer: {
@@ -20,6 +21,7 @@ export const store = configureStore({
     wallet: walletReducer,
     terminal: terminalReducer,
     model: modelReducer,
+    ui: uiReducer,
   },
   middleware: (getDefaultMiddleware) => getDefaultMiddleware().concat(walletStatusMiddleware),
 });

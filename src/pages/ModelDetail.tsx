@@ -37,6 +37,7 @@ import {
 import { formatId, formatDateRange } from '../utils/format';
 import { RootState } from '../store';
 import { showToast } from '../store/slices/toastSlice';
+import { openGenerateModal } from '../store/slices/uiSlice';
 
 function formatAddress(address: string | undefined) {
   return address ? address.slice(0, 6) + '...' + address.slice(-4) : '';
@@ -170,10 +171,10 @@ const DescriptionBox = styled(Box)({
   flexDirection: 'column',
 });
 
-const InfoRow = styled(Box)<{ $withBorder?: boolean }>(({ $withBorder = true }) => ({
+const InfoRow = styled(Box)<{ withborder?: boolean }>(({ withborder = true }) => ({
   width: '345px',
   height: '34px',
-  borderBottom: $withBorder ? '1px solid rgba(255, 255, 255, 0.1)' : 'none',
+  borderBottom: withborder ? '1px solid rgba(255, 255, 255, 0.1)' : 'none',
   display: 'flex',
   justifyContent: 'space-between',
   alignItems: 'center',
@@ -212,11 +213,11 @@ const GenerateButton = styled(BaseButton)({
   },
 });
 
-const InfoButton = styled(BaseButton)<{ $bgColor: string }>(({ $bgColor }) => ({
+const InfoButton = styled(BaseButton)<{ bgcolor: string }>(({ bgcolor }) => ({
   width: '60px',
-  backgroundColor: $bgColor,
+  backgroundColor: bgcolor,
   '&:hover': {
-    backgroundColor: $bgColor,
+    backgroundColor: bgcolor,
     opacity: 0.9,
   },
 }));
@@ -594,6 +595,10 @@ export default function ModelDetail() {
     }
   };
 
+  const handleGenerate = () => {
+    dispatch(openGenerateModal());
+  };
+
   if (isLoading) {
     return (
       <PageContainer>
@@ -664,7 +669,7 @@ export default function ModelDetail() {
                   {model.created_at ? new Date(model.created_at).toLocaleDateString() : 'N/A'}
                 </InfoText>
               </InfoRow>
-              <InfoRow $withBorder={false}>
+              <InfoRow withborder={false}>
                 <InfoText>Status</InfoText>
                 <InfoText>{status}</InfoText>
               </InfoRow>
@@ -673,13 +678,14 @@ export default function ModelDetail() {
             <ButtonGroup>
               <GenerateButton
                 startIcon={<ButtonIcon src={createIcon} alt="Create" />}
+                onClick={handleGenerate}
               >
                 <GenerateText>GENERATE</GenerateText>
               </GenerateButton>
-              <InfoButton $bgColor="#FF8A7B">
+              <InfoButton bgcolor="#FF8A7B">
                 <ButtonIcon src={shareIcon} alt="Share" />
               </InfoButton>
-              <InfoButton $bgColor="#A176FF">
+              <InfoButton bgcolor="#A176FF">
                 <ButtonIcon src={coinsIcon} alt="Coins" />
               </InfoButton>
             </ButtonGroup>
