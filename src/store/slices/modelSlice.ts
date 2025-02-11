@@ -162,6 +162,7 @@ interface ModelState {
   generatingStatus: 'idle' | 'generating' | 'completed' | 'failed';
   generatedImageUrl: string | null;
   generatedRatio: AspectRatio | null;
+  shouldRefreshGallery: boolean;
 }
 
 const initialState: ModelState = {
@@ -204,6 +205,7 @@ const initialState: ModelState = {
   generatingStatus: 'idle',
   generatedImageUrl: null,
   generatedRatio: null,
+  shouldRefreshGallery: false,
 };
 
 export const fetchVotingModels = createAsyncThunk(
@@ -338,14 +340,14 @@ export const fetchGalleryImages = createAsyncThunk(
   async ({
     page = 1, 
     pageSize = 10,
-    order = 'created_at',
+    order = 'id',
     desc = 'desc',
     model_id,
     state
   }: {
     page?: number;
     pageSize?: number;
-    order?: 'created_at' | 'updated_at';
+    order?: 'created_at' | 'updated_at' | 'id';
     desc?: 'desc' | 'asc';
     model_id?: number;
     state?: 'success' | 'pending';
@@ -374,13 +376,13 @@ export const fetchGalleryList = createAsyncThunk(
   async ({ 
     page = 1, 
     pageSize = 10,
-    order = 'created_at',
+    order = 'id',
     desc = 'desc',
     state = 'success'
   }: { 
     page?: number;
     pageSize?: number;
-    order?: 'created_at' | 'updated_at';
+    order?: 'created_at' | 'updated_at' | 'id';
     desc?: 'desc' | 'asc';
     state?: 'success' | 'pending';
   }) => {
@@ -409,14 +411,14 @@ export const fetchMyImages = createAsyncThunk(
     user,
     page = 1, 
     pageSize = 10,
-    order = 'created_at',
+    order = 'id',
     desc = 'desc',
     state
   }: {
     user: string,
     page?: number;
     pageSize?: number;
-    order?: 'created_at' | 'updated_at';
+    order?: 'created_at' | 'updated_at' | 'id';
     desc?: 'desc' | 'asc';
     model_id?: number;
     state?: 'success' | 'pending';
@@ -677,6 +679,10 @@ const modelSlice = createSlice({
       state.generatingStatus = 'idle';
       state.generatedImageUrl = null;
       state.generatedRatio = null;
+      state.shouldRefreshGallery = false;
+    },
+    setShouldRefreshGallery: (state, action: PayloadAction<boolean>) => {
+      state.shouldRefreshGallery = action.payload;
     },
   },
   extraReducers: (builder) => {
@@ -868,6 +874,7 @@ const modelSlice = createSlice({
         if (action.payload.data?.status === 'completed') {
           state.generatingStatus = 'completed';
           state.generatedImageUrl = action.payload.data.upscaled_urls?.[0] || null;
+          state.shouldRefreshGallery = true;
         } else if (action.payload.data?.status === 'failed') {
           state.generatingStatus = 'failed';
         } else if (action.payload.data?.status === 'in-progress') {
@@ -886,7 +893,8 @@ export const {
   clearMyImages,
   updateGalleryListTotalCount,
   setGeneratedRatio,
-  resetGeneration
+  resetGeneration,
+  setShouldRefreshGallery
 } = modelSlice.actions;
 
 export default modelSlice.reducer;
@@ -919,3 +927,4 @@ export const selectGeneratingStatus = (state: RootState) => state.model.generati
 export const selectGeneratedImageUrl = (state: RootState) => state.model.generatedImageUrl;
 export const selectGeneratingTaskId = (state: RootState) => state.model.generatingTaskId;
 export const selectGeneratedRatio = (state: RootState) => state.model.generatedRatio;
+export const selectShouldRefreshGallery = (state: RootState) => state.model.shouldRefreshGallery;

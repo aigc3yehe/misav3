@@ -32,7 +32,9 @@ import {
   selectGalleryTotalCount,
   selectVotingDuration,
   voteModel,
-  updateVoteOptimistically
+  updateVoteOptimistically,
+  selectShouldRefreshGallery,
+  setShouldRefreshGallery
 } from '../store/slices/modelSlice';
 import { formatId, formatDateRange } from '../utils/format';
 import { RootState } from '../store';
@@ -441,6 +443,7 @@ export default function ModelDetail() {
   const totalCount = useSelector(selectGalleryTotalCount);
   const votingDuration = useSelector(selectVotingDuration);
   const walletAddress = useSelector((state: RootState) => state.wallet.address);
+  const shouldRefreshGallery = useSelector(selectShouldRefreshGallery);
 
   // 加载模型详情
   useEffect(() => {
@@ -598,6 +601,21 @@ export default function ModelDetail() {
   const handleGenerate = () => {
     dispatch(openGenerateModal());
   };
+
+  useEffect(() => {
+    if (shouldRefreshGallery) {
+      // 重置页码到第一页
+      setPage(1);
+      // 从第一页开始重新加载数据
+      dispatch(fetchGalleryImages({
+        page: 1,
+        pageSize: PAGE_SIZE,
+        model_id: Number(id),
+        state: 'success'
+      }));
+      dispatch(setShouldRefreshGallery(false));
+    }
+  }, [shouldRefreshGallery, dispatch, id]);
 
   if (isLoading) {
     return (

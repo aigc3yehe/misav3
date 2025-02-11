@@ -416,6 +416,7 @@ const PromptInput = styled(Box)({
   border: '1px solid #4E318D',
 });
 
+// @ts-ignore
 const StyledInput = styled('input')<{ disabled?: boolean }>(({ disabled }) => ({
   flex: 1,
   height: '50px',
@@ -540,7 +541,6 @@ export default function GenerateModal() {
   const [selectedRatio, setSelectedRatio] = useState<AspectRatio>(aspectRatios[0]);
   const [strength, setStrength] = useState(0.5);
   const [prompt, setPrompt] = useState('');
-  const [isGenerating, setIsGenerating] = useState(false);
   const sliderRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
 
@@ -553,7 +553,6 @@ export default function GenerateModal() {
       setSelectedRatio(aspectRatios[0]);
       setStrength(0.5);
       setPrompt('');
-      setIsGenerating(false);
     }
   }, [isOpen, dispatch]);
 
@@ -574,7 +573,14 @@ export default function GenerateModal() {
   const handleClose = useCallback(() => {
     document.body.style.overflow = '';
     dispatch(closeGenerateModal());
-  }, [dispatch]);
+    
+    // 如果有生成成功的图片，刷新 Gallery
+    if (generatingStatus === 'completed' && generatedImageUrl) {
+      // 重新加载 ModelDetail 的 Gallery 数据
+      const currentPath = location.pathname;
+      navigate(currentPath, { replace: true });
+    }
+  }, [dispatch, generatingStatus, generatedImageUrl, navigate, location]);
 
   const handleRatioClick = (ratio: AspectRatio) => {
     setSelectedRatio(ratio);
@@ -643,11 +649,7 @@ export default function GenerateModal() {
               <ModelName>{currentModel?.name || 'Unnamed Model'}</ModelName>
             </ModelInfo>
           </TitleLeft>
-          <CloseButton 
-            onClick={() => {
-              handleClose();
-            }}
-          >
+          <CloseButton onClick={handleClose}>
             <img src={closeIcon} alt="Close" />
           </CloseButton>
         </TitleBar>
