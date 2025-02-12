@@ -10,7 +10,8 @@ import { RootState, AppDispatch } from '../store';
 import { useLocation, Navigate } from 'react-router-dom';
 import { hideToast } from '../store/slices/toastSlice';
 import { fetchCollections } from '../store/slices/collectionSlice';
-import GenerateModal from '../components/GenerateModal';  
+import GenerateModal from '../components/GenerateModal';
+import VotingModalsModal from '../components/VotingModalsModal';
 
 const LayoutRoot = styled('div')(({ theme }) => ({
   display: 'flex',
@@ -133,6 +134,7 @@ export default function MainLayout() {
       </LayoutRoot>
       
       <GenerateModal />
+      <VotingModalsModal />
     </>
   );
 } 

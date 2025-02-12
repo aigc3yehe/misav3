@@ -3,6 +3,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import arrowIcon from '../assets/arrow.svg';
 import addIcon from '../assets/add.svg';
+import { openVotingModalsModal } from '../store/slices/uiSlice';
 import ModelCard from '../components/ModelCard';
 import EnabledModelCard from '../components/EnabledModelCard';
 import VirtualizedGrid from '../components/VirtualizedGrid';
@@ -50,15 +51,16 @@ const SectionHeader = styled(Box)({
 
 const TitleSection = styled(Box)({
   display: 'flex',
-  alignItems: 'center',
+  alignItems: 'flex-end',
   gap: '12px',
 });
 
 const Title = styled(Typography)({
-  fontSize: '22px',
+  fontSize: '30px',
   fontWeight: 800,
   lineHeight: '100%',
   color: '#FFFFFF',
+  marginBottom: '-2px',
 });
 
 //@ts-ignore
@@ -67,7 +69,6 @@ const DateRange = styled(Typography)({
   fontWeight: 400,
   lineHeight: '100%',
   color: '#D6C0FF',
-  marginTop: '3px',
 });
 
 const SeeAllLink = styled(Link)({
@@ -245,11 +246,6 @@ export default function Models() {
       
       // 通过当前数据量计算下一页的页码
       const nextPage = Math.floor(enabledModels.length / PAGE_SIZE) + 1;
-      console.log('next page:', {
-        currentItems: enabledModels.length,
-        pageSize: PAGE_SIZE,
-        nextPage
-      });
       
       dispatch(fetchEnabledModels({ 
         page: nextPage, 
@@ -401,7 +397,7 @@ export default function Models() {
           <TitleSection>
             <Title>VOTING MODELS</Title>
           </TitleSection>
-          <SeeAllLink href="/voting-models">
+          <SeeAllLink onClick={() => dispatch(openVotingModalsModal())}>
             See All Voting
             <ArrowIcon src={arrowIcon} alt="See all" />
           </SeeAllLink>
@@ -424,7 +420,7 @@ export default function Models() {
             {formatDateRange(votingDuration?.start, votingDuration?.end)}
           </DateRange>
         </TitleSection>
-        <SeeAllLink href="/voting-models">
+        <SeeAllLink onClick={() => dispatch(openVotingModalsModal())}>
           See All Voting
           <ArrowIcon src={arrowIcon} alt="See all" />
         </SeeAllLink>

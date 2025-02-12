@@ -57,7 +57,7 @@ function WaterfallGrid<T>({
       
       // 确保至少有1列
       const itemsPerRow = Math.max(1, Math.floor((containerWidth + gap) / (itemWidth + gap)));
-      console.log('Layout calculation:', { itemsPerRow, containerWidth, itemWidth, gap });
+      // console.log('Layout calculation:', { itemsPerRow, containerWidth, itemWidth, gap });
 
       const totalRowWidth = (itemWidth * itemsPerRow) + (gap * (itemsPerRow - 1));
       const sidePadding = Math.max(0, (containerWidth - totalRowWidth) / 2);
@@ -92,16 +92,16 @@ function WaterfallGrid<T>({
 
       // 调整 scrollHeight 的计算，使用网格的实际高度
       const adjustedScrollHeight = gridTop + maxHeight;
-      console.log('scrollHeight', adjustedScrollHeight);
-      console.log('clientHeight', clientHeight);
-      console.log('scrollTop', scrollTop);
-      console.log('threshold', threshold);
+      //console.log('scrollHeight', adjustedScrollHeight);
+      //console.log('clientHeight', clientHeight);
+      //console.log('scrollTop', scrollTop);
+      //console.log('threshold', threshold);
       
       // 使用调整后的 scrollHeight 检查是否需要加载更多
       if (adjustedScrollHeight > 0 && 
           clientHeight > 0 && 
           adjustedScrollHeight - (scrollTop + clientHeight) < threshold) {
-        console.log('Triggering load more...');
+        //console.log('Triggering load more...');
         onScroll?.({ 
           scrollTop, 
           scrollHeight: adjustedScrollHeight, 

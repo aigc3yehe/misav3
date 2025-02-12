@@ -42,7 +42,7 @@ const ContentOverlay = styled(Box)({
   position: 'absolute',
   bottom: 15,
   left: '50%',
-  transform: 'translateX(-50%)',
+  transform: 'translateX(-50%) !important',
   width: 150,
   height: 50,
 });

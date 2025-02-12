@@ -163,6 +163,12 @@ interface ModelState {
   generatedImageUrl: string | null;
   generatedRatio: AspectRatio | null;
   shouldRefreshGallery: boolean;
+
+  modalVotingModels: {
+    [page: number]: Model[];  // 用对象来缓存每一页的数据
+  };
+  modalVotingLoading: boolean;
+  modalVotingError: string | null;
 }
 
 const initialState: ModelState = {
@@ -206,6 +212,9 @@ const initialState: ModelState = {
   generatedImageUrl: null,
   generatedRatio: null,
   shouldRefreshGallery: false,
+  modalVotingModels: {},
+  modalVotingLoading: false,
+  modalVotingError: null,
 };
 
 export const fetchVotingModels = createAsyncThunk(
@@ -231,7 +240,6 @@ export const fetchVotingModels = createAsyncThunk(
     // 如果用户已登录，获取投票状态
     const state = getState() as RootState;
     const walletAddress = state.wallet.address;
-    console.log("当前用户状态", walletAddress, votingModelsData.data.models?.length)
     if (walletAddress && votingModelsData.data.models?.length > 0) {
       const modelIds = votingModelsData.data.models.map((model: Model) => model.id);
       const voteParams = new URLSearchParams({
@@ -582,6 +590,59 @@ export const checkGenerationStatus = createAsyncThunk(
   }
 );
 
+export const fetchModalVotingModels = createAsyncThunk(
+  'model/fetchModalVotingModels',
+  async ({ page, pageSize }: { page: number; pageSize: number }, { getState }) => {
+    // 首先获取投票模型列表
+    const params = new URLSearchParams({
+      page: page.toString(),
+      pageSize: pageSize.toString(),
+    });
+
+    const response = await fetch(`/niyoko-api/model/list/voting?${params}`, {
+      headers: {
+        'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6InN0dWRpbyIsImlhdCI6MTczNjA4MzA3MX0.nBfMsRYqjOkOfjFqCEbmBJWjz1I_CkIr5emwdMS2nXo'
+      }
+    });
+    if (!response.ok) throw new Error('Failed to fetch voting models');
+    const votingModelsData = await response.json();
+
+    // 如果用户已登录，获取投票状态
+    const state = getState() as RootState;
+    const walletAddress = state.wallet.address;
+    if (walletAddress && votingModelsData.data.models?.length > 0) {
+      const modelIds = votingModelsData.data.models.map((model: Model) => model.id);
+      const voteParams = new URLSearchParams({
+        user: walletAddress,
+        ids: modelIds.join(','),
+      });
+
+      const voteResponse = await fetch(`/niyoko-api/model/vote/state_batch?${voteParams}`, {
+        headers: {
+          'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6InN0dWRpbyIsImlhdCI6MTczNjA4MzA3MX0.nBfMsRYqjOkOfjFqCEbmBJWjz1I_CkIr5emwdMS2nXo'
+        }
+      });
+
+      if (voteResponse.ok) {
+        const voteData = await voteResponse.json();
+        // 将投票状态合并到模型数据中
+        votingModelsData.data.models = votingModelsData.data.models.map((model: Model) => {
+          const voteState = voteData.data.find((vote: { model_id?: number }) => vote.model_id === model.id);
+          return {
+            ...model,
+            model_vote: {
+              ...model.model_vote,
+              state: voteState?.state
+            }
+          };
+        });
+      }
+    }
+
+    return votingModelsData;
+  }
+);
+
 const modelSlice = createSlice({
   name: 'model',
   initialState,
@@ -612,9 +673,6 @@ const modelSlice = createSlice({
       state.votingModels = state.votingModels.map(model => {
         if (model.id === modelId) {
           const currentLikes = model.model_vote?.like || 0;
-          // 如果是从未投票状态变为喜欢，likes+1
-          // 如果是从不喜欢状态变为喜欢，likes+1
-          // 如果是从喜欢状态变为不喜欢，likes-1
           let newLikes = currentLikes;
           if (previousState === 1) {
             // 原来是喜欢的
@@ -638,12 +696,43 @@ const modelSlice = createSlice({
         return model;
       });
 
+      // 更新模态框中的投票模型列表
+      Object.keys(state.modalVotingModels).forEach(pageKey => {
+        const page = Number(pageKey);
+        // @ts-ignore
+        state.modalVotingModels[page] = state.modalVotingModels[page].map(model => {
+          if (model.id === modelId) {
+            const currentLikes = model.model_vote?.like || 0;
+            let newLikes = currentLikes;
+            if (previousState === 1) {
+              // 原来是喜欢的
+              if (like === false) {
+                newLikes = newLikes - 1;
+              }
+            } else if (like) {
+              // 现在点了喜欢的
+              newLikes = newLikes + 1
+            }
+            
+            return {
+              ...model,
+              model_vote: {
+                ...model.model_vote,
+                state: like ? 1 : 2,
+                like: newLikes,
+              }
+            };
+          }
+          return model;
+        });
+      });
+
       // 同样更新当前模型详情（如果存在）
       if (state.currentModel && state.currentModel.id === modelId) {
         const currentLikes = state.currentModel.model_vote?.like || 0;
         let newLikes = currentLikes;
         if (previousState === 1) {
-            // 原来是喜欢的
+          // 原来是喜欢的
           if (like === false) {
             newLikes = newLikes - 1;
           }
@@ -684,6 +773,9 @@ const modelSlice = createSlice({
     setShouldRefreshGallery: (state, action: PayloadAction<boolean>) => {
       state.shouldRefreshGallery = action.payload;
     },
+    clearModalVotingModels: (state) => {
+      state.modalVotingModels = {};
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -696,6 +788,15 @@ const modelSlice = createSlice({
         state.votingDuration = action.payload.data.duration;
         state.totalCount = action.payload.data.totalCount || 0;
         state.isLoading = false;
+
+        // 将获取的20条数据分成两页缓存到 modalVotingModels
+        const models = action.payload.data.models || [];
+        if (models.length > 0) {
+          state.modalVotingModels[1] = models.slice(0, 10);
+          if (models.length > 10) {
+            state.modalVotingModels[2] = models.slice(10, 20);
+          }
+        }
       })
       .addCase(fetchVotingModels.rejected, (state, action) => {
         state.isLoading = false;
@@ -779,7 +880,7 @@ const modelSlice = createSlice({
       })
       .addCase(fetchGalleryList.rejected, (state, action) => {
         state.galleryListLoading = false;
-        state.galleryListError = action.error.message || '获取图片列表失败';
+        state.galleryListError = action.error.message || 'get gallery list failed';
       })
       .addCase(voteModel.fulfilled, (state, action) => {
         // 使用实际的服务器响应更新状态
@@ -805,6 +906,25 @@ const modelSlice = createSlice({
             };
           }
           return model;
+        });
+
+        // 更新模态框缓存的数据
+        Object.keys(state.modalVotingModels).forEach(pageKey => {
+          const page = Number(pageKey);
+          state.modalVotingModels[page] = state.modalVotingModels[page].map(model => {
+            if (model.id === action.meta.arg.model_id) {
+              return {
+                ...model,
+                model_vote: {
+                  ...model.model_vote,
+                  state: action.meta.arg.like ? 1 : 2,
+                  like: action.payload.data.likes || 0,
+                  dislike: action.payload.data.dislikes || 0
+                }
+              };
+            }
+            return model;
+          });
         });
       })
       .addCase(fetchModelVoteState.fulfilled, (state, action) => {
@@ -882,6 +1002,19 @@ const modelSlice = createSlice({
         } else if (action.payload.data?.status === 'in-progress') {
           state.generatingStatus = 'generating';
         }
+      })
+      .addCase(fetchModalVotingModels.pending, (state) => {
+        state.modalVotingLoading = true;
+        state.modalVotingError = null;
+      })
+      .addCase(fetchModalVotingModels.fulfilled, (state, action) => {
+        state.modalVotingModels[action.meta.arg.page] = action.payload.data.models;
+        state.totalCount = action.payload.data.totalCount || 0;
+        state.modalVotingLoading = false;
+      })
+      .addCase(fetchModalVotingModels.rejected, (state, action) => {
+        state.modalVotingLoading = false;
+        state.modalVotingError = action.error.message || 'Failed to fetch modal voting models';
       });
   },
 });
@@ -896,7 +1029,8 @@ export const {
   updateGalleryListTotalCount,
   setGeneratedRatio,
   resetGeneration,
-  setShouldRefreshGallery
+  setShouldRefreshGallery,
+  clearModalVotingModels
 } = modelSlice.actions;
 
 export default modelSlice.reducer;
@@ -930,3 +1064,9 @@ export const selectGeneratedImageUrl = (state: RootState) => state.model.generat
 export const selectGeneratingTaskId = (state: RootState) => state.model.generatingTaskId;
 export const selectGeneratedRatio = (state: RootState) => state.model.generatedRatio;
 export const selectShouldRefreshGallery = (state: RootState) => state.model.shouldRefreshGallery;
+export const selectModalVotingModels = (state: RootState, page: number) => 
+  state.model.modalVotingModels[page] || [];
+export const selectModalVotingLoading = (state: RootState) => 
+  state.model.modalVotingLoading;
+export const selectModalVotingError = (state: RootState) => 
+  state.model.modalVotingError;

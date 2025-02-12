@@ -599,6 +599,14 @@ export default function ModelDetail() {
   };
 
   const handleGenerate = () => {
+    if (!walletAddress) {
+      // 处理未登录状态
+      dispatch(showToast({
+        message: 'Please connect your wallet first',
+        severity: 'error'
+      }));
+      return;
+    }
     dispatch(openGenerateModal());
   };
 
