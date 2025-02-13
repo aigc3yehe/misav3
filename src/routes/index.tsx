@@ -19,7 +19,7 @@ export const router = createBrowserRouter([
     children: [
       {
         path: '/',
-        element: <Navigate to="/workstation" replace />,
+        element: <Navigate to="/workstation?agent=misato" replace />,
       },
       {
         path: '/workstation',

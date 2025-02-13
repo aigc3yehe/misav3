@@ -1,5 +1,12 @@
 import { Box, Button, styled, useTheme, useMediaQuery } from '@mui/material';
 import MDRenderer from '../shared/MDRenderer';
+import { useRef } from 'react';
+import completedIcon from '../../assets/upload_ok.svg';
+import uploadIcon from '../../assets/upload.svg';
+import { AppDispatch } from '../../store';
+import { useDispatch } from 'react-redux';
+import { uploadImages } from '../../store/slices/imagesSlice';
+import { sendMessage } from '../../store/slices/chatSlice';
 
 const BubbleContainer = styled(Box)(({ theme }) => ({
   width: '100%',
@@ -47,29 +54,55 @@ const ActionButtons = styled(Box)({
   gap: 10,
 });
 
-const ActionButton = styled(Button)<{ variant?: 'primary' | 'secondary' }>(({ variant = 'primary' }) => ({
+const ActionButton = styled(Button)<{ actionstyle: string }>(({ actionstyle="primary" }) => ({
   height: 35,
   padding: '0 24px',
   borderRadius: 4,
-  backgroundColor: variant === 'primary' ? '#C7FF8C' : '#C9ACFF',
+  backgroundColor: actionstyle === "secondary" ? '#C9ACFF' : '#C7FF8C',
   color: '#000000',
   fontSize: 16,
   fontWeight: 700,
   lineHeight: '24px',
   textTransform: 'none',
   '&:hover': {
-    backgroundColor: variant === 'primary' ? '#B7EF7C' : '#B99CEF',
+    backgroundColor: actionstyle === "secondary" ? '#C9ACFF' : '#C7FF8C',
   },
   '&.Mui-disabled': {
-    backgroundColor: variant === 'primary' ? '#C7FF8C' : '#C9ACFF',
+    backgroundColor: actionstyle === "secondary" ? '#C9ACFF' : '#C7FF8C',
     color: '#636071'
-  }
+  },
+  '& .MuiButton-startIcon': {
+    margin: 0,
+    marginRight: '0px',
+  },
 }));
 
+const ButtonIcon = styled('img')({
+  width: '30px',
+  height: '31px',
+});
+
+const UrlList = styled(Box)({
+  marginTop: 0,
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '0px',
+});
+
+const UrlItem = styled(Box)({
+  fontSize: '12px',
+  color: '#6D2EF5',
+  lineHeight: '140%',
+  fontWeight: 'normal'
+});
+
 interface MessageBubbleProps {
+  messageId: string | number;
   isUser?: boolean;
   content: string;
   avatar?: string;
+  show_status?: 'send_eth' | 'idle' | 'disconnected' | 'queuing' | 'upload_image';
+  urls?: string[];
   actions?: Array<{
     label: string;
     variant: 'primary' | 'secondary';
@@ -79,13 +112,46 @@ interface MessageBubbleProps {
 }
 
 export default function MessageBubble({ 
+  messageId,
   isUser, 
   content, 
   avatar, 
-  actions 
+  actions,
+  show_status,
+  urls
 }: MessageBubbleProps) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const dispatch = useDispatch<AppDispatch>();
+
+  const handleUpload = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleCompleted = async () => {
+    try {
+      await dispatch(sendMessage({ 
+        messageText: "I have uploaded it successfully, please help me train"
+      })).unwrap();
+    } catch (error) {
+      console.error('Failed to send completion message:', error);
+    }
+  };
+
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files || []);
+    if (files.length > 0) {
+      try {
+        await dispatch(uploadImages({ 
+          messageId: messageId, 
+          files 
+        })).unwrap();
+      } catch (error) {
+        console.error('Failed to upload images:', error);
+      }
+    }
+  };
 
   return (
     <BubbleContainer sx={{ justifyContent: isUser ? 'flex-end' : 'flex-start' }}>
@@ -110,6 +176,44 @@ export default function MessageBubble({
         ) : (
           <MDRenderer content={content} />
         )}
+        
+        {!isUser && show_status === 'upload_image' && (
+          <>
+            <input
+              type="file"
+              ref={fileInputRef}
+              style={{ display: 'none' }}
+              multiple
+              accept="image/*"
+              onChange={handleFileChange}
+            />
+            <ActionButtons>
+              <ActionButton 
+              startIcon={<ButtonIcon src={uploadIcon} alt="upload" />}
+              onClick={handleUpload}
+              actionstyle="primary">
+                UPLOAD
+              </ActionButton>
+              <ActionButton
+              onClick={handleCompleted} 
+              disabled={!urls || urls.length == 0}
+              startIcon={<ButtonIcon src={completedIcon} alt="completed" />}
+              actionstyle="secondary">
+                COMPLETED
+              </ActionButton>
+            </ActionButtons>
+            {urls && urls.length > 0 && (
+              <UrlList>
+                {urls.map((url, index) => (
+                  <UrlItem key={url}>
+                    {`${index + 1}/${urls.length} ${url}`}
+                  </UrlItem>
+                ))}
+              </UrlList>
+            )}
+          </>
+        )}
+
         {!isUser && actions && actions.length > 0 && (
           <ActionButtons>
             {actions.map((action, index) => (
@@ -117,6 +221,7 @@ export default function MessageBubble({
                 key={`action-${index}`}
                 onClick={action.onClick}
                 disabled={action.disabled}
+                actionstyle="primary"
               >
                 {action.label}
               </ActionButton>

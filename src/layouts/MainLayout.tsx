@@ -2,16 +2,16 @@ import { Box, styled, Alert, Snackbar, useTheme, useMediaQuery } from '@mui/mate
 import Sidebar from '../components/Sidebar';
 import Navbar from '../components/Navbar';
 import { useState, useEffect } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation, useNavigate, Navigate} from 'react-router-dom';
 import SharedAvatar from '../components/SharedAvatar';
 import SharedMenuButton from '../components/SharedMenuButton';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState, AppDispatch } from '../store';
-import { useLocation, Navigate } from 'react-router-dom';
 import { hideToast } from '../store/slices/toastSlice';
 import { fetchCollections } from '../store/slices/collectionSlice';
 import GenerateModal from '../components/GenerateModal';
 import VotingModalsModal from '../components/VotingModalsModal';
+import { setCurrentAgent } from '../store/slices/agentSlice';
 
 const LayoutRoot = styled('div')(({ theme }) => ({
   display: 'flex',
@@ -40,13 +40,32 @@ const LayoutWrapper = styled('div')<{ sidebarOpen: boolean, isFullscreen: boolea
 
 export default function MainLayout() {
   const location = useLocation();
+  const navigate = useNavigate();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
   const currentAgent = useSelector((state: RootState) => state.agent.currentAgent);
+  const availableAgents = useSelector((state: RootState) => state.agent.availableAgents);
   const isFullscreen = location.pathname === '/workstation' || location.pathname === '/voice_call';
   const dispatch = useDispatch<AppDispatch>();
   const toast = useSelector((state: RootState) => state.toast);
+
+  // 获取 URL 参数中的 agent
+  const searchParams = new URLSearchParams(location.search);
+  const agentId = searchParams.get('agent');
+  console.log('agentId', agentId)
+  useEffect(() => {
+    if (agentId) {
+      // 根据 agentId 找到对应的 agent 配置
+      const agent = availableAgents.find(a => a.id === agentId);
+      if (agent) {
+        dispatch(setCurrentAgent(agent));
+      } else {
+        // 如果找不到对应的 agent，重定向到默认 agent
+        navigate('/workstation?agent=misato', { replace: true });
+      }
+    }
+  }, [agentId, dispatch, navigate]);
 
   useEffect(() => {
     dispatch(fetchCollections());

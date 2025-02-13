@@ -27,6 +27,7 @@ import { formatDateRange } from '../utils/format';
 import { showToast } from '../store/slices/toastSlice';
 import { voteModel } from '../store/slices/modelSlice';
 import { RootState } from '../store';
+import { sendMessage } from '../store/slices/chatSlice';
 
 
 const CARD_WIDTH = 175;
@@ -390,6 +391,20 @@ export default function Models() {
     showStatus: model.model_tran?.[0]?.train_state === 2 ? false : true,
   }));
 
+  const handleNewStyle = async () => {
+    // 先导航到 Workstation
+    navigate('/workstation?agent=niyoko');
+    
+    // 然后发送消息
+    try {
+      await dispatch(sendMessage({ 
+        messageText: "I want training a model"
+      })).unwrap();
+    } catch (error) {
+      console.error('Failed to send model training message:', error);
+    }
+  };
+
   if (votingModelsLoading && displayModels.length == 0) {
     return (
       <PageContainer id="modelsContainer" padding={containerPadding}>
@@ -437,7 +452,7 @@ export default function Models() {
                 onCardClick={() => handleCardClick(model.id)}
               />
             ))}
-            <AddModelCard>
+            <AddModelCard onClick={handleNewStyle}>
               <AddIcon src={addIcon} alt="Add new style" />
               <NewStyleText>New Style</NewStyleText>
             </AddModelCard>

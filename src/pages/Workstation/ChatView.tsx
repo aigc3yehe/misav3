@@ -1,6 +1,8 @@
 import { Box, styled } from '@mui/material';
 import ChatWindow from '../../components/ChatWindow';
 import UnityGame from '../../components/UnityGame';
+import { useSelector } from 'react-redux';
+import { RootState } from '../../store';
 
 const ViewContainer = styled(Box)({
   position: 'relative',
@@ -38,13 +40,15 @@ const ChatWindowWrapper = styled(Box)(({ theme }) => ({
 }));
 
 export default function ChatView() {
+  const currentAgent = useSelector((state: RootState) => state.agent.currentAgent);
+
   return (
     <ViewContainer>
       <UnityContainer>
         <UnityGame />
       </UnityContainer>
       <ChatWindowWrapper>
-        <ChatWindow agentName="MISATO" />
+        <ChatWindow agentName={currentAgent?.name || 'MISATO'} />
       </ChatWindowWrapper>
     </ViewContainer>
   );

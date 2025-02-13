@@ -137,6 +137,7 @@ interface Message {
     onClick: () => void;
     disabled?: boolean;
   }>;
+  urls?: string[]
 }
 
 // 未连接钱包时的消息
@@ -208,6 +209,7 @@ const formatPrice = (price: number): string => {
 
 // 转换消息格式的函数
 const convertChatMessage = (
+  agentId: string | undefined,
   chatMessage: any, 
   handleSendEth: (id: number) => void,
   checkPayment: () => void,
@@ -223,14 +225,25 @@ const convertChatMessage = (
   error: Error | null,
   currentCollection: Collection | null
 ): Message => {
+
+  let content = chatMessage.content;
+  if (chatMessage.id === 1) {
+    if (agentId === 'niyoko') {
+      content = "Hi, I'm Niyoko, I'm an AI agent for professional model training."
+    } else {
+      content = '### Welcome! I ($MISATO) am offering minting services for two NFT collections: MISATO Frens and Seven Bond. If you\'re interested in them, just let me know by saying: "I want to buy an NFT."'
+    }
+  }
+
   const baseMessage = {
     id: chatMessage.id || Date.now(),
     isUser: chatMessage.role === 'user',
-    content: chatMessage.content,
+    content: content,
     type: chatMessage.type || 'text',
     time: chatMessage.time || formatTime(new Date()),
     avatar: chatMessage.role === 'user' ? undefined : '/misato.jpg',
     show_status: chatMessage.show_status,
+    urls: chatMessage.urls,
     };
 
   // 如果是需要支付的消息
@@ -389,6 +402,7 @@ export default function ChatWindow({ agentName }: ChatWindowProps) {
   const [message, setMessage] = useState('');
   const isRequesting = useSelector((state: RootState) => state.chat.isRequesting);
   const processingState = useSelector((state: RootState) => state.chat.processingState);
+  const agentId = useSelector((state: RootState) => state.agent.currentAgent?.id);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<InputBaseProps['inputRef']>();
 
@@ -912,6 +926,7 @@ export default function ChatWindow({ agentName }: ChatWindowProps) {
       default:
         return chatMessages.map(msg => 
           convertChatMessage(
+            agentId,
             msg, 
             handleSendEth, 
             checkPayment,
@@ -1012,11 +1027,14 @@ export default function ChatWindow({ agentName }: ChatWindowProps) {
           <MessageList>
             {messages.map((msg) => (
               <MessageBubble
+                messageId={msg.id}
                 key={msg.id}
                 isUser={msg.isUser}
                 content={msg.content}
                 avatar={msg.avatar}
                 actions={msg.actions}
+                show_status={msg.show_status}
+                urls={msg.urls}
               />
             ))}
             <div ref={messagesEndRef} />

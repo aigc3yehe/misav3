@@ -1,6 +1,8 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { RootState } from '..';
 
+const WELCOME_MSG_ID = 1
+
 // 支付相关信息接口
 interface PaymentInfo {
   recipient_address: string;  // 接收方地址
@@ -16,8 +18,9 @@ export interface ChatMessage {
   role: 'user' | 'assistant' | 'system';  // 消息发送者角色
   type: 'text' | 'image' | 'error' | 'transaction';  // 消息类型
   time?: string;                          // 消息时间
-  show_status?: 'send_eth' | 'idle' | 'disconnected' | 'queuing';  // 显示状态
+  show_status?: 'send_eth' | 'idle' | 'disconnected' | 'queuing' | 'upload_image';  // 显示状态
   payment_info?: PaymentInfo;             // 支付信息（如果需要）
+  urls?: string[];  // 新增字段，用于存储上传的图片URL
 }
 
 // 聊天状态接口
@@ -37,7 +40,7 @@ interface ChatState {
 // 初始欢迎消息
 const initialMessages: ChatMessage[] = [
   {
-    id: 1,
+    id: WELCOME_MSG_ID,
     type: 'text',
     content: '### Welcome! I ($MISATO) am offering minting services for two NFT collections: MISATO Frens and Seven Bond. If you\'re interested in them, just let me know by saying: "I want to buy an NFT."',
     role: 'system',
@@ -149,6 +152,12 @@ const convertNumberToWords = (text: string): string => {
   }
 }
 
+// 获取API基础URL
+const getApiBaseUrl = (getState: () => RootState) => {
+  const state = getState();
+  return state.agent.currentAgent?.id === 'niyoko' ? '/niyoko-chat-api/' : '/api/';
+};
+
 // 发送消息的异步 action
 // 处理流程：
 // 1. 添加用户消息到列表
@@ -180,12 +189,8 @@ export const sendMessage = createAsyncThunk(
 
       const state = getState() as RootState;
       const { address: walletAddress, userUuid } = state.wallet;
+      const apiBaseUrl = getApiBaseUrl(getState as () => RootState);
       
-      // 检查连接状态
-      /* if (state.chat.connectionState !== 'ready') {
-        throw new Error('Connection not ready');
-      } */
-
       // 过滤并准备对话历史
       const conversation_history = state.chat.messages
         .filter(msg => 
@@ -199,23 +204,41 @@ export const sendMessage = createAsyncThunk(
           content: msg.content 
         }));
 
+      // 获取最新的带有 URLs 的消息
+      const latestMessageWithUrls = [...state.chat.messages]
+        .reverse()
+        .find(msg => msg.urls && msg.urls.length > 0);
+
+      // 准备请求体
+      const baseBody = {
+        message: messageText,
+        conversation_history,
+        wallet_address: walletAddress || '',
+      };
+
+      // 根据 agent 类型添加额外字段
+      const requestBody = state.agent.currentAgent?.id === 'niyoko' 
+        ? {
+            ...baseBody,
+            urls: latestMessageWithUrls?.urls || []
+          }
+        : {
+            ...baseBody,
+            user_uuid: userUuid || 'anonymous',
+            request_id: state.chat.currentRequestId,
+            pay_fee_hash: payFeeHash,
+            collection: state.chat.collectionName
+          };
+
       // 发送请求
-      const response = await fetch('/api/chat', {
+      const response = await fetch(`${apiBaseUrl}chat`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
           'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImFnZW50IiwiaWF0IjoxNzMyNDQzNjUxfQ.mEGxHMQPGxb2q4nEDvyAJwCjGGQmi9DNcXgslosn6DI',
           'x-user-id': userUuid || 'anonymous'
         },
-        body: JSON.stringify({
-          message: messageText,
-          conversation_history,
-          user_uuid: userUuid || 'anonymous',
-          wallet_address: walletAddress || '',
-          request_id: state.chat.currentRequestId,
-          pay_fee_hash: payFeeHash,
-          collection: state.chat.collectionName
-        })
+        body: JSON.stringify(requestBody)
       });
 
       const data = await response.json();
@@ -264,6 +287,20 @@ export const sendMessage = createAsyncThunk(
             sendToUnity(convertNumberToWords(cleanSentence), index === lastIndex)
           }
         })
+        return data;
+      }
+
+      if (data.status === 'upload_image') {
+        // 添加一条需要上传图片的消息
+        dispatch(addMessage({
+          id: Date.now(),
+          content: data.content || 'Please upload your images.',
+          role: 'assistant',
+          type: 'text',
+          show_status: 'upload_image',
+          urls: [], // 初始化空数组
+          time: formatTime(new Date()),
+        }));
         return data;
       }
 
@@ -319,7 +356,6 @@ export const sendMessage = createAsyncThunk(
       })
 
       return data;
-
     } catch (error) {
       // 添加错误消息
       dispatch(addMessage({
@@ -366,9 +402,11 @@ export const pollImageStatus = createAsyncThunk(
 
       while (attempts < maxAttempts) {
         await waitForRequestAvailable(getState as () => RootState);
+        
+        const apiBaseUrl = getApiBaseUrl(getState as () => RootState);
 
         try {
-          const response = await fetch(`/api/generation-status/${requestId}`, {
+          const response = await fetch(`${apiBaseUrl}generation-status/${requestId}`, {
             headers: {
               'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImFnZW50IiwiaWF0IjoxNzMyNDQzNjUxfQ.mEGxHMQPGxb2q4nEDvyAJwCjGGQmi9DNcXgslosn6DI',
               'x-user-id': userUuid || 'anonymous'
@@ -472,8 +510,9 @@ export const sendHeartbeat = createAsyncThunk(
       
       const state = getState() as RootState;
       const { userUuid } = state.wallet;
+      const apiBaseUrl = getApiBaseUrl(getState as () => RootState);
       
-      const response = await fetch('/api/heartbeat', {
+      const response = await fetch(`${apiBaseUrl}heartbeat`, {
         headers: {
           'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImFnZW50IiwiaWF0IjoxNzMyNDQzNjUxfQ.mEGxHMQPGxb2q4nEDvyAJwCjGGQmi9DNcXgslosn6DI',
           'x-user-id': userUuid || ''
@@ -520,8 +559,9 @@ export const checkConnectionStatus = createAsyncThunk(
       
       const state = getState() as RootState;
       const { userUuid } = state.wallet;
+      const apiBaseUrl = getApiBaseUrl(getState as () => RootState);
       
-      const response = await fetch(`/api/initial-connection/${userUuid}`, {
+      const response = await fetch(`${apiBaseUrl}initial-connection/${userUuid}`, {
         headers: {
           'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImFnZW50IiwiaWF0IjoxNzMyNDQzNjUxfQ.mEGxHMQPGxb2q4nEDvyAJwCjGGQmi9DNcXgslosn6DI',
           'x-user-id': userUuid || ''
@@ -628,6 +668,13 @@ const chatSlice = createSlice({
     resetMessages: (state) => {
       state.messages = [...initialMessages];
       state.collectionName = null;
+    },
+    updateMessageUrls: (state, action: PayloadAction<{ messageId: string | number; urls: string[] }>) => {
+      const { messageId, urls } = action.payload;
+      const message = state.messages.find(msg => msg.id === messageId);
+      if (message) {
+        message.urls = urls;
+      }
     },
   },
   extraReducers: (builder) => {
@@ -742,6 +789,7 @@ export const {
   updateLastActivity,
   resetMessages,
   updateConnectionState,
+  updateMessageUrls,
 } = chatSlice.actions;
 
 export default chatSlice.reducer; 

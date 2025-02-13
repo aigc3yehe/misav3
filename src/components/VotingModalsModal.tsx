@@ -1,5 +1,5 @@
 import { Box, styled, Typography, IconButton } from '@mui/material';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState, AppDispatch } from '../store';
 import { closeVotingModalsModal } from '../store/slices/uiSlice';

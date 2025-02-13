@@ -28,3 +28,8 @@ mock/
 
 # VUE
 vue/
+
+# env
+.env
+.env.local
+.env.*.local

@@ -138,8 +138,9 @@ const ProfileInfo = styled(Box)({
 const NameSection = styled(Box)({
   display: 'flex',
   alignItems: 'center',
-  gap: '0px',
+  gap: '8px',
   marginTop: '0px',
+  cursor: `url(${pointingCursor}), pointer`,
 });
 
 const IconsSection = styled(Box)({
@@ -269,9 +270,10 @@ const IconImage = styled('img')({
   display: 'block',
 });
 
-const ArrowIcon = styled(IconImage)({
+const ArrowIcon = styled('img')({
   width: '14px',
-  height: '10px',
+  height: '14px',
+  padding: '2px 0 2px 0'
 });
 
 const SocialIcon = styled(IconImage)({
@@ -364,16 +366,14 @@ export default function Sidebar({ open, onClose, isMobile }: SidebarProps) {
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
   const [selectedChat, setSelectedChat] = useState<string | null>(null);
   const currentAgent = useSelector((state: RootState) => state.agent.currentAgent);
+  // 从 store 中获取 agents 列表
+  const availableAgents = useSelector((state: RootState) => state.agent.availableAgents);
   const dispatch = useDispatch();
   const [agentMenuAnchor, setAgentMenuAnchor] = useState<null | HTMLElement>(null);
   // @ts-ignore
   const [chatHistory, setChatHistory] = useState<ChatHistoryProps[]>([]);
 
   const showShared = currentAgent?.id === 'misato';
-
-  /* const formatAddress = (address: string) => {
-    return `${address.slice(0, 6)}...${address.slice(-4)}`;
-  }; */
 
   const handleCopyWalletAddress = () => {
     navigator.clipboard.writeText(currentAgent?.wallet_address || '');
@@ -547,23 +547,6 @@ export default function Sidebar({ open, onClose, isMobile }: SidebarProps) {
     });
   };
 
-  // 添加可用的 agents 列表
-  const availableAgents = [
-    {
-      id: 'misato',
-      name: 'MISATO',
-      avatar: '/misato.jpg',
-      address: '0x98f4779FcCb177A6D856dd1DfD78cd15B7cd2af5',
-      wallet_address: '0x900709432a8F2C7E65f90aA7CD35D0afe4eB7169',
-    },
-    /* {
-      id: 'niyoko',
-      name: 'NiyoKo',
-      avatar: '/misato.jpg',
-      address: '0x1234567890abcdef1234567890abcdef12345678',
-    }, */
-    // 可以添加更多 agent
-  ];
   // @ts-ignore
   const handleAgentMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
     event.stopPropagation();
@@ -605,7 +588,7 @@ export default function Sidebar({ open, onClose, isMobile }: SidebarProps) {
                 <Box sx={{ width: 40, height: 40 }} />
               )}
               <Box sx={{ gap: '0px' }}>
-                <NameSection>
+                <NameSection onClick={handleAgentMenuOpen}>
                   <Typography 
                     variant="subtitle1" 
                     sx={{ 
@@ -616,12 +599,7 @@ export default function Sidebar({ open, onClose, isMobile }: SidebarProps) {
                   >
                     ${currentAgent?.name}
                   </Typography>
-                  <IconButton 
-                    size="small" 
-                    sx={{ padding: 1, width: 28, height: 28, display: 'none' }}
-                  >
-                    <ArrowIcon src={arrowDropDown} alt="expand" />
-                  </IconButton>
+                  <ArrowIcon src={arrowDropDown} alt="expand" />
                 </NameSection>
                 <IconsSection>
                   <ActionIcon src={walletIcon} alt="wallet" onClick={handleCopyWalletAddress}/>

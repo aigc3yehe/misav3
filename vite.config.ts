@@ -13,6 +13,11 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, '')
       },
+      '/niyoko-chat-api': {
+        target: 'http://45.32.110.109:5555',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/niyoko-chat-api/, '')
+      },
       '/studio-api': {
         target: 'http://43.153.40.155:5577',
         changeOrigin: true,

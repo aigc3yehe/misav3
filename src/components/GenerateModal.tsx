@@ -340,12 +340,12 @@ const ParametersArea = styled(Box)({
   height: '32px',
 });
 
-const AspectRatioButton = styled(Box)<{ isOpen: boolean }>(({ isOpen }) => ({
+const AspectRatioButton = styled(Box)<{ backgroundstyle: string }>(({ backgroundstyle }) => ({
   width: '90px',
   height: '32px',
   borderRadius: '4px',
   border: '1px solid #4E318D',
-  backgroundColor: isOpen ? 'rgba(0, 0, 0, 0.3)' : '#4E318D',
+  backgroundColor: backgroundstyle === "open" ? 'rgba(0, 0, 0, 0.3)' : '#4E318D',
   display: 'flex',
   alignItems: 'center',
   padding: '0 14px',
@@ -662,7 +662,7 @@ export default function GenerateModal() {
         </ImageDisplay>
         <ParametersArea>
           <AspectRatioButton 
-            isOpen={isRatioMenuOpen}
+            backgroundstyle={isRatioMenuOpen ? "open" : "close"}
             onClick={(e) => {
               e.stopPropagation();
               setIsRatioMenuOpen(!isRatioMenuOpen);

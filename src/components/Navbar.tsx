@@ -396,6 +396,14 @@ export default function Navbar({ onSidebarOpen, sidebarOpen, isMobile, avatar }:
     }
   };
 
+  const handleCopyAddress = (address: string) => {
+    navigator.clipboard.writeText(address);
+    dispatch(showToast({
+      message: 'Wallet address copied',
+      severity: 'success'
+    }));
+  };
+
   // 当钱包状态改变时更新 Redux store
   useEffect(() => {
     if (isConnected && address) {
@@ -544,10 +552,12 @@ export default function Navbar({ onSidebarOpen, sidebarOpen, isMobile, avatar }:
                   }}
                 >
                   <MenuItem>
-                    <MenuItemContent>
+                    <MenuItemContent 
+                      onClick={() => handleCopyAddress(address || '')}
+                    >
                       <Avatar 
-                          src={walletIcon} 
-                          sx={{ width: 20, height: 20 }} 
+                        src={walletIcon} 
+                        sx={{ width: 20, height: 20 }} 
                       />
                       <span className="address-text">
                         {formatAddress(address)} 
