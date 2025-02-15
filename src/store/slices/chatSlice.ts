@@ -292,15 +292,26 @@ export const sendMessage = createAsyncThunk(
 
       if (data.status === 'upload_image') {
         // 添加一条需要上传图片的消息
+        const content = data.content || 'Please upload your images.'
         dispatch(addMessage({
           id: Date.now(),
-          content: data.content || 'Please upload your images.',
+          content: content,
           role: 'assistant',
           type: 'text',
           show_status: 'upload_image',
           urls: [], // 初始化空数组
           time: formatTime(new Date()),
         }));
+        // 添加语音播放
+        const sentences = content.split(/[.,!?。！？]/g).filter(Boolean)
+        const lastIndex = sentences.length - 1
+
+        sentences.forEach((sentence: string, index: number) => {
+          const cleanSentence = sentence.trim()
+          if (cleanSentence) {
+            sendToUnity(convertNumberToWords(cleanSentence), index === lastIndex)
+          }
+        })
         return data;
       }
 
