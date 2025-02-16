@@ -75,7 +75,12 @@ const waitForRequestAvailable = async (getState: () => RootState): Promise<void>
 };
 
 // 添加类型检查辅助函数
-const sendToUnity = (content: string, finish: boolean) => {
+const sendToUnity = (content: string, finish: boolean, getState: () => RootState) => {
+  const state = getState() as RootState;
+  const isNiyoko = state.agent.currentAgent?.id === 'niyoko';
+  if (isNiyoko) {
+    return;
+  }
   if (window.unityInstance?.SendMessage) {
     window.unityInstance.SendMessage('JSCall', 'AddVoice', JSON.stringify({
       content,
@@ -284,7 +289,7 @@ export const sendMessage = createAsyncThunk(
         sentences.forEach((sentence: string, index: number) => {
           const cleanSentence = sentence.trim()
           if (cleanSentence) {
-            sendToUnity(convertNumberToWords(cleanSentence), index === lastIndex)
+            sendToUnity(convertNumberToWords(cleanSentence), index === lastIndex, getState as () => RootState)
           }
         })
         return data;
@@ -309,7 +314,7 @@ export const sendMessage = createAsyncThunk(
         sentences.forEach((sentence: string, index: number) => {
           const cleanSentence = sentence.trim()
           if (cleanSentence) {
-            sendToUnity(convertNumberToWords(cleanSentence), index === lastIndex)
+            sendToUnity(convertNumberToWords(cleanSentence), index === lastIndex, getState as () => RootState)
           }
         })
         return data;
@@ -362,7 +367,7 @@ export const sendMessage = createAsyncThunk(
       sentences.forEach((sentence: string, index: number) => {
         const cleanSentence = sentence.trim()
         if (cleanSentence) {
-          sendToUnity(convertNumberToWords(cleanSentence), index === lastIndex)
+          sendToUnity(convertNumberToWords(cleanSentence), index === lastIndex, getState as () => RootState)
         }
       })
 
@@ -449,7 +454,7 @@ export const pollImageStatus = createAsyncThunk(
             sentences.forEach((sentence: string, index: number) => {
               const cleanSentence = sentence.trim()
               if (cleanSentence) {
-                sendToUnity(convertNumberToWords(cleanSentence), index === lastIndex)
+                sendToUnity(convertNumberToWords(cleanSentence), index === lastIndex, getState as () => RootState)
               }
             })
 
@@ -470,7 +475,7 @@ export const pollImageStatus = createAsyncThunk(
             }));
 
             // 发送错误消息到 Unity
-            sendToUnity('Image generation failed, please try again.', true)
+            sendToUnity('Image generation failed, please try again.', true, getState as () => RootState)
 
             return result;
           }
@@ -498,7 +503,7 @@ export const pollImageStatus = createAsyncThunk(
         time: formatTime(new Date()),
       }));
       // 发送错误消息到 Unity
-      sendToUnity('Error checking image generation status', true)
+      sendToUnity('Error checking image generation status', true, getState as () => RootState)
       throw error;
     }
   }

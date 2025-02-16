@@ -8,6 +8,12 @@ const MISATO_TOKEN_ADDRESS = '0x98f4779FcCb177A6D856dd1DfD78cd15B7cd2af5';
 const WALLET_INFO_CACHE_KEY = 'wallet_info_cache';
 const UUID_STORAGE_KEY = 'misato_user_uuid';
 
+// 添加白名单地址列表
+const WHITELISTED_ADDRESSES = [
+  '0xdbEA32C9a4438cE9eae6Cf1505343E803F277922',
+  // 添加其他白名单地址...
+].map(addr => addr.toLowerCase());
+
 // 接口定义
 interface WalletInfo {
   name: string;
@@ -27,6 +33,7 @@ interface WalletState {
   isLoading: boolean;
   error: string | null;
   userUuid: string;
+  isWhitelisted: boolean;
 }
 
 // 初始化或获取 UUID
@@ -55,6 +62,7 @@ const initialState: WalletState = {
   isLoading: false,
   error: null,
   userUuid: initializeUuid(),
+  isWhitelisted: false,
 };
 
 // 从缓存加载钱包信息
@@ -132,6 +140,10 @@ const walletSlice = createSlice({
   reducers: {
     setAddress: (state, action: PayloadAction<string | null>) => {
       state.address = action.payload;
+      // 当地址更新时检查是否在白名单中
+      state.isWhitelisted = action.payload ? 
+        WHITELISTED_ADDRESSES.includes(action.payload.toLowerCase()) : 
+        false;
     },
     setCaipAddress: (state, action: PayloadAction<string | null>) => {
       state.caipAddress = action.payload;
@@ -159,6 +171,7 @@ const walletSlice = createSlice({
       state.tokenBalance = 0;
       state.hasEnoughTokens = true;
       state.userUuid = '';
+      state.isWhitelisted = false;
     },
     updateMaxBalance: (state, action: PayloadAction<{ address: string; balance: number }>) => {
       const { address, balance } = action.payload;
@@ -195,6 +208,10 @@ const walletSlice = createSlice({
       .addCase(updatePrivyAccount.fulfilled, (state, action) => {
         console.log('updatePrivyAccount.fulfilled', action.payload);
         state.address = action.payload.address;
+        // 更新白名单状态
+        state.isWhitelisted = action.payload.address ? 
+          WHITELISTED_ADDRESSES.includes(action.payload.address.toLowerCase()) : 
+          false;
         state.isConnected = action.payload.isConnected;
         state.walletInfo = action.payload.walletInfo;
       });

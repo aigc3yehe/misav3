@@ -372,6 +372,7 @@ export default function Sidebar({ open, onClose, isMobile }: SidebarProps) {
   const [agentMenuAnchor, setAgentMenuAnchor] = useState<null | HTMLElement>(null);
   // @ts-ignore
   const [chatHistory, setChatHistory] = useState<ChatHistoryProps[]>([]);
+  const { isWhitelisted } = useSelector((state: RootState) => state.wallet);
 
   const showShared = currentAgent?.id === 'misato';
 
@@ -549,6 +550,7 @@ export default function Sidebar({ open, onClose, isMobile }: SidebarProps) {
 
   // @ts-ignore
   const handleAgentMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
+    if (!isWhitelisted) return;
     event.stopPropagation();
     setAgentMenuAnchor(event.currentTarget);
   };
@@ -588,7 +590,12 @@ export default function Sidebar({ open, onClose, isMobile }: SidebarProps) {
                 <Box sx={{ width: 40, height: 40 }} />
               )}
               <Box sx={{ gap: '0px' }}>
-                <NameSection onClick={handleAgentMenuOpen}>
+                <NameSection 
+                  onClick={handleAgentMenuOpen}
+                  sx={{ 
+                    cursor: isWhitelisted ? `url(${pointingCursor}), pointer` : 'default' 
+                  }}
+                >
                   <Typography 
                     variant="subtitle1" 
                     sx={{ 
@@ -599,9 +606,17 @@ export default function Sidebar({ open, onClose, isMobile }: SidebarProps) {
                   >
                     ${currentAgent?.name}
                   </Typography>
-                  <ArrowIcon src={arrowDropDown} alt="expand" />
+                  <ArrowIcon 
+                    src={arrowDropDown} 
+                    alt="expand" 
+                    sx={{ 
+                      visibility: isWhitelisted ? 'visible' : 'hidden'
+                    }} 
+                  />
                 </NameSection>
-                <IconsSection>
+                <IconsSection sx={{ 
+                  visibility: currentAgent?.id === 'misato' ? 'visible' : 'hidden'
+                }}>
                   <ActionIcon src={walletIcon} alt="wallet" onClick={handleCopyWalletAddress}/>
                   <ActionIcon src={dockIcon} alt="dock" onClick={handleCopyContractAddress}/>
                 </IconsSection>

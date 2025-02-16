@@ -31,7 +31,10 @@ import { sendMessage } from '../store/slices/chatSlice';
 
 
 const CARD_WIDTH = 175;
+const CARD_WIDTH_ENABLED = 268.5;
 const CARD_GAP = 12;
+const CARD_GAP_ENABLED = 12;
+const CARD_HEIGHT_ENABLED = 314;
 const MIN_PADDING = 40;
 const SCROLLBAR_WIDTH = 17; // Windows 系统默认滚动条宽度
 const PAGE_SIZE = 20
@@ -154,7 +157,9 @@ const LoadingWrapper = styled(Box)(({ theme }) => ({
 
 export default function Models() {
   const navigate = useNavigate();
+  // @ts-ignore
   const [containerPadding, setContainerPadding] = useState(MIN_PADDING);
+  const [containerPaddingEnabled, setContainerPaddingEnabled] = useState(MIN_PADDING);
   const [cardsPerRow, setCardsPerRow] = useState(6);
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
@@ -183,18 +188,26 @@ export default function Models() {
       
       // 计算每行最多能放几个卡片（包括添加按钮）
       const maxCards = Math.floor((availableWidth + CARD_GAP) / (CARD_WIDTH + CARD_GAP));
+      const maxCardsEnabled = Math.floor((availableWidth + CARD_GAP_ENABLED) / (CARD_WIDTH_ENABLED + CARD_GAP_ENABLED));
       
       // 计算实际需要的总宽度
       const totalCardsWidth = maxCards * CARD_WIDTH + (maxCards - 1) * CARD_GAP;
+      const totalCardsWidthEnabled = maxCardsEnabled * CARD_WIDTH_ENABLED + (maxCardsEnabled - 1) * CARD_GAP_ENABLED;
       
       // 计算新的padding
       const newPadding = Math.max(
         MIN_PADDING, 
         (containerWidth - scrollbarWidth - totalCardsWidth) / 2
       );
+
+      const newPaddingEnabled = Math.max(
+        MIN_PADDING, 
+        (containerWidth - scrollbarWidth - totalCardsWidthEnabled) / 2
+      );
       
       setCardsPerRow(maxCards);
       setContainerPadding(newPadding);
+      setContainerPaddingEnabled(newPaddingEnabled);
     };
 
     // 使用 ResizeObserver 监听容器尺寸变化
@@ -407,15 +420,11 @@ export default function Models() {
 
   if (votingModelsLoading && displayModels.length == 0) {
     return (
-      <PageContainer id="modelsContainer" padding={containerPadding}>
+      <PageContainer id="modelsContainer" padding={containerPaddingEnabled}>
         <SectionHeader>
           <TitleSection>
-            <Title>VOTING MODELS</Title>
+            <Title>ENABLED MODELS</Title>
           </TitleSection>
-          <SeeAllLink onClick={() => dispatch(openVotingModalsModal())}>
-            See All Voting
-            <ArrowIcon src={arrowIcon} alt="See all" />
-          </SeeAllLink>
         </SectionHeader>
       
         <LoadingWrapper  className="visible">
@@ -427,8 +436,10 @@ export default function Models() {
 
 
   return (
-    <PageContainer id="modelsContainer" padding={containerPadding}>
-      <SectionHeader>
+    <PageContainer id="modelsContainer" padding={containerPaddingEnabled}>
+      <SectionHeader sx={{
+        display: 'none'
+      }}>
         <TitleSection>
           <Title>VOTING MODELS</Title>
           <DateRange>
@@ -441,7 +452,10 @@ export default function Models() {
         </SeeAllLink>
       </SectionHeader>
       
-      <ModelsGrid>
+      <ModelsGrid
+       sx={{
+        display: 'none'
+      }}>
         <>
             {displayModels.slice(0, Math.min(cardsPerRow - 1, displayModels.length)).map(model => (
               <ModelCard
@@ -459,7 +473,9 @@ export default function Models() {
         </>
       </ModelsGrid>
 
-      <Divider />
+      <Divider  sx={{
+        display: 'none'
+      }}/>
 
       <SectionHeader>
         <TitleSection>
@@ -476,10 +492,10 @@ export default function Models() {
             onCardClick={() => handleCardClick(model.id)}
           />
         )}
-        itemWidth={268.5}
-        itemHeight={314}
-        gap={12}
-        containerWidth={(document.getElementById('modelsContainer')?.offsetWidth ?? 0) - containerPadding * 2}
+        itemWidth={CARD_WIDTH_ENABLED}
+        itemHeight={CARD_HEIGHT_ENABLED}
+        gap={CARD_GAP_ENABLED}
+        containerWidth={(document.getElementById('modelsContainer')?.offsetWidth ?? 0) - containerPaddingEnabled * 2}
         onScroll={handleScroll}
         containerId="modelsContainer"
       />

@@ -1,10 +1,12 @@
 import { Box, styled } from '@mui/material';
 import terminalBg from '../../assets/terminal_bg.png';
+import terminalBgNiyoko from '../../assets/terminal_niyoko_bg.png';
 import mobileTerminalBg from '../../assets/mobile_terminal_bg.png';
 import mobileMisato from '../../assets/mobile_misato.png';
 import { useEffect, useCallback, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useTypewriter } from '../../hooks/useTypewriter';
+import { RootState } from '../../store';
 import Pusher from 'pusher-js';
 import { 
   fetchTerminalLogs, 
@@ -143,6 +145,10 @@ export default function TerminalView() {
   const logs = useSelector(selectTerminalLogs);
   const { isLoading, error } = useSelector(selectTerminalStatus);
 
+  const currentAgent = useSelector((state: RootState) => state.agent.currentAgent);
+  const isNiyoko = currentAgent?.id === 'niyoko';
+  const terminalBgImage = isNiyoko ? terminalBgNiyoko : terminalBg;
+
   // 添加打字机效果相关状态
   const [currentLineIndex, setCurrentLineIndex] = useState(0);
   const [terminalLines, setTerminalLines] = useState<string[]>([]);
@@ -216,7 +222,7 @@ export default function TerminalView() {
 
   return (
     <TerminalContainer>
-      <BackgroundImage src={terminalBg} alt="" />
+      <BackgroundImage src={terminalBgImage} alt="" />
       <MobileMisatoImage src={mobileMisato} alt="" />
       <TerminalOutput id="terminal-output">
         {isLoading ? (

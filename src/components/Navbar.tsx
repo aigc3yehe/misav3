@@ -23,6 +23,9 @@ import mobileTerminalNormal from '../assets/mobile_terminal_normal.svg';
 import mobileTerminalSelected from '../assets/mobile_terminal_selected.svg';
 import menuNormal from '../assets/menu_normal.svg';
 import CommonDialog, { ActionButton } from './CommonDialog';
+import { useSelector } from 'react-redux';
+import { RootState } from '../store';
+import { setCurrentAgent, availableAgents } from '../store/slices/agentSlice';
 
 const StyledAppBar = styled(AppBar)(() => ({
   background: 'transparent',
@@ -338,6 +341,7 @@ export default function Navbar({ onSidebarOpen, sidebarOpen, isMobile, avatar }:
   const [searchParams] = useSearchParams();
   const isWorkstation = location.pathname === '/workstation';
   const mode = searchParams.get('mode') || 'chat';
+  const currentAgent = useSelector((state: RootState) => state.agent.currentAgent);
 
   // 从 wallets 中找到当前钱包的图标
   const currentWallet = wallets.find(w => w.address === address);
@@ -367,6 +371,15 @@ export default function Navbar({ onSidebarOpen, sidebarOpen, isMobile, avatar }:
     try {
       await logout();
       setIsLogoutDialogOpen(false);
+      // 判断是否是niyoko
+      
+      if (currentAgent?.id === 'niyoko') {
+        const misatoAgent = availableAgents.find(agent => agent.id === 'misato');
+        if (misatoAgent) {
+          dispatch(setCurrentAgent(misatoAgent));
+        }
+      }
+
       dispatch(showToast({
         message: 'Logout successfully',
         severity: 'success'

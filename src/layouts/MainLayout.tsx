@@ -54,7 +54,6 @@ export default function MainLayout() {
   // 获取 URL 参数中的 agent
   const searchParams = new URLSearchParams(location.search);
   const agentId = searchParams.get('agent');
-  console.log('agentId', agentId)
   useEffect(() => {
     if (agentId) {
       // 根据 agentId 找到对应的 agent 配置

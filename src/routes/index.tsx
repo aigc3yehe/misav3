@@ -11,6 +11,8 @@ import VisualizeX from '../pages/VisualizeX';
 import NotFound from '../pages/NotFound';
 import MyNFTs from '../pages/MyNFTs';
 import MySpace from '../pages/MySpace';
+import { useSelector } from 'react-redux';
+import { RootState } from '../store';
 
 export const router = createBrowserRouter([
   {
@@ -23,43 +25,43 @@ export const router = createBrowserRouter([
       },
       {
         path: '/workstation',
-        element: <Workstation />,
+        element: <WorkstationProtectedRoute><Workstation /></WorkstationProtectedRoute>,
       },
       {
         path: '/models',
-        element: <Models />,
+        element: <NiyokoProtectedRoute><Models /></NiyokoProtectedRoute>,
       },
       {
         path: '/models/:id',
-        element: <ModelDetail />,
+        element: <NiyokoProtectedRoute><ModelDetail /></NiyokoProtectedRoute>,
       },
       {
         path: '/collections',
-        element: <Collections />,
+        element: <MisatoProtectedRoute><Collections /></MisatoProtectedRoute>,
       },
       {
         path: '/collections/:id/nfts',
-        element: <NFTGallery />,
+        element: <MisatoProtectedRoute><NFTGallery /></MisatoProtectedRoute>,
       },
       {
         path: '/gallery',
-        element: <Gallery />,
+        element: <NiyokoProtectedRoute><Gallery /></NiyokoProtectedRoute>,
       },
       {
         path: '/voice_call',
-        element: <VoiceCall />,
+        element: <MisatoProtectedRoute><VoiceCall /></MisatoProtectedRoute>,
       },
       {
         path: '/visualize_x',
-        element: <VisualizeX />,
+        element: <MisatoProtectedRoute><VisualizeX /></MisatoProtectedRoute>,
       },
       {
         path: '/my-nfts',
-        element: <MyNFTs />,
+        element: <MisatoProtectedRoute><MyNFTs /></MisatoProtectedRoute>,
       },
       {
         path: '/my-space',
-        element: <MySpace />,
+        element: <NiyokoProtectedRoute><MySpace /></NiyokoProtectedRoute>,
       },
     ],
   },
@@ -67,4 +69,46 @@ export const router = createBrowserRouter([
     path: '*',
     element: <NotFound />,
   },
-]); 
+]);
+
+// 添加 ProtectedRoute 组件
+interface ProtectedRouteProps {
+  children: React.ReactElement;
+}
+
+function NiyokoProtectedRoute({ children }: ProtectedRouteProps) {
+  const currentAgent = useSelector((state: RootState) => state.agent.currentAgent);
+  const { isWhitelisted } = useSelector((state: RootState) => state.wallet);
+  
+  if (!isWhitelisted) {
+    // 如果尝试访问 niyoko 相关页面但不在白名单中，重定向到 misato
+    return <Navigate to="/workstation?agent=misato" replace />;
+  }
+  
+  if (currentAgent?.id !== 'niyoko') {
+    return <Navigate to="/workstation?agent=misato" replace />;
+  }
+
+  return children;
+} 
+
+function MisatoProtectedRoute({ children }: ProtectedRouteProps) {
+  const currentAgent = useSelector((state: RootState) => state.agent.currentAgent);
+  
+  if (currentAgent?.id !== 'misato') {
+    return <Navigate to="/workstation?agent=niyoko" replace />;
+  }
+
+  return children;
+}
+
+function WorkstationProtectedRoute({ children }: ProtectedRouteProps) {
+  const currentAgent = useSelector((state: RootState) => state.agent.currentAgent);
+  const { isWhitelisted } = useSelector((state: RootState) => state.wallet);
+  
+  if (currentAgent?.id === 'niyoko' && !isWhitelisted) {
+    return <Navigate to="/workstation?agent=misato" replace />;
+  }
+
+  return children;
+}
