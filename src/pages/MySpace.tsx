@@ -23,7 +23,7 @@ import {
   selectMyImagesTotalCount,
   clearMyImages
 } from '../store/slices/modelSlice';
-
+import { openImageViewer } from '../store/slices/imageViewerSlice';
 const PageContainer = styled(Box)({
   minHeight: '100%',
   width: '100%',
@@ -544,7 +544,11 @@ export default function MySpace() {
                     imageUrl={item.url || ''}
                     width={GALLERY_CARD_WIDTH}
                     height={calculateScaledHeight(item)}
-                    onClick={() => {/* handle click */}}
+                    onClick={() => dispatch(openImageViewer({
+                      imageUrl: item.url || '',
+                      width: item.width,
+                      height: item.height,
+                    }))}
                   />
                 )}
                 itemWidth={GALLERY_CARD_WIDTH}

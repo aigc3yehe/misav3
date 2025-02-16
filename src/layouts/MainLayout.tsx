@@ -12,6 +12,7 @@ import { fetchCollections } from '../store/slices/collectionSlice';
 import GenerateModal from '../components/GenerateModal';
 import VotingModalsModal from '../components/VotingModalsModal';
 import { setCurrentAgent } from '../store/slices/agentSlice';
+import ImageViewerModal from '../components/ImageViewerModal';
 
 const LayoutRoot = styled('div')(({ theme }) => ({
   display: 'flex',
@@ -154,6 +155,7 @@ export default function MainLayout() {
       
       <GenerateModal />
       <VotingModalsModal />
+      <ImageViewerModal />
     </>
   );
 } 

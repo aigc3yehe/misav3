@@ -9,6 +9,7 @@ import EmptyState from '../components/EmptyState';
 import LoadingState from '../components/LoadingState';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch } from '../store';
+import { openImageViewer } from '../store/slices/imageViewerSlice';
 import {
   fetchGalleryList,
   clearGalleryList,
@@ -252,7 +253,11 @@ export default function Gallery() {
               imageUrl={item.url || ''}
               width={CARD_WIDTH}
               height={calculateScaledHeight(item)}
-              onClick={() => {/* handle click */}}
+              onClick={() => dispatch(openImageViewer({
+                imageUrl: item.url || '',
+                width: item.width,
+                height: item.height,
+              }))}
             />
           )
         )}

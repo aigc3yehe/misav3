@@ -10,6 +10,7 @@ import myNftReducer from './slices/mynftSlice';
 import modelReducer from './slices/modelSlice';
 import uiReducer from './slices/uiSlice';
 import imagesReducer from './slices/imagesSlice';
+import imageViewerReducer from './slices/imageViewerSlice';
 
 export const store = configureStore({
   reducer: {
@@ -24,6 +25,7 @@ export const store = configureStore({
     model: modelReducer,
     ui: uiReducer,
     images: imagesReducer,
+    imageViewer: imageViewerReducer,
   },
   middleware: (getDefaultMiddleware) => getDefaultMiddleware().concat(walletStatusMiddleware),
 });
