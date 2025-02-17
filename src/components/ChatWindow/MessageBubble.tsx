@@ -1,12 +1,15 @@
 import { Box, Button, styled, useTheme, useMediaQuery } from '@mui/material';
 import MDRenderer from '../shared/MDRenderer';
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import completedIcon from '../../assets/upload_ok.svg';
 import uploadIcon from '../../assets/upload.svg';
+import uploadingIcon from '../../assets/uploading.svg';
 import { AppDispatch } from '../../store';
 import { useDispatch } from 'react-redux';
 import { uploadImages } from '../../store/slices/imagesSlice';
 import { sendMessage } from '../../store/slices/chatSlice';
+import { useSelector } from 'react-redux';
+import { RootState } from '../../store';
 
 const BubbleContainer = styled(Box)(({ theme }) => ({
   width: '100%',
@@ -109,6 +112,7 @@ interface MessageBubbleProps {
     onClick: () => void;
     disabled?: boolean;
   }>;
+  progress: number;
 }
 
 export default function MessageBubble({ 
@@ -118,18 +122,22 @@ export default function MessageBubble({
   avatar, 
   actions,
   show_status,
-  urls
+  urls,
+  progress
 }: MessageBubbleProps) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dispatch = useDispatch<AppDispatch>();
+  const [isConfirmed, setIsConfirmed] = useState(false);
+  const isUploading = useSelector((state: RootState) => state.images.isUploading);
 
   const handleUpload = () => {
     fileInputRef.current?.click();
   };
 
   const handleCompleted = async () => {
+    setIsConfirmed(true);
     try {
       await dispatch(sendMessage({ 
         messageText: "I have uploaded it successfully, please help me train"
@@ -152,6 +160,23 @@ export default function MessageBubble({
       }
     }
   };
+
+  let startIcon = null;
+  if (isUploading) {
+    startIcon = <ButtonIcon src={uploadingIcon} alt="uploading" />;
+  } else if (isConfirmed) {
+    startIcon = <ButtonIcon src={completedIcon} alt="completed" />;
+  }
+
+  let disabled = false;
+  if (isUploading) {
+    disabled = true;
+  } else if (isConfirmed) {
+    disabled = true;
+  }
+  if (!urls || urls.length === 0) {
+    disabled = true;
+  }
 
   return (
     <BubbleContainer sx={{ justifyContent: isUser ? 'flex-end' : 'flex-start' }}>
@@ -189,17 +214,26 @@ export default function MessageBubble({
             />
             <ActionButtons>
               <ActionButton 
-              startIcon={<ButtonIcon src={uploadIcon} alt="upload" />}
-              onClick={handleUpload}
-              actionstyle="primary">
+                startIcon={<ButtonIcon src={uploadIcon} alt="upload" />}
+                onClick={handleUpload}
+                actionstyle="primary">
                 UPLOAD
               </ActionButton>
               <ActionButton
-              onClick={handleCompleted} 
-              disabled={!urls || urls.length == 0}
-              startIcon={<ButtonIcon src={completedIcon} alt="completed" />}
-              actionstyle="secondary">
-                COMPLETED
+                onClick={handleCompleted} 
+                disabled={disabled}
+                startIcon={startIcon}
+                actionstyle="secondary"
+                sx={{
+                  '& .MuiButton-startIcon': {
+                    animation: isUploading ? 'spin 1s linear infinite' : 'none',
+                  },
+                }}>
+                {isUploading 
+                  ? `UPLOADING (${progress}%)`
+                  : isConfirmed 
+                    ? 'COMPLETED' 
+                    : 'CONFIRM'}
               </ActionButton>
             </ActionButtons>
             {urls && urls.length > 0 && (

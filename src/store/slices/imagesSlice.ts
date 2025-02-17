@@ -2,7 +2,6 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { showToast } from './toastSlice';
 import { updateMessageUrls } from './chatSlice';
-import { RootState } from '..';
 
 // S3 配置
 const S3_CONFIG = {
@@ -58,7 +57,7 @@ const uploadFileToS3 = async (s3Client: S3Client, file: File, key: string) => {
 // 上传图片到 S3
 export const uploadImages = createAsyncThunk(
   'images/uploadImages',
-  async ({ messageId, files }: { messageId: string | number, files: File[] }, { dispatch, getState }) => {
+  async ({ messageId, files }: { messageId: string | number, files: File[] }, { dispatch }) => {
     console.log('📤 Starting image upload process', { messageId, fileCount: files.length });
     try {
       const s3Client = new S3Client({
@@ -67,24 +66,38 @@ export const uploadImages = createAsyncThunk(
       });
 
       const uploadedUrls: string[] = [];
+      const totalFiles = files.length;
+      let completedUploads = 0;
 
       // 并行上传所有文件
-      const uploadPromises = files.map(file => {
+      const uploadPromises = files.map(async file => {
         const fileName = `${Date.now()}-${file.name}`;
         const key = `images/chat/${fileName}`;
         console.log('🖼️ Processing file:', file.name);
-        return uploadFileToS3(s3Client, file, key);
+        
+        try {
+          const url = await uploadFileToS3(s3Client, file, key);
+          completedUploads++;
+          
+          // 计算当前进度
+          const progress = Math.round((completedUploads / totalFiles) * 100);
+          
+          // 更新当前已上传的URLs和进度
+          dispatch(updateMessageUrls({ 
+            messageId, 
+            urls: [url],
+            progress 
+          }));
+          
+          return url;
+        } catch (error) {
+          console.error('Error uploading file:', file.name, error);
+          throw error;
+        }
       });
 
       const results = await Promise.all(uploadPromises);
       uploadedUrls.push(...results);
-
-      // 更新消息中的 URLs
-      const state = getState() as RootState;
-      const currentAgent = state.agent.currentAgent;
-      
-      console.log('👤 Current agent:', currentAgent?.id);
-      dispatch(updateMessageUrls({ messageId, urls: uploadedUrls }));
 
       dispatch(showToast({ message: 'Images uploaded successfully', severity: 'success' }));
       console.log('✅ Upload process completed successfully');

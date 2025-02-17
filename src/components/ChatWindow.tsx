@@ -137,7 +137,8 @@ interface Message {
     onClick: () => void;
     disabled?: boolean;
   }>;
-  urls?: string[]
+  urls?: string[];
+  progress?: number;
 }
 
 // 未连接钱包时的消息
@@ -244,6 +245,7 @@ const convertChatMessage = (
     avatar: chatMessage.role === 'user' ? undefined : '/misato.jpg',
     show_status: chatMessage.show_status,
     urls: chatMessage.urls,
+    progress: chatMessage.progress,
     };
 
   // 如果是需要支付的消息
@@ -1035,6 +1037,7 @@ export default function ChatWindow({ agentName }: ChatWindowProps) {
                 actions={msg.actions}
                 show_status={msg.show_status}
                 urls={msg.urls}
+                progress={msg.progress || 0}
               />
             ))}
             <div ref={messagesEndRef} />

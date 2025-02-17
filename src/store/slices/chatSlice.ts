@@ -20,7 +20,8 @@ export interface ChatMessage {
   time?: string;                          // 消息时间
   show_status?: 'send_eth' | 'idle' | 'disconnected' | 'queuing' | 'upload_image';  // 显示状态
   payment_info?: PaymentInfo;             // 支付信息（如果需要）
-  urls?: string[];  // 新增字段，用于存储上传的图片URL
+  urls?: string[];  // 新增字段，用于存储上传的图片URL  
+  progress?: number;  // 新增字段，用于存储上传的进度
 }
 
 // 聊天状态接口
@@ -685,11 +686,13 @@ const chatSlice = createSlice({
       state.messages = [...initialMessages];
       state.collectionName = null;
     },
-    updateMessageUrls: (state, action: PayloadAction<{ messageId: string | number; urls: string[] }>) => {
-      const { messageId, urls } = action.payload;
+    updateMessageUrls: (state, action: PayloadAction<{ messageId: string | number; urls: string[]; progress?: number }>) => {
+      const { messageId, urls, progress } = action.payload;
       const message = state.messages.find(msg => msg.id === messageId);
       if (message) {
-        message.urls = urls;
+        // 这里的urls是累加的，不是直接替换的，并且过滤掉相关的url  
+        message.urls = [...(message.urls || []), ...urls].filter((url, index, self) => self.indexOf(url) === index);
+        message.progress = progress;
       }
     },
   },
