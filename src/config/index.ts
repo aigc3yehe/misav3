@@ -7,9 +7,10 @@ export const IS_DEV = false; // 在生产环境部署时改为 false
 };  */
 
 // 生产环境的 privy id : cm68ssno000jm4isiy31vlvpr
+// 测试环境的 privy id : cm5lv29x9004b7sm0zundvun8
 export const CHAIN_CONFIG = {
     chainId: 8453,
     chain: 'base',
     base_url: 'base-mainnet',
-    privy_id: 'cm5lv29x9004b7sm0zundvun8'
+    privy_id: 'cm68ssno000jm4isiy31vlvpr'
   };

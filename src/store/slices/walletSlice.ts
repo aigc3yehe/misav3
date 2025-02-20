@@ -1,9 +1,10 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { formatUnits } from 'viem';
+import { RootState } from '..';
 
 // 常量定义
 const MISATO_TOKEN_ADDRESS = '0x98f4779FcCb177A6D856dd1DfD78cd15B7cd2af5';
-// const REQUIRED_BALANCE = 50_000; // 需要持有的最小数量
+const REQUIRED_BALANCE = 200_000; // 需要持有的最小数量
 // const PROJECT_ID = '24138badb492a0fbadb1a04687d27fcd';
 const WALLET_INFO_CACHE_KEY = 'wallet_info_cache';
 const UUID_STORAGE_KEY = 'misato_user_uuid';
@@ -11,6 +12,7 @@ const UUID_STORAGE_KEY = 'misato_user_uuid';
 // 添加白名单地址列表
 const WHITELISTED_ADDRESSES = [
   '0xdbEA32C9a4438cE9eae6Cf1505343E803F277922',
+  '0x520EacebDa3Aa6659080c6e2618502a566C86954'
   // 添加其他白名单地址...
 ].map(addr => addr.toLowerCase());
 
@@ -88,7 +90,12 @@ const saveWalletInfoToCache = (walletInfo: WalletInfo) => {
 // Async Thunks
 export const checkTokenBalance = createAsyncThunk(
   'wallet/checkTokenBalance',
-  async (address: string) => {
+  async (address: string, { getState }) => {
+    const state = getState() as RootState;
+    const agentId = state.agent.currentAgent?.id;
+    if (agentId === 'niyoko') {
+      return REQUIRED_BALANCE * 10;
+    }
     const baseUrl = 'https://base-mainnet.g.alchemy.com/v2/goUyG3r-JBxlrxzsqIoyv0b_W-LwScsN';
     
     const raw = JSON.stringify({
@@ -173,11 +180,16 @@ const walletSlice = createSlice({
       state.userUuid = '';
       state.isWhitelisted = false;
     },
-    updateMaxBalance: (state, action: PayloadAction<{ address: string; balance: number }>) => {
-      const { address, balance } = action.payload;
+    updateMaxBalance: (state, action: PayloadAction<{ address: string; balance: number; agentId?: string }>) => {
+      const { address, balance, agentId } = action.payload;
       state.maxBalances[address] = Math.max(state.maxBalances[address] || 0, balance);
-      // state.hasEnoughTokens = state.maxBalances[address] >= REQUIRED_BALANCE;
-      state.hasEnoughTokens = true;
+      console.log('updateMaxBalance:', balance);
+      // 如果是 niyoko，直接设置 hasEnoughTokens 为 true
+      if (agentId === 'niyoko') {
+        state.hasEnoughTokens = true;
+      } else {
+        state.hasEnoughTokens = state.maxBalances[address] >= REQUIRED_BALANCE;
+      }
     },
   },
   extraReducers: (builder) => {
@@ -197,8 +209,8 @@ const walletSlice = createSlice({
           );
           // 如果余额大于等于 REQUIRED_BALANCE，则设置 hasEnoughTokens 为 true
           // 测试时，设置为 true
-          // state.hasEnoughTokens = state.maxBalances[state.address] >= REQUIRED_BALANCE;
-          state.hasEnoughTokens = true;
+          state.hasEnoughTokens = state.maxBalances[state.address] >= REQUIRED_BALANCE;
+          //state.hasEnoughTokens = true;
         }
       })
       .addCase(checkTokenBalance.rejected, (state, action) => {
@@ -228,5 +240,33 @@ export const {
   disconnectWallet,
   updateMaxBalance,
 } = walletSlice.actions;
+
+// 添加 agent 状态监听中间件
+export const agentStatusMiddleware = (store: any) => (next: any) => (action: any) => {
+  // @ts-ignore
+  const prevState = store.getState();
+  const result = next(action);
+  const currentState = store.getState();
+
+  // 检查 agent 是否发生变化
+  if (action.type === 'agent/setCurrentAgent') {
+    const isNiyoko = action.payload.id === 'niyoko';
+    if (isNiyoko) {
+      // 如果切换到 niyoko，直接设置 hasEnoughTokens 为 true
+      store.dispatch(updateMaxBalance({ 
+        address: currentState.wallet.address || '', 
+        balance: REQUIRED_BALANCE * 10,
+        agentId: 'niyoko'
+      }));
+    } else {
+      // 如果切换到其他 agent，重新检查 token balance
+      if (currentState.wallet.address) {
+        store.dispatch(checkTokenBalance(currentState.wallet.address));
+      }
+    }
+  }
+
+  return result;
+};
 
 export default walletSlice.reducer; 

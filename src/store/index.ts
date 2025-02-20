@@ -4,7 +4,7 @@ import agentReducer from './slices/agentSlice';
 import nftReducer from './slices/nftSlice';
 import toastReducer from './slices/toastSlice';
 import chatReducer, { walletStatusMiddleware } from './slices/chatSlice';
-import walletReducer from './slices/walletSlice';
+import walletReducer, { agentStatusMiddleware } from './slices/walletSlice';
 import terminalReducer from './slices/terminalSlice';
 import myNftReducer from './slices/mynftSlice';
 import modelReducer from './slices/modelSlice';
@@ -27,7 +27,10 @@ export const store = configureStore({
     images: imagesReducer,
     imageViewer: imageViewerReducer,
   },
-  middleware: (getDefaultMiddleware) => getDefaultMiddleware().concat(walletStatusMiddleware),
+  middleware: (getDefaultMiddleware) => 
+    getDefaultMiddleware()
+      .concat(agentStatusMiddleware)
+      .concat(walletStatusMiddleware),
 });
 
 export type RootState = ReturnType<typeof store.getState>;

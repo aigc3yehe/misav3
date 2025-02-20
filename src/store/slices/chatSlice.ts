@@ -521,6 +521,14 @@ export const sendHeartbeat = createAsyncThunk(
     if (Date.now() - lastActivityTime < 20000) {
       return;
     }
+
+    const hasEnoughTokens = state.wallet.hasEnoughTokens;
+    console.log('sendHeartbeat:,', hasEnoughTokens);
+    if (!hasEnoughTokens) {
+      dispatch(setConnectionState('not-enough-tokens'));
+      return;
+    }
+
     try {
       await waitForRequestAvailable(getState as () => RootState);
       dispatch(setIsRequesting(true));
@@ -570,6 +578,13 @@ export const sendHeartbeat = createAsyncThunk(
 export const checkConnectionStatus = createAsyncThunk(
   'chat/checkConnectionStatus',
   async (_, { getState, dispatch }) => {
+    const state = getState() as RootState;
+    const hasEnoughTokens = state.wallet.hasEnoughTokens;
+    console.log('checkConnectionStatus:,', hasEnoughTokens);
+    if (!hasEnoughTokens) {
+      dispatch(setConnectionState('not-enough-tokens'));
+      return;
+    }
     try {
       await waitForRequestAvailable(getState as () => RootState);
       dispatch(setIsRequesting(true));
