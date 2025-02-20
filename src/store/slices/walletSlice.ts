@@ -12,7 +12,8 @@ const UUID_STORAGE_KEY = 'misato_user_uuid';
 // 添加白名单地址列表
 const WHITELISTED_ADDRESSES = [
   '0xdbEA32C9a4438cE9eae6Cf1505343E803F277922',
-  '0x520EacebDa3Aa6659080c6e2618502a566C86954'
+  '0x520EacebDa3Aa6659080c6e2618502a566C86954',
+  '0x4272e3150A81B9735ccc58692f5dd3Cf73fB3B92'
   // 添加其他白名单地址...
 ].map(addr => addr.toLowerCase());
 
