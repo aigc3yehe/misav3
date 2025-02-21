@@ -136,7 +136,6 @@ const TerminalOutput = styled(Box)(({ theme }) => ({
 const PUSHER_CONFIG = {
   APP_KEY: 'ae89f44addd84df6b762',
   CLUSTER: 'ap1',
-  CHANNEL: 'misato',
   EVENT: 'aigc'
 } as const;
 
@@ -148,6 +147,9 @@ export default function TerminalView() {
   const currentAgent = useSelector((state: RootState) => state.agent.currentAgent);
   const isNiyoko = currentAgent?.id === 'niyoko';
   const terminalBgImage = isNiyoko ? terminalBgNiyoko : terminalBg;
+  
+  // 根据当前 agent 确定 channel
+  const currentChannel = isNiyoko ? 'niyoko' : 'misato';
 
   // 添加打字机效果相关状态
   const [currentLineIndex, setCurrentLineIndex] = useState(0);
@@ -185,7 +187,7 @@ export default function TerminalView() {
   useEffect(() => {
     // 获取历史日志
     dispatch(fetchTerminalLogs({
-      channel: PUSHER_CONFIG.CHANNEL,
+      channel: currentChannel,
       event: PUSHER_CONFIG.EVENT
     }));
 
@@ -198,7 +200,7 @@ export default function TerminalView() {
     pusher.connection.bind('state_change', handleStateChange);
 
     // 订阅频道和事件
-    const channel = pusher.subscribe(PUSHER_CONFIG.CHANNEL);
+    const channel = pusher.subscribe(currentChannel);
     channel.bind(PUSHER_CONFIG.EVENT, (data: string) => {
       dispatch(addLog(data));
     });
@@ -207,10 +209,10 @@ export default function TerminalView() {
     return () => {
       pusher.connection.unbind('state_change', handleStateChange);
       channel.unbind(PUSHER_CONFIG.EVENT);
-      pusher.unsubscribe(PUSHER_CONFIG.CHANNEL);
+      pusher.unsubscribe(currentChannel);
       pusher.disconnect();
     };
-  }, [dispatch, handleStateChange]);
+  }, [dispatch, handleStateChange, currentChannel]);
 
   // 自动滚动到底部
   useEffect(() => {
