@@ -643,6 +643,20 @@ export const fetchModalVotingModels = createAsyncThunk(
   }
 );
 
+// 添加新的 thunk 用于获取训练状态
+export const fetchTrainingState = createAsyncThunk(
+  'model/fetchTrainingState',
+  async (task_id: string) => {
+    const response = await fetch(`/niyoko-api/model/train/state?task_id=${task_id}&refreshState=true`, {
+      headers: {
+        'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6InN0dWRpbyIsImlhdCI6MTczNjA4MzA3MX0.nBfMsRYqjOkOfjFqCEbmBJWjz1I_CkIr5emwdMS2nXo'
+      }
+    });
+    if (!response.ok) throw new Error('Failed to fetch training state');
+    return await response.json();
+  }
+);
+
 const modelSlice = createSlice({
   name: 'model',
   initialState,
@@ -1015,6 +1029,15 @@ const modelSlice = createSlice({
       .addCase(fetchModalVotingModels.rejected, (state, action) => {
         state.modalVotingLoading = false;
         state.modalVotingError = action.error.message || 'Failed to fetch modal voting models';
+      })
+      .addCase(fetchTrainingState.fulfilled, (state, action) => {
+        if (state.currentModel && state.currentModel.model_tran?.[0]) {
+          if (action.payload.data.status === 'SUCCESS') {
+            state.currentModel.model_tran[0].train_state = 2; // Ready
+          } else if (action.payload.data.status === 'FAILED') {
+            state.currentModel.model_tran[0].train_state = -1; // Failed
+          }
+        }
       });
   },
 });

@@ -35,7 +35,8 @@ import {
   voteModel,
   updateVoteOptimistically,
   selectShouldRefreshGallery,
-  setShouldRefreshGallery
+  setShouldRefreshGallery,
+  fetchTrainingState
 } from '../store/slices/modelSlice';
 import { formatId, formatDateRange } from '../utils/format';
 import { RootState } from '../store';
@@ -446,6 +447,36 @@ export default function ModelDetail() {
   const walletAddress = useSelector((state: RootState) => state.wallet.address);
   const shouldRefreshGallery = useSelector(selectShouldRefreshGallery);
 
+  // 添加轮询定时器的引用
+  const pollingRef = useRef<NodeJS.Timeout>();
+
+  // 添加轮询函数
+  const startPolling = useCallback(() => {
+    if (model?.model_tran?.[0]) {
+      const trainState = model.model_tran[0].train_state;
+      const taskId = model.model_tran[0].task_id;
+      
+      // 只在 Training 状态下进行轮询
+      if (trainState === 1 && taskId) {
+        pollingRef.current = setInterval(() => {
+          dispatch(fetchTrainingState(taskId));
+        }, 10000); // 每10秒轮询一次
+      }
+    }
+  }, [model, dispatch]);
+
+  // 在组件挂载和model更新时启动轮询
+  useEffect(() => {
+    startPolling();
+    
+    // 清理函数
+    return () => {
+      if (pollingRef.current) {
+        clearInterval(pollingRef.current);
+      }
+    };
+  }, [startPolling]);
+
   // 加载模型详情
   useEffect(() => {
     if (id) {
@@ -794,7 +825,7 @@ export default function ModelDetail() {
             <AuthorSection>
               <AvatarIcon src={avatarIcon} alt="Author" />
               <AuthorAddress>{formatAddress(model.creator)}</AuthorAddress>
-              <XButton>
+              <XButton sx={{display: 'none'}}>
                 <img src={xIcon} alt="X" />
               </XButton>
             </AuthorSection>
